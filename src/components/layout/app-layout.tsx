@@ -132,7 +132,7 @@ export function AppLayout() {
 
     if (!isSplit) {
       return (
-        <main className="flex-1 overflow-hidden px-4 pb-4 relative">
+        <main className="flex-1 px-4 pb-4 relative">
           {isDragging && (
             <div className="absolute inset-0 z-10 grid grid-cols-2 gap-4">
               <div
@@ -153,7 +153,7 @@ export function AppLayout() {
               />
             </div>
           )}
-          <div className={`overflow-auto ${tabColorClasses[tabMeta[primaryId].color].bgFaint} rounded-lg h-full`}>
+          <div className={`${tabColorClasses[tabMeta[primaryId].color].bgFaint} rounded-lg min-h-64`}>
             <TabContent tab={activeTabs[0]} />
           </div>
         </main>
@@ -161,9 +161,9 @@ export function AppLayout() {
     }
 
     return (
-      <main className="flex-1 overflow-hidden px-4 pb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <main className="flex-1 px-4 pb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
         <div
-          className={`overflow-auto ${tabColorClasses[tabMeta[primaryId].color].bgFaint} rounded-lg relative`}
+          className={`${tabColorClasses[tabMeta[primaryId].color].bgFaint} rounded-lg relative min-h-64`}
           onDragOver={(e) => handleDragOver(e, 'left')}
           onDragLeave={handleDragLeave}
           onDrop={(e) => handleDrop(e, 'left')}
@@ -174,7 +174,7 @@ export function AppLayout() {
           <TabContent tab={activeTabs[0]} />
         </div>
         <div
-          className={`overflow-auto ${tabColorClasses[tabMeta[splitId!].color].bgFaint} rounded-lg relative`}
+          className={`${tabColorClasses[tabMeta[splitId!].color].bgFaint} rounded-lg relative min-h-64`}
           onDragOver={(e) => handleDragOver(e, 'right')}
           onDragLeave={handleDragLeave}
           onDrop={(e) => handleDrop(e, 'right')}
@@ -189,7 +189,7 @@ export function AppLayout() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-base-100">
+    <div className="flex flex-col min-h-screen bg-base-100">
       <header className="flex items-center px-4 py-2.5 bg-base-100">
         <button
           onClick={() => navigate('/')}
