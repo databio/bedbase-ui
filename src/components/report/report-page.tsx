@@ -1,5 +1,4 @@
 import { FileBarChart } from 'lucide-react';
-import { Footer } from '../layout/footer';
 
 export function ReportPage() {
   return (
@@ -9,7 +8,6 @@ export function ReportPage() {
         <h2 className="text-2xl font-bold text-base-content">Analysis Report</h2>
         <p className="text-base-content/60 mt-2">Report generation coming soon.</p>
       </div>
-      <Footer />
     </div>
   );
 }

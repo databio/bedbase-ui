@@ -47,13 +47,14 @@ export const tabColorClasses: Record<string, {
   text: string;
   bg: string;
   borderTop: string;
+  borderTopFaint: string;
   borderLeft: string;
   bgSubtle: string;
   bgFaint: string;
 }> = {
-  primary: { text: 'text-primary', bg: 'bg-primary', borderTop: 'border-t-primary', borderLeft: 'border-l-primary', bgSubtle: 'bg-primary/15', bgFaint: 'bg-primary/8' },
-  info:    { text: 'text-info',    bg: 'bg-info',    borderTop: 'border-t-info',    borderLeft: 'border-l-info',    bgSubtle: 'bg-info/15',    bgFaint: 'bg-info/8' },
-  success: { text: 'text-success', bg: 'bg-success', borderTop: 'border-t-success', borderLeft: 'border-l-success', bgSubtle: 'bg-success/15', bgFaint: 'bg-success/8' },
-  warning: { text: 'text-warning', bg: 'bg-warning', borderTop: 'border-t-warning', borderLeft: 'border-l-warning', bgSubtle: 'bg-warning/15', bgFaint: 'bg-warning/8' },
-  accent:  { text: 'text-accent',  bg: 'bg-accent',  borderTop: 'border-t-accent',  borderLeft: 'border-l-accent',  bgSubtle: 'bg-accent/15',  bgFaint: 'bg-accent/8' },
+  primary: { text: 'text-primary', bg: 'bg-primary', borderTop: 'border-t-primary', borderTopFaint: 'border-t-primary/60', borderLeft: 'border-l-primary', bgSubtle: 'bg-primary/15', bgFaint: 'bg-primary/8' },
+  info:    { text: 'text-info',    bg: 'bg-info',    borderTop: 'border-t-info',    borderTopFaint: 'border-t-info/60',    borderLeft: 'border-l-info',    bgSubtle: 'bg-info/15',    bgFaint: 'bg-info/8' },
+  success: { text: 'text-success', bg: 'bg-success', borderTop: 'border-t-success', borderTopFaint: 'border-t-success/60', borderLeft: 'border-l-success', bgSubtle: 'bg-success/15', bgFaint: 'bg-success/8' },
+  warning: { text: 'text-warning', bg: 'bg-warning', borderTop: 'border-t-warning', borderTopFaint: 'border-t-warning/60', borderLeft: 'border-l-warning', bgSubtle: 'bg-warning/15', bgFaint: 'bg-warning/8' },
+  accent:  { text: 'text-accent',  bg: 'bg-accent',  borderTop: 'border-t-accent',  borderTopFaint: 'border-t-accent/60',  borderLeft: 'border-l-accent',  bgSubtle: 'bg-accent/15',  bgFaint: 'bg-accent/8' },
 };

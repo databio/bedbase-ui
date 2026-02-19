@@ -9,6 +9,7 @@ import { TabContent } from '../tabs/tab-content';
 import { ReportPage } from '../report/report-page';
 import { UploadPage } from '../upload/upload-page';
 import { MetricsPage } from '../metrics/metrics-page';
+import { Footer } from './footer';
 
 export function AppLayout() {
   const { activeTabs, openTab, openSplit, closeTab } = useTab();
@@ -132,7 +133,7 @@ export function AppLayout() {
 
     if (!isSplit) {
       return (
-        <main className="flex-1 px-4 pb-4 relative">
+        <main className="flex-1 flex flex-col px-4 pb-4 relative">
           {isDragging && (
             <div className="absolute inset-0 z-10 grid grid-cols-2 gap-4">
               <div
@@ -153,7 +154,7 @@ export function AppLayout() {
               />
             </div>
           )}
-          <div className={`${tabColorClasses[tabMeta[primaryId].color].bgFaint} rounded-lg min-h-64`}>
+          <div className={`@container flex-1 bg-base-100 rounded-lg border border-base-300 border-t-2 shadow-sm ${tabColorClasses[tabMeta[primaryId].color].borderTopFaint}`}>
             <TabContent tab={activeTabs[0]} />
           </div>
         </main>
@@ -163,7 +164,7 @@ export function AppLayout() {
     return (
       <main className="flex-1 px-4 pb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
         <div
-          className={`${tabColorClasses[tabMeta[primaryId].color].bgFaint} rounded-lg relative min-h-64`}
+          className={`@container bg-base-100 rounded-lg border border-base-300 border-t-2 shadow-sm ${tabColorClasses[tabMeta[primaryId].color].borderTopFaint} relative`}
           onDragOver={(e) => handleDragOver(e, 'left')}
           onDragLeave={handleDragLeave}
           onDrop={(e) => handleDrop(e, 'left')}
@@ -174,7 +175,7 @@ export function AppLayout() {
           <TabContent tab={activeTabs[0]} />
         </div>
         <div
-          className={`${tabColorClasses[tabMeta[splitId!].color].bgFaint} rounded-lg relative min-h-64`}
+          className={`@container bg-base-100 rounded-lg border border-base-300 border-t-2 shadow-sm ${tabColorClasses[tabMeta[splitId!].color].borderTopFaint} relative`}
           onDragOver={(e) => handleDragOver(e, 'right')}
           onDragLeave={handleDragLeave}
           onDrop={(e) => handleDrop(e, 'right')}
@@ -218,6 +219,7 @@ export function AppLayout() {
         </div>
       </header>
       {renderContent()}
+      <Footer />
     </div>
   );
 }

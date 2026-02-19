@@ -1,5 +1,4 @@
 import { BarChart3 } from 'lucide-react';
-import { Footer } from '../layout/footer';
 
 export function MetricsPage() {
   return (
@@ -9,7 +8,6 @@ export function MetricsPage() {
         <h2 className="text-2xl font-bold text-base-content">Metrics</h2>
         <p className="text-base-content/60 mt-2">BEDbase usage metrics coming soon.</p>
       </div>
-      <Footer />
     </div>
   );
 }

@@ -2,10 +2,16 @@ import { useState, useRef, type ReactNode } from 'react';
 import { Search, Upload, FileText, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useFile } from '../../contexts/file-context';
+import { useTab } from '../../contexts/tab-context';
 import { FileSearchGraphic } from '../graphics/file-search-graphic';
 import { BedAnalyzerGraphic } from '../graphics/bed-analyzer-graphic';
 import { CodeSnippetGraphic } from '../graphics/code-snippet-graphic';
-import { Footer } from '../layout/footer';
+
+function formatBytes(bytes: number): string {
+  if (bytes >= 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / 1024).toFixed(1)} KB`;
+}
 
 // --- Search / upload input ---
 
@@ -15,6 +21,7 @@ function SearchInput({ onFileSelect }: { onFileSelect: (f: File) => void }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadedFile, setUploadedFile } = useFile();
   const navigate = useNavigate();
+  const { openTab } = useTab();
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -25,7 +32,7 @@ function SearchInput({ onFileSelect }: { onFileSelect: (f: File) => void }) {
 
   const handleSubmit = () => {
     if (!query) return;
-    // TODO: navigate to search with query
+    openTab('search', query);
   };
 
   return (
@@ -58,7 +65,7 @@ function SearchInput({ onFileSelect }: { onFileSelect: (f: File) => void }) {
         >
           <FileText size={16} className="text-primary shrink-0 mx-2" />
           <span className="text-sm font-medium text-base-content/70 truncate flex-1">{uploadedFile.name}</span>
-          <span className="text-xs text-base-content/40">{(uploadedFile.size / 1024).toFixed(1)} KB</span>
+          <span className="text-xs text-base-content/40">{formatBytes(uploadedFile.size)}</span>
           <button
             onClick={(e) => { e.stopPropagation(); setUploadedFile(null); }}
             className="p-0.5 rounded hover:bg-base-300 transition-colors cursor-pointer"
@@ -156,6 +163,7 @@ export function Hub() {
           The open access platform for aggregating, analyzing, and serving genomic region data.
         </p>
         <SearchInput onFileSelect={handleFileSelect} />
+        {/* TODO: fetch real counts from API */}
         <div className="flex items-center gap-4 mt-20 text-sm text-base-content/50">
           <span><strong className="text-primary">93,026</strong> BED files</span>
           <span className="text-base-content/20">•</span>
@@ -188,7 +196,6 @@ export function Hub() {
         </div>
       </div>
 
-      <Footer />
     </div>
   );
 }

@@ -4,11 +4,20 @@ import { Search, FlaskConical, ScatterChart, FolderOpen, X, FileText, FileBarCha
 import { useTab, type TabId } from '../../contexts/tab-context';
 import { useFile } from '../../contexts/file-context';
 import { tabMeta, tabColorClasses } from '../../lib/tab-meta';
-import { Footer } from '../layout/footer';
+
+function formatNumber(n: number): string {
+  return n.toLocaleString();
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes >= 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / 1024).toFixed(1)} KB`;
+}
 
 // --- Action cards ---
 
-const actions: { id: TabId; label: string; description: string; icon: typeof Search }[] = [
+const actions: { id: TabId; param?: string; label: string; description: string; icon: typeof Search }[] = [
   {
     id: 'search',
     label: 'Find similar files',
@@ -17,6 +26,7 @@ const actions: { id: TabId; label: string; description: string; icon: typeof Sea
   },
   {
     id: 'analysis',
+    param: 'upload',
     label: 'Analyze in detail',
     description: 'View statistics, chromosome distributions, and genomic annotations for your regions.',
     icon: FlaskConical,
@@ -42,7 +52,7 @@ function ActionCard({ action }: { action: (typeof actions)[number] }) {
 
   return (
     <button
-      onClick={() => openTab(action.id)}
+      onClick={() => openTab(action.id, action.param)}
       className="flex items-start gap-3 p-4 rounded-lg border border-base-300 hover:border-base-content/20 hover:bg-base-200/30 transition-colors cursor-pointer text-left"
     >
       <Icon size={18} className={`${colors.text} mt-0.5 shrink-0`} />
@@ -57,6 +67,8 @@ function ActionCard({ action }: { action: (typeof actions)[number] }) {
 // --- File preview ---
 
 function FilePreview({ file, onClear }: { file: File; onClear: () => void }) {
+  const { regionSet, parsing, parseProgress, parseError, parseTime } = useFile();
+
   return (
     <div className="w-full max-w-2xl border border-base-300 rounded-lg p-5">
       <div className="flex items-center gap-3 mb-4">
@@ -65,7 +77,10 @@ function FilePreview({ file, onClear }: { file: File; onClear: () => void }) {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-base-content truncate">{file.name}</p>
-          <p className="text-xs text-base-content/40">{(file.size / 1024).toFixed(1)} KB</p>
+          <p className="text-xs text-base-content/40">
+            {formatBytes(file.size)}
+            {!parsing && parseTime != null && ` · parsed in ${parseTime.toFixed(0)} ms`}
+          </p>
         </div>
         <button
           onClick={onClear}
@@ -75,24 +90,46 @@ function FilePreview({ file, onClear }: { file: File; onClear: () => void }) {
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-base-200/50 rounded-lg p-3">
-          <p className="text-xs text-base-content/40">Regions</p>
-          <p className="text-lg font-medium text-base-content/30">—</p>
+      {parsing ? (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs text-base-content/50">
+            <span>Parsing {formatBytes(file.size)} file...</span>
+            <span>{Math.round(parseProgress * 100)}%</span>
+          </div>
+          <div className="w-full h-1.5 bg-base-200 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-primary rounded-full transition-[width] duration-150 ease-out"
+              style={{ width: `${parseProgress * 100}%` }}
+            />
+          </div>
         </div>
-        <div className="bg-base-200/50 rounded-lg p-3">
-          <p className="text-xs text-base-content/40">Genome</p>
-          <p className="text-lg font-medium text-base-content/30">—</p>
-        </div>
-        <div className="bg-base-200/50 rounded-lg p-3">
-          <p className="text-xs text-base-content/40">Avg length</p>
-          <p className="text-lg font-medium text-base-content/30">—</p>
-        </div>
-      </div>
-
-      <p className="text-xs text-base-content/30 mt-3 text-center">
-        File preview coming soon
-      </p>
+      ) : (
+        <>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-base-200/50 rounded-lg p-3">
+              <p className="text-xs text-base-content/40">Regions</p>
+              <p className={`text-md font-medium ${regionSet ? 'text-base-content' : 'text-base-content/30'}`}>
+                {regionSet ? formatNumber(regionSet.numberOfRegions) : '—'}
+              </p>
+            </div>
+            <div className="bg-base-200/50 rounded-lg p-3">
+              <p className="text-xs text-base-content/40">Mean width</p>
+              <p className={`text-md font-medium ${regionSet ? 'text-base-content' : 'text-base-content/30'}`}>
+                {regionSet ? `${formatNumber(Math.round(regionSet.meanRegionWidth))} bp` : '—'}
+              </p>
+            </div>
+            <div className="bg-base-200/50 rounded-lg p-3">
+              <p className="text-xs text-base-content/40">Nucleotides</p>
+              <p className={`text-md font-medium ${regionSet ? 'text-base-content' : 'text-base-content/30'}`}>
+                {regionSet ? formatNumber(regionSet.nucleotidesLength) : '—'}
+              </p>
+            </div>
+          </div>
+          {parseError && (
+            <p className="text-xs text-error mt-3 text-center">{parseError}</p>
+          )}
+        </>
+      )}
     </div>
   );
 }
@@ -142,7 +179,6 @@ export function UploadPage() {
         </div>
       </div>
 
-      <Footer />
     </div>
   );
 }
