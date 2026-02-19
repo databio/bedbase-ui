@@ -1,4 +1,4 @@
-import { ShoppingCart, Plus, Check } from 'lucide-react';
+import { Plus, Check } from 'lucide-react';
 import type { components } from '../../bedbase-types';
 import { useTab } from '../../contexts/tab-context';
 import { useCart } from '../../contexts/cart-context';

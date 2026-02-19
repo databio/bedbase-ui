@@ -151,7 +151,7 @@ function FilePreview({ file, onClear }: { file: File; onClear: () => void }) {
 
 export function FilePage() {
   const { bedFile, setBedFile } = useFile();
-  const { closeTab, openTab } = useTab();
+  const { closeTab } = useTab();
   const navigate = useNavigate();
 
   useEffect(() => {

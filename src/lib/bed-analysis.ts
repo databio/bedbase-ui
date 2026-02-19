@@ -1,4 +1,9 @@
 import type { RegionSet, ChromosomeStatistics } from '@databio/gtars';
+import type { components } from '../bedbase-types';
+import type { PlotSlot } from './plot-specs';
+
+type BedMetadataAll = components['schemas']['BedMetadataAll'];
+type FileModel = components['schemas']['FileModel'];
 
 // --- Normalized data types consumed by all analysis panels ---
 
@@ -25,7 +30,7 @@ export type BedAnalysis = {
   source: 'local' | 'database';
 
   // Identity
-  id?: string; // database bed file ID (e.g. md5 hash)
+  id?: string;
   fileName?: string;
   fileSize?: number;
   parseTime?: number;
@@ -35,18 +40,39 @@ export type BedAnalysis = {
     regions: number;
     meanRegionWidth: number;
     nucleotides: number;
+    gcContent?: number;
+    medianTssDist?: number;
     dataFormat: string | null;
     bedCompliance: string | null;
   };
 
-  // Overview metadata (database only — species, cell line, assay, etc.)
+  // Overview metadata (database only)
   metadata?: {
     species?: string;
+    speciesId?: string;
     cellLine?: string;
+    cellType?: string;
     assay?: string;
     antibody?: string;
+    target?: string;
     tissue?: string;
+    treatment?: string;
+    librarySource?: string;
     description?: string;
+    globalSampleId?: string;
+    globalExperimentId?: string;
+    originalFileName?: string;
+  };
+
+  // Genomic feature percentages (database only)
+  genomicFeatures?: {
+    exon: number;
+    intron: number;
+    intergenic: number;
+    promoterCore: number;
+    promoterProx: number;
+    fiveUtr: number;
+    threeUtr: number;
   };
 
   // Table data
@@ -55,12 +81,140 @@ export type BedAnalysis = {
   // Plot data — keyed by plot ID, each holds raw data for spec builders
   plots: {
     regionDistribution?: DistributionPoint[];
-    // Future: gcContent, partitions, widthsHistogram, neighborDistances,
-    // openChromatin, tssDistance, cumulativePartitions
   };
+
+  // Database only — image-based plots from server
+  serverPlots?: PlotSlot[];
+  bedsets?: { id: string; name: string; description?: string }[];
+  downloadUrls?: { bed?: string; bigBed?: string };
+  submissionDate?: string;
+  lastUpdateDate?: string;
+  isUniverse?: boolean;
+  licenseId?: string;
 };
 
+// --- Helpers ---
+
+const API_BASE = import.meta.env.VITE_API_BASE ?? 'https://api.bedbase.org/v1';
+
+function fileModelToUrl(fm: FileModel | undefined | null): string | undefined {
+  if (!fm?.access_methods) return undefined;
+  const http = fm.access_methods.find((m) => m.type === 'http');
+  return http?.access_url?.url ?? undefined;
+}
+
+function fileModelToPlotSlot(fm: FileModel | undefined, id: string, title: string): PlotSlot | null {
+  if (!fm) return null;
+  // The API field is `path_thumbnail` (not in generated types), holding a PNG path.
+  // The main `path` is a PDF which browsers can't render in <img> tags.
+  const thumbPath = (fm as Record<string, unknown>).path_thumbnail as string | undefined;
+  if (!thumbPath) return null;
+  const url = `${API_BASE}/files/${thumbPath}`;
+  return { id, title, type: 'image', thumbnail: url, full: url };
+}
+
+function nonEmpty(s: string | null | undefined): string | undefined {
+  return s && s.trim() ? s.trim() : undefined;
+}
+
 // --- Producers ---
+
+export function fromApiResponse(data: BedMetadataAll): BedAnalysis {
+  const { stats, plots, files, annotation } = data;
+
+  // Build server plot slots
+  const serverPlots: PlotSlot[] = [];
+  if (plots) {
+    const plotEntries: [string, string][] = [
+      ['chrombins', 'Chromosome bins'],
+      ['gccontent', 'GC content'],
+      ['partitions', 'Partitions'],
+      ['cumulative_partitions', 'Cumulative partitions'],
+      ['widths_histogram', 'Region widths'],
+      ['neighbor_distances', 'Neighbor distances'],
+      ['open_chromatin', 'Open chromatin'],
+      ['tss_distance', 'TSS distance'],
+    ];
+    for (const [key, title] of plotEntries) {
+      const fm = plots[key as keyof typeof plots];
+      const slot = fileModelToPlotSlot(fm, key, fm?.title ?? title);
+      if (slot) serverPlots.push(slot);
+    }
+  }
+
+  // Build genomic features if any percentage data exists
+  const hasFeatures =
+    stats?.exon_percentage != null ||
+    stats?.intron_percentage != null ||
+    stats?.intergenic_percentage != null;
+
+  const genomicFeatures = hasFeatures
+    ? {
+        exon: stats?.exon_percentage ?? 0,
+        intron: stats?.intron_percentage ?? 0,
+        intergenic: stats?.intergenic_percentage ?? 0,
+        promoterCore: stats?.promotercore_percentage ?? 0,
+        promoterProx: stats?.promoterprox_percentage ?? 0,
+        fiveUtr: stats?.fiveutr_percentage ?? 0,
+        threeUtr: stats?.threeutr_percentage ?? 0,
+      }
+    : undefined;
+
+  // Build bedsets
+  const bedsets = data.bedsets?.map((bs) => ({
+    id: bs.id,
+    name: bs.name ?? bs.id,
+    description: bs.description ?? undefined,
+  }));
+
+  return {
+    source: 'database',
+    id: data.id,
+    fileName: data.name || undefined,
+    summary: {
+      regions: stats?.number_of_regions ?? 0,
+      meanRegionWidth: stats?.mean_region_width ?? 0,
+      nucleotides: 0,
+      gcContent: stats?.gc_content ?? undefined,
+      medianTssDist: stats?.median_tss_dist ?? undefined,
+      dataFormat: data.data_format ?? null,
+      bedCompliance: data.bed_compliance ?? null,
+    },
+    metadata: annotation
+      ? {
+          species: nonEmpty((annotation as Record<string, unknown>).species_name as string) || nonEmpty(annotation.organism),
+          speciesId: nonEmpty(annotation.species_id),
+          cellLine: nonEmpty(annotation.cell_line),
+          cellType: nonEmpty(annotation.cell_type),
+          assay: nonEmpty(annotation.assay),
+          antibody: nonEmpty(annotation.antibody),
+          target: nonEmpty(annotation.target),
+          tissue: nonEmpty(annotation.tissue),
+          treatment: nonEmpty(annotation.treatment),
+          librarySource: nonEmpty(annotation.library_source),
+          description: nonEmpty(data.description),
+          globalSampleId: annotation.global_sample_id?.filter(Boolean).join(', ') || undefined,
+          globalExperimentId: annotation.global_experiment_id?.filter(Boolean).join(', ') || undefined,
+          originalFileName: nonEmpty((annotation as Record<string, unknown>).original_file_name as string),
+        }
+      : data.description
+        ? { description: nonEmpty(data.description) }
+        : undefined,
+    genomicFeatures,
+    chromosomeStats: [],
+    plots: {},
+    serverPlots: serverPlots.length > 0 ? serverPlots : undefined,
+    bedsets: bedsets && bedsets.length > 0 ? bedsets : undefined,
+    downloadUrls: {
+      bed: fileModelToUrl(files?.bed_file),
+      bigBed: fileModelToUrl(files?.bigbed_file),
+    },
+    submissionDate: data.submission_date,
+    lastUpdateDate: data.last_update_date ?? undefined,
+    isUniverse: data.is_universe ?? undefined,
+    licenseId: data.license_id ?? undefined,
+  };
+}
 
 export function fromRegionSet(
   rs: RegionSet,

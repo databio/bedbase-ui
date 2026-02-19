@@ -117,11 +117,11 @@ export function PlotGallery({ plots }: { plots: PlotSlot[] }) {
             onClick={() => setExpanded(plot)}
             className="border border-base-300 rounded-lg bg-base-100 overflow-hidden hover:border-base-content/20 transition-colors cursor-pointer text-left"
           >
-            <div className="p-2 flex items-center justify-center min-h-[140px] overflow-hidden">
+            <div className="p-2 flex items-center justify-center min-h-[160px] overflow-hidden">
               {plot.type === 'vega' ? (
                 <VegaThumbnail spec={plot.spec} />
               ) : (
-                <img src={plot.thumbnail} alt={plot.title} className="max-h-[130px] object-contain" />
+                <img src={plot.thumbnail} alt={plot.title} className="w-full h-auto object-contain px-4 py-1" />
               )}
             </div>
             <div className="px-3 py-2 border-t border-base-300 bg-base-200/50">
