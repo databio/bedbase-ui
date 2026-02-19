@@ -4,11 +4,11 @@ import { AnalysisView } from '../analysis/analysis-view';
 import { SearchView } from '../search/search-view';
 
 const tabPhase: Record<TabId, string> = {
-  search: 'Phase 4',
-  analysis: 'Phase 3',
+  search: 'Phase 3',
+  analysis: 'Phase 4',
   umap: 'Phase 5',
-  collections: 'Phase 7',
-  cart: 'Phase 8',
+  collections: 'Phase 6',
+  cart: 'Phase 6',
 };
 
 function PlaceholderTab({ tab }: { tab: ActiveTab }) {

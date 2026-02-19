@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 export type TabId = 'search' | 'analysis' | 'umap' | 'collections' | 'cart';
@@ -89,10 +89,23 @@ export function TabProvider({ children }: { children: ReactNode }) {
     return tabs;
   }, [primaryTab, splitTab]);
 
+  // Remember each tab's last param so switching back restores it
+  const lastParams = useRef<Partial<Record<TabId, string>>>({});
+
+  useEffect(() => {
+    for (const tab of activeTabs) {
+      if (tab.param) lastParams.current[tab.id] = tab.param;
+    }
+  }, [activeTabs]);
+
   const openTab = (id: TabId, param?: string) => {
-    const target: ActiveTab = { id, param };
     const existing = activeTabs.find((t) => t.id === id);
-    if (existing && existing.param === param) return;
+
+    // No explicit param + tab not currently active → restore last known param
+    const resolvedParam = param ?? (existing ? undefined : lastParams.current[id]);
+
+    const target: ActiveTab = { id, param: resolvedParam };
+    if (existing && existing.param === resolvedParam) return;
 
     if (splitTab) {
       if (id === primaryTab?.id) {
@@ -115,7 +128,8 @@ export function TabProvider({ children }: { children: ReactNode }) {
   };
 
   const openSplit = (id: TabId, side: 'left' | 'right', param?: string) => {
-    const target: ActiveTab = { id, param };
+    const resolvedParam = param ?? lastParams.current[id];
+    const target: ActiveTab = { id, param: resolvedParam };
     if (!primaryTab) {
       navigate(tabToPath(target));
       return;

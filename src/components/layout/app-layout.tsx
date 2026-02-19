@@ -160,8 +160,8 @@ export function AppLayout() {
               />
             </div>
           )}
-          <div className={`absolute top-0 inset-x-0 h-6 bg-gradient-to-b ${tabColorClasses[tabMeta[primaryId].color].glowFrom} to-transparent pointer-events-none`} />
-          <div className="@container flex-1">
+          <div className={`absolute top-0 inset-x-0 h-6 bg-gradient-to-b ${tabColorClasses[tabMeta[primaryId].color].glowFrom} to-transparent pointer-events-none z-0`} />
+          <div className="@container flex-1 relative z-[1]">
             <TabContent tab={activeTabs[0]} />
           </div>
         </main>
@@ -179,8 +179,10 @@ export function AppLayout() {
           {isDragging && dragOverSide === 'left' && (
             <div className="absolute inset-0 z-10 bg-primary/10 border-2 border-dashed border-primary/30" />
           )}
-          <div className={`absolute top-0 inset-x-0 h-6 bg-gradient-to-b ${tabColorClasses[tabMeta[primaryId].color].glowFrom} to-transparent pointer-events-none`} />
-          <TabContent tab={activeTabs[0]} />
+          <div className={`absolute top-0 inset-x-0 h-6 bg-gradient-to-b ${tabColorClasses[tabMeta[primaryId].color].glowFrom} to-transparent pointer-events-none z-0`} />
+          <div className="relative z-[1]">
+            <TabContent tab={activeTabs[0]} />
+          </div>
         </div>
         <div
           className={`@container relative border-l border-base-300`}
@@ -191,8 +193,10 @@ export function AppLayout() {
           {isDragging && dragOverSide === 'right' && (
             <div className="absolute inset-0 z-10 bg-primary/10 border-2 border-dashed border-primary/30" />
           )}
-          <div className={`absolute top-0 inset-x-0 h-6 bg-gradient-to-b ${tabColorClasses[tabMeta[splitId!].color].glowFrom} to-transparent pointer-events-none`} />
-          <TabContent tab={activeTabs[1]} />
+          <div className={`absolute top-0 inset-x-0 h-6 bg-gradient-to-b ${tabColorClasses[tabMeta[splitId!].color].glowFrom} to-transparent pointer-events-none z-0`} />
+          <div className="relative z-[1]">
+            <TabContent tab={activeTabs[1]} />
+          </div>
         </div>
       </main>
     );
