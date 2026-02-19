@@ -5,6 +5,8 @@ import {
 } from 'lucide-react';
 import { useFile } from '../../contexts/file-context';
 import { useTab } from '../../contexts/tab-context';
+import { useStats } from '../../queries/use-stats';
+import { useSampleBeds } from '../../queries/use-sample-beds';
 
 function formatBytes(bytes: number): string {
   if (bytes >= 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
@@ -23,19 +25,13 @@ const capabilities = [
   { icon: BarChart3, label: 'Neighbor distances', description: 'Distance to nearest neighboring regions' },
 ];
 
-// --- Sample files ---
-
-const sampleFiles = [
-  { label: 'CTCF ChIP-seq (K562)', description: '45K regions · hg38' },
-  { label: 'DNase-seq (GM12878)', description: '120K regions · hg38' },
-  { label: 'H3K27ac peaks', description: '68K regions · hg38' },
-];
-
 // --- Main component ---
 
 export function AnalysisEmpty() {
   const { uploadedFile, setUploadedFile } = useFile();
-  const { openTab } = useTab();
+  const { openTab, activeTabs } = useTab();
+  const { data: stats } = useStats();
+  const { data: sampleBeds } = useSampleBeds(3);
   const inputRef = useRef<HTMLInputElement>(null);
 
   function handleFile(file: File) {
@@ -53,7 +49,7 @@ export function AnalysisEmpty() {
         <div className="max-w-3xl mx-auto">
 
           {/* Two ways to analyze — with integrated actions */}
-          <h3 className="text-md font-semibold text-base-content mb-4 text-center">Analyze a BED file</h3>
+          <h2 className="text-2xl font-bold text-base-content mb-4 text-center">Analyze a BED file</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {/* Database card */}
             <div className="flex flex-col rounded-lg border border-base-300 overflow-hidden">
@@ -65,15 +61,17 @@ export function AnalysisEmpty() {
                   <p className="text-sm font-medium text-base-content">Database</p>
                 </div>
                 <ul className="space-y-1 text-xs text-base-content/50 list-disc list-inside">
-                  {/* TODO: fetch real count from API */}
-                  <li>93,000+ BED files with precomputed analyses</li>
+                  <li>{stats ? `${stats.bedfiles_number.toLocaleString()} BED files` : 'Thousands of BED files'} with precomputed analyses</li>
                   <li>Rich metadata — species, cell line, assay, antibody</li>
                   <li>Full analysis pipeline with genomic annotations</li>
                 </ul>
               </div>
               <div className="border-t border-base-300">
                 <button
-                  onClick={() => openTab('search')}
+                  onClick={() => {
+                    const existing = activeTabs.find((t) => t.id === 'search');
+                    openTab('search', existing?.param);
+                  }}
                   className="flex items-center gap-3 px-4 py-3 hover:bg-base-200/50 transition-colors cursor-pointer text-left w-full"
                 >
                   <Search size={16} className="text-base-content/30 shrink-0" />
@@ -154,18 +152,29 @@ export function AnalysisEmpty() {
           {/* Sample files */}
           <h3 className="text-sm font-semibold text-base-content mb-4 mt-10 text-center">Try a sample file:</h3>
           <div className="grid grid-cols-3 gap-2">
-            {sampleFiles.map((sample) => (
+            {sampleBeds ? sampleBeds.map((bed) => (
               <button
-                key={sample.label}
+                key={bed.id}
+                onClick={() => openTab('analysis', bed.id)}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-base-300 hover:border-base-content/20 hover:bg-base-200/30 transition-colors cursor-pointer text-left"
               >
                 <FileText size={14} className="text-base-content/30 shrink-0" />
-                <div>
-                  <p className="text-xs font-medium text-base-content">{sample.label}</p>
-                  <p className="text-[11px] text-base-content/40">{sample.description}</p>
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-base-content truncate">{bed.name || 'Unnamed'}</p>
+                  <p className="text-[11px] text-base-content/40">{[bed.genome_alias, bed.annotation?.assay].filter(Boolean).join(' · ') || bed.id.slice(0, 8)}</p>
                 </div>
               </button>
-            ))}
+            )) : (
+              [0, 1, 2].map((i) => (
+                <div key={i} className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-base-300 animate-pulse">
+                  <div className="w-3.5 h-3.5 bg-base-300 rounded shrink-0" />
+                  <div className="flex-1">
+                    <div className="h-3 w-24 bg-base-300 rounded mb-1" />
+                    <div className="h-2.5 w-16 bg-base-300 rounded" />
+                  </div>
+                </div>
+              ))
+            )}
           </div>
 
         </div>

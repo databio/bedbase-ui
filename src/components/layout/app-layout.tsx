@@ -86,8 +86,14 @@ export function AppLayout() {
           onDragEnd={handleDragEnd}
           className={`flex items-center gap-1.5 ${showLabel ? 'px-4' : 'px-3'} py-3 text-sm font-semibold rounded-lg ${colors.bgFaint} text-base-content cursor-grab active:cursor-grabbing`}
         >
-          <span className="flex items-center h-5"><Icon size={14} /></span>
-          {showLabel && <span>{meta.label}</span>}
+          <button
+            onClick={() => openTab(id as TabId)}
+            className="flex items-center gap-1.5 cursor-pointer hover:opacity-70 transition-opacity"
+            title={`Back to ${meta.label}`}
+          >
+            <span className="flex items-center h-5"><Icon size={14} /></span>
+            {showLabel && <span>{meta.label}</span>}
+          </button>
           <button
             onClick={() => closeTab(id as TabId)}
             className="ml-1 p-0.5 rounded hover:bg-base-300 transition-colors cursor-pointer"

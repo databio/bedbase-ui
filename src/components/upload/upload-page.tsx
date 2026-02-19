@@ -20,6 +20,7 @@ function formatBytes(bytes: number): string {
 const actions: { id: TabId; param?: string; label: string; description: string; icon: typeof Search }[] = [
   {
     id: 'search',
+    param: 'upload',
     label: 'Find similar files',
     description: 'Search BEDbase for files with similar genomic regions and compare overlap scores.',
     icon: Search,

@@ -3,6 +3,7 @@ import { Search, Upload, FileText, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useFile } from '../../contexts/file-context';
 import { useTab } from '../../contexts/tab-context';
+import { useStats } from '../../queries/use-stats';
 import { FileSearchGraphic } from '../graphics/file-search-graphic';
 import { BedAnalyzerGraphic } from '../graphics/bed-analyzer-graphic';
 import { CodeSnippetGraphic } from '../graphics/code-snippet-graphic';
@@ -149,6 +150,7 @@ const aboutFeatures: { title: string; description: string; graphic?: ReactNode }
 export function Hub() {
   const { setUploadedFile } = useFile();
   const navigate = useNavigate();
+  const { data: stats, isLoading: statsLoading } = useStats();
 
   function handleFileSelect(file: File) {
     setUploadedFile(file);
@@ -163,13 +165,24 @@ export function Hub() {
           The open access platform for aggregating, analyzing, and serving genomic region data.
         </p>
         <SearchInput onFileSelect={handleFileSelect} />
-        {/* TODO: fetch real counts from API */}
         <div className="flex items-center gap-4 mt-20 text-sm text-base-content/50">
-          <span><strong className="text-primary">93,026</strong> BED files</span>
-          <span className="text-base-content/20">•</span>
-          <span><strong className="text-success">18,547</strong> BEDsets</span>
-          <span className="text-base-content/20">•</span>
-          <span><strong className="text-info">5</strong> genomes</span>
+          {statsLoading ? (
+            <>
+              <span className="h-4 w-24 bg-base-300 rounded animate-pulse" />
+              <span className="text-base-content/20">•</span>
+              <span className="h-4 w-20 bg-base-300 rounded animate-pulse" />
+              <span className="text-base-content/20">•</span>
+              <span className="h-4 w-16 bg-base-300 rounded animate-pulse" />
+            </>
+          ) : stats ? (
+            <>
+              <span><strong className="text-primary">{stats.bedfiles_number.toLocaleString()}</strong> BED files</span>
+              <span className="text-base-content/20">•</span>
+              <span><strong className="text-success">{stats.bedsets_number.toLocaleString()}</strong> BEDsets</span>
+              <span className="text-base-content/20">•</span>
+              <span><strong className="text-info">{stats.genomes_number.toLocaleString()}</strong> genomes</span>
+            </>
+          ) : null}
         </div>
       </div>
 

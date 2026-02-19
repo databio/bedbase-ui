@@ -7,10 +7,13 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "generate-types": "npx openapi-typescript https://api-dev.bedbase.org/openapi.json -o src/bedbase-types.d.ts"
   },
   "dependencies": {
     "@databio/gtars": "^0.6.1",
+    "@tanstack/react-query": "^5.90.21",
+    "axios": "^1.13.5",
     "highlight.js": "^11.11.1",
     "lucide-react": "^0.574.0",
     "pako": "^2.1.0",
@@ -35,6 +38,7 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
+    "openapi-typescript": "^7.13.0",
     "tailwindcss": "^4.2.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.48.0",

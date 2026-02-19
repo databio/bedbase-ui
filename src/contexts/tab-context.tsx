@@ -19,7 +19,10 @@ export type ActiveTab = {
 };
 
 function pathToActiveTab(pathname: string): ActiveTab | null {
-  if (pathname.startsWith('/search')) return { id: 'search' };
+  if (pathname.startsWith('/search')) {
+    const match = pathname.match(/^\/search\/(.+)/);
+    return { id: 'search', param: match?.[1] ? decodeURIComponent(match[1]) : undefined };
+  }
   if (pathname.startsWith('/analysis')) {
     const match = pathname.match(/^\/analysis\/(.+)/);
     return { id: 'analysis', param: match?.[1] };
@@ -91,8 +94,24 @@ export function TabProvider({ children }: { children: ReactNode }) {
     const existing = activeTabs.find((t) => t.id === id);
     if (existing && existing.param === param) return;
 
-    // Navigate to the tab (opens it or updates its param)
-    navigate(tabToPath(target));
+    if (splitTab) {
+      if (id === primaryTab?.id) {
+        // Updating param of the primary tab — keep split
+        navigate(`${tabToPath(target)}?split=${encodeSplitParam(splitTab)}`);
+      } else if (id === splitTab.id) {
+        // Updating param of the split tab — keep primary
+        navigate(`${tabToPath(primaryTab!)}?split=${encodeSplitParam(target)}`);
+      } else {
+        // Opening a new tab replaces primary, keeps split
+        navigate(`${tabToPath(target)}?split=${encodeSplitParam(splitTab)}`);
+      }
+    } else if (primaryTab && id !== primaryTab.id) {
+      // No split — just navigate to the new tab
+      navigate(tabToPath(target));
+    } else {
+      // No split — updating primary or opening fresh
+      navigate(tabToPath(target));
+    }
   };
 
   const openSplit = (id: TabId, side: 'left' | 'right', param?: string) => {

@@ -1,6 +1,7 @@
 import type { ActiveTab, TabId } from '../../contexts/tab-context';
 import { tabMeta } from '../../lib/tab-meta';
 import { AnalysisView } from '../analysis/analysis-view';
+import { SearchView } from '../search/search-view';
 
 const tabPhase: Record<TabId, string> = {
   search: 'Phase 4',
@@ -26,6 +27,7 @@ function PlaceholderTab({ tab }: { tab: ActiveTab }) {
 }
 
 export function TabContent({ tab }: { tab: ActiveTab }) {
+  if (tab.id === 'search') return <SearchView param={tab.param} />;
   if (tab.id === 'analysis') return <AnalysisView param={tab.param} />;
   return <PlaceholderTab tab={tab} />;
 }
