@@ -1,14 +1,50 @@
 @import 'tailwindcss';
 @plugin "@tailwindcss/typography";
-@plugin "daisyui" {
-  themes: light --default, dark --prefersdark;
-}
+@plugin "daisyui";
 
-:root {
-  --color-primary: #008080;
-  --color-primary-content: #ffffff;
-  --color-success: #16a34a;
-  --color-success-content: #ffffff;
+@plugin "daisyui/theme" {
+  name: "bedbase";
+  default: true;
+  color-scheme: light;
+
+  /* Primary — teal #008080 */
+  --color-primary: oklch(54.3% 0.093 194.8);
+  --color-primary-content: oklch(98% 0.005 194.8);
+
+  /* Secondary — navy #0D3B66 */
+  --color-secondary: oklch(34.7% 0.089 251.1);
+  --color-secondary-content: oklch(98% 0.005 251.1);
+
+  /* Accent — plum #693B58 */
+  --color-accent: oklch(41.9% 0.076 342.5);
+  --color-accent-content: oklch(98% 0.005 342.5);
+
+  /* Neutral — cool gray #93A8AC */
+  --color-neutral: oklch(71.7% 0.024 210.4);
+  --color-neutral-content: oklch(25% 0.01 210.4);
+
+  /* Info — dark slate #1A3847 */
+  --color-info: oklch(32.5% 0.045 232.2);
+  --color-info-content: oklch(98% 0.005 232.2);
+
+  /* Success — forest green #4A7C59 */
+  --color-success: oklch(54.1% 0.077 152.7);
+  --color-success-content: oklch(98% 0.005 152.7);
+
+  /* Warning — peach #F49E58 */
+  --color-warning: oklch(77.2% 0.134 58.1);
+  --color-warning-content: oklch(25% 0.05 58.1);
+
+  /* Error — brick red #B33A3A */
+  --color-error: oklch(52.4% 0.157 24.3);
+  --color-error-content: oklch(98% 0.005 24.3);
+
+  --radius-box: 0.5rem;
+  --radius-field: 0.25rem;
+  --radius-selector: 0.5rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
 }
 
 @keyframes slide-down {

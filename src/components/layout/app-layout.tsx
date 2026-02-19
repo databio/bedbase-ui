@@ -133,14 +133,14 @@ export function AppLayout() {
 
     if (!isSplit) {
       return (
-        <main className="flex-1 flex flex-col px-4 pb-4 relative">
+        <main className="flex-1 flex flex-col relative">
           {isDragging && (
             <div className="absolute inset-0 z-10 grid grid-cols-2 gap-4">
               <div
                 onDragOver={(e) => handleDragOver(e, 'left')}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, 'left')}
-                className={`rounded-lg transition-colors ${
+                className={`transition-colors ${
                   dragOverSide === 'left' ? 'bg-primary/10 border-2 border-dashed border-primary/30' : ''
                 }`}
               />
@@ -148,13 +148,14 @@ export function AppLayout() {
                 onDragOver={(e) => handleDragOver(e, 'right')}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, 'right')}
-                className={`rounded-lg transition-colors ${
+                className={`transition-colors ${
                   dragOverSide === 'right' ? 'bg-primary/10 border-2 border-dashed border-primary/30' : ''
                 }`}
               />
             </div>
           )}
-          <div className={`@container flex-1 bg-base-100 rounded-lg border border-base-300 border-t-2 shadow-sm ${tabColorClasses[tabMeta[primaryId].color].borderTopFaint}`}>
+          <div className={`absolute top-0 inset-x-0 h-6 bg-gradient-to-b ${tabColorClasses[tabMeta[primaryId].color].glowFrom} to-transparent pointer-events-none`} />
+          <div className="@container flex-1">
             <TabContent tab={activeTabs[0]} />
           </div>
         </main>
@@ -162,27 +163,29 @@ export function AppLayout() {
     }
 
     return (
-      <main className="flex-1 px-4 pb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <main className="flex-1 grid grid-cols-1 md:grid-cols-2">
         <div
-          className={`@container bg-base-100 rounded-lg border border-base-300 border-t-2 shadow-sm ${tabColorClasses[tabMeta[primaryId].color].borderTopFaint} relative`}
+          className="@container relative"
           onDragOver={(e) => handleDragOver(e, 'left')}
           onDragLeave={handleDragLeave}
           onDrop={(e) => handleDrop(e, 'left')}
         >
           {isDragging && dragOverSide === 'left' && (
-            <div className="absolute inset-0 z-10 rounded-lg bg-primary/10 border-2 border-dashed border-primary/30" />
+            <div className="absolute inset-0 z-10 bg-primary/10 border-2 border-dashed border-primary/30" />
           )}
+          <div className={`absolute top-0 inset-x-0 h-6 bg-gradient-to-b ${tabColorClasses[tabMeta[primaryId].color].glowFrom} to-transparent pointer-events-none`} />
           <TabContent tab={activeTabs[0]} />
         </div>
         <div
-          className={`@container bg-base-100 rounded-lg border border-base-300 border-t-2 shadow-sm ${tabColorClasses[tabMeta[splitId!].color].borderTopFaint} relative`}
+          className={`@container relative border-l border-base-300`}
           onDragOver={(e) => handleDragOver(e, 'right')}
           onDragLeave={handleDragLeave}
           onDrop={(e) => handleDrop(e, 'right')}
         >
           {isDragging && dragOverSide === 'right' && (
-            <div className="absolute inset-0 z-10 rounded-lg bg-primary/10 border-2 border-dashed border-primary/30" />
+            <div className="absolute inset-0 z-10 bg-primary/10 border-2 border-dashed border-primary/30" />
           )}
+          <div className={`absolute top-0 inset-x-0 h-6 bg-gradient-to-b ${tabColorClasses[tabMeta[splitId!].color].glowFrom} to-transparent pointer-events-none`} />
           <TabContent tab={activeTabs[1]} />
         </div>
       </main>
