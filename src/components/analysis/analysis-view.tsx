@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Loader2, FileText, AlertCircle, Search, Copy, CheckCheck } from 'lucide-react';
+import { Loader2, FileText, AlertCircle, Search, Copy, CheckCheck, X, ChevronLeft } from 'lucide-react';
 import { useFile } from '../../contexts/file-context';
 import { useTab } from '../../contexts/tab-context';
 import { fromRegionSet, fromApiResponse, type BedAnalysis } from '../../lib/bed-analysis';
@@ -56,6 +56,9 @@ function StatsGrid({ analysis }: { analysis: BedAnalysis }) {
 // --- Upload header ---
 
 function LocalHeader({ analysis }: { analysis: BedAnalysis }) {
+  const { setBedFile } = useFile();
+  const { openTab } = useTab();
+
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-3">
@@ -69,6 +72,13 @@ function LocalHeader({ analysis }: { analysis: BedAnalysis }) {
             {analysis.parseTime != null && ` · parsed in ${analysis.parseTime.toFixed(0)} ms`}
           </p>
         </div>
+        <button
+          onClick={() => { setBedFile(null); openTab('analysis'); }}
+          title="Clear file"
+          className="p-1 rounded hover:bg-base-300 transition-colors cursor-pointer ml-auto"
+        >
+          <X size={16} className="text-base-content/40" />
+        </button>
       </div>
 
       <StatsGrid analysis={analysis} />
@@ -186,6 +196,8 @@ function DatabaseHeader({ analysis }: { analysis: BedAnalysis }) {
           )}
         </div>
       </div>
+
+      <ComparisonStrip />
 
       <div className="grid grid-cols-1 @xl:grid-cols-2 gap-3">
         {annoRows.length > 0 && <KvTable title="Annotation" rows={annoRows} />}
@@ -312,15 +324,21 @@ function DatabaseAnalysis({ bedId }: { bedId: string }) {
 // --- Shared panel layout ---
 
 function AnalysisPanels({ analysis }: { analysis: BedAnalysis }) {
+  const { openTab } = useTab();
   const plotSlots = useMemo(() => buildPlotSlots(analysis), [analysis]);
   const isDatabase = analysis.source === 'database';
 
   return (
-    <div className="flex-1 overflow-auto p-4 @md:p-6 space-y-6">
+    <div className="flex flex-col h-full overflow-auto p-4 @md:p-6">
+      <button
+        onClick={() => openTab('analysis')}
+        className="inline-flex items-center gap-0.5 text-xs text-base-content/40 hover:text-base-content/60 transition-colors cursor-pointer w-fit mb-4"
+      >
+        <ChevronLeft size={14} />
+        Analysis
+      </button>
+      <div className="space-y-6">
       <AnalysisHeader analysis={analysis} />
-
-      {isDatabase && <ComparisonStrip />}
-
 
       {plotSlots.length > 0 && (
         <div className="space-y-2">
@@ -340,6 +358,7 @@ function AnalysisPanels({ analysis }: { analysis: BedAnalysis }) {
       {analysis.bedsets && analysis.bedsets.length > 0 && (
         <BedsetMemberships bedsets={analysis.bedsets} />
       )}
+      </div>
     </div>
   );
 }

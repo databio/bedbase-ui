@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, FileText, AlertCircle, RefreshCw, X } from 'lucide-react';
+import { Search, FileText, AlertCircle, RefreshCw, X, ChevronLeft } from 'lucide-react';
 import { useTab } from '../../contexts/tab-context';
 import { useFile } from '../../contexts/file-context';
 import { useTextSearch } from '../../queries/use-text-search';
@@ -180,13 +180,22 @@ function SearchResults({
   limit: number;
   onOffsetChange: (offset: number) => void;
 }) {
+  const { openTab } = useTab();
+
   return (
-    <div className="flex flex-col h-full overflow-auto">
-      <div className="px-6 pt-6 pb-2 flex flex-col gap-2">
+    <div className="flex flex-col h-full overflow-auto p-4 @md:p-6">
+      <div className="flex flex-col gap-2 pb-4">
+        <button
+          onClick={() => openTab('search')}
+          className="inline-flex items-center gap-0.5 text-xs text-base-content/40 hover:text-base-content/60 transition-colors cursor-pointer w-fit"
+        >
+          <ChevronLeft size={14} />
+          Search
+        </button>
         {header}
         {filters}
       </div>
-      <div className="flex-1 px-6 pb-6">
+      <div className="flex-1">
         {isLoading ? (
           <SkeletonTable />
         ) : error ? (
@@ -250,6 +259,16 @@ function TextSearchResults({ query }: { query: string }) {
         onChange={(e) => setEditQuery(e.target.value)}
         onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
       />
+      {editQuery && (
+        <button
+          type="button"
+          onClick={() => { setEditQuery(''); openTab('search'); }}
+          title="Clear search"
+          className="p-0.5 rounded hover:bg-base-300 transition-colors cursor-pointer"
+        >
+          <X size={14} className="text-base-content/40" />
+        </button>
+      )}
       <button
         type="button"
         onClick={handleSubmit}
