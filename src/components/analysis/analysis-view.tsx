@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react';
-import { Loader2, FileText, AlertCircle, Search, Copy, CheckCheck, X, ChevronLeft } from 'lucide-react';
+import { Loader2, FileText, AlertCircle, Search, Copy, CheckCheck, X, ChevronLeft, Dna } from 'lucide-react';
 import { useFile } from '../../contexts/file-context';
 import { useTab } from '../../contexts/tab-context';
 import { fromRegionSet, fromApiResponse, type BedAnalysis } from '../../lib/bed-analysis';
 import type { PlotSlot } from '../../lib/plot-specs';
 import { regionDistributionSlot } from './plots/region-distribution';
 import { useBedMetadata } from '../../queries/use-bed-metadata';
+import { useGenomeStats } from '../../queries/use-genome-stats';
+import { useAnalyzeGenome } from '../../queries/use-analyze-genome';
 import { AnalysisEmpty } from './analysis-empty';
 import { ChromosomeStats } from './chromosome-stats';
 import { PlotGallery } from './plot-gallery';
@@ -13,6 +15,7 @@ import { SimilarFiles } from './similar-files';
 import { BedsetMemberships } from './bedset-memberships';
 import { ActionBar } from './action-bar';
 import { ComparisonStrip } from './comparison-strip';
+import { GenomeCompatModal } from './genome-compat-modal';
 
 function formatBytes(bytes: number): string {
   if (bytes >= 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
@@ -58,6 +61,18 @@ function StatsGrid({ analysis }: { analysis: BedAnalysis }) {
 function LocalHeader({ analysis }: { analysis: BedAnalysis }) {
   const { setBedFile } = useFile();
   const { openTab } = useTab();
+  const [showGenomeModal, setShowGenomeModal] = useState(false);
+
+  const bedFileData = useMemo(() => {
+    if (analysis.chromosomeStats.length === 0) return undefined;
+    const data: Record<string, number> = {};
+    for (const row of analysis.chromosomeStats) {
+      data[row.chromosome] = row.end;
+    }
+    return data;
+  }, [analysis.chromosomeStats]);
+
+  const { data: genomeStats, isLoading: genomeLoading } = useAnalyzeGenome(bedFileData);
 
   return (
     <div className="space-y-3">
@@ -82,6 +97,26 @@ function LocalHeader({ analysis }: { analysis: BedAnalysis }) {
       </div>
 
       <StatsGrid analysis={analysis} />
+
+      <div className="mt-6">
+        {genomeStats ? (
+          <GenomeSection
+            genomeStats={genomeStats}
+            showModal={showGenomeModal}
+            onShowModal={setShowGenomeModal}
+          />
+        ) : genomeLoading ? (
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold text-base-content/50 uppercase tracking-wide">
+              Reference Genome
+            </h3>
+            <div className="flex items-center gap-1.5 text-xs text-base-content/50 px-4 py-3">
+              <Loader2 size={13} className="animate-spin" />
+              Analyzing...
+            </div>
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -132,10 +167,109 @@ function CopyableId({ id }: { id: string }) {
   );
 }
 
+// --- Reference genome section card ---
+
+function GenomeSection({
+  genomeAlias,
+  genomeDigest,
+  genomeStats,
+  showModal,
+  onShowModal,
+}: {
+  genomeAlias?: string;
+  genomeDigest?: string;
+  genomeStats?: import('../../bedbase-types').components['schemas']['RefGenValidReturnModel'];
+  showModal: boolean;
+  onShowModal: (v: boolean) => void;
+}) {
+  const sorted = genomeStats?.compared_genome
+    ? [...genomeStats.compared_genome].sort(
+        (a, b) =>
+          a.tier_ranking - b.tier_ranking ||
+          b.xs - a.xs ||
+          (b.oobr ?? 0) - (a.oobr ?? 0) ||
+          (b.sequence_fit ?? 0) - (a.sequence_fit ?? 0),
+      )
+    : [];
+  const topMatch = sorted[0];
+
+  return (
+    <div className="space-y-2">
+      <h3 className="text-sm font-semibold text-base-content/50 uppercase tracking-wide">
+        Reference Genome
+      </h3>
+      <button
+        onClick={sorted.length > 0 ? () => onShowModal(true) : undefined}
+        className={`border rounded-lg px-4 py-3 w-full text-left flex flex-wrap @lg:flex-nowrap items-center gap-x-6 gap-y-1 transition-colors ${
+          topMatch
+            ? topMatch.tier_ranking === 1
+              ? 'bg-success/10 border-success/30 hover:bg-success/15'
+              : topMatch.tier_ranking === 2
+                ? 'bg-warning/10 border-warning/30 hover:bg-warning/15'
+                : topMatch.tier_ranking === 3
+                  ? 'bg-warning/20 border-warning/40 hover:bg-warning/25'
+                  : 'bg-error/10 border-error/30 hover:bg-error/15'
+            : 'bg-white border-base-300'
+        } ${sorted.length > 0 ? 'cursor-pointer' : ''}`}
+      >
+        <div className="flex items-center gap-2 shrink-0">
+          <Dna size={16} className="text-primary" />
+          <span className="text-sm font-semibold text-base-content">
+            {genomeAlias || (topMatch ? <><span className="font-normal">Best match:</span> {topMatch.compared_genome}</> : 'Unknown')}
+          </span>
+        </div>
+        {topMatch && (
+          <>
+            {genomeAlias && (
+              <div className="hidden @lg:block text-xs text-base-content/50">
+                Best match: <span className="font-medium text-base-content">{topMatch.compared_genome}</span>
+              </div>
+            )}
+            <div className={`text-xs font-medium ${topMatch.tier_ranking === 1 ? 'text-success' : topMatch.tier_ranking === 2 ? 'text-warning' : 'text-error'}`}>
+              Tier {topMatch.tier_ranking}
+            </div>
+            <div className="hidden @lg:flex items-center gap-4">
+              {topMatch.xs != null && (
+                <div className="text-xs text-base-content/50">
+                  XS {(topMatch.xs * 100).toFixed(1)}%
+                </div>
+              )}
+              {topMatch.oobr != null && (
+                <div className="text-xs text-base-content/50">
+                  OOBR {(topMatch.oobr * 100).toFixed(1)}%
+                </div>
+              )}
+              {topMatch.sequence_fit != null && (
+                <div className="text-xs text-base-content/50">
+                  SF {(topMatch.sequence_fit * 100).toFixed(1)}%
+                </div>
+              )}
+            </div>
+          </>
+        )}
+        {sorted.length > 1 && (
+          <span className="text-xs text-primary font-medium ml-auto shrink-0">
+            +{sorted.length - 1} more
+          </span>
+        )}
+      </button>
+      {genomeStats && (
+        <GenomeCompatModal
+          open={showModal}
+          onClose={() => onShowModal(false)}
+          genomeStats={genomeStats}
+        />
+      )}
+    </div>
+  );
+}
+
 // --- Database header ---
 
 function DatabaseHeader({ analysis }: { analysis: BedAnalysis }) {
   const { summary, metadata } = analysis;
+  const [showGenomeModal, setShowGenomeModal] = useState(false);
+  const { data: genomeStats } = useGenomeStats(analysis.id);
 
   // Stats table rows
   const statsRows: { label: string; value: string }[] = [
@@ -173,9 +307,9 @@ function DatabaseHeader({ analysis }: { analysis: BedAnalysis }) {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col @lg:flex-row @lg:items-start @lg:justify-between gap-3">
         <div className="min-w-0">
-          <div className="flex items-baseline gap-2">
+          <div className="flex items-baseline gap-2 flex-wrap">
             <p className="text-lg font-semibold text-base-content">
               {analysis.fileName || 'BED file'}
             </p>
@@ -185,7 +319,7 @@ function DatabaseHeader({ analysis }: { analysis: BedAnalysis }) {
             <p className="text-sm text-base-content/50 mt-1 leading-relaxed">{metadata.description}</p>
           )}
         </div>
-        <div className="shrink-0 flex flex-col items-end gap-1.5">
+        <div className="shrink-0 flex flex-col @lg:items-end gap-1.5">
           <ActionBar analysis={analysis} />
           {(analysis.submissionDate || analysis.lastUpdateDate) && (
             <p className="text-[11px] text-base-content/30">
@@ -197,7 +331,18 @@ function DatabaseHeader({ analysis }: { analysis: BedAnalysis }) {
         </div>
       </div>
 
-      <ComparisonStrip />
+      {/* <ComparisonStrip /> */}
+
+      {/* Reference genome section card */}
+      {(analysis.genomeAlias || genomeStats) && (
+        <GenomeSection
+          genomeAlias={analysis.genomeAlias}
+          genomeDigest={analysis.genomeDigest}
+          genomeStats={genomeStats ?? undefined}
+          showModal={showGenomeModal}
+          onShowModal={setShowGenomeModal}
+        />
+      )}
 
       <div className="grid grid-cols-1 @xl:grid-cols-2 gap-3">
         {annoRows.length > 0 && <KvTable title="Annotation" rows={annoRows} />}

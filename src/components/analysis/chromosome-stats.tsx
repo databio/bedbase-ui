@@ -40,7 +40,7 @@ export function ChromosomeStats({ rows, fileName }: Props) {
   return (
     <div className="space-y-2">
       <div className="flex items-end justify-between">
-        <h3 className="text-sm font-semibold text-base-content">Chromosome statistics</h3>
+        <h3 className="text-sm font-semibold text-base-content/50 uppercase tracking-wide">Chromosome statistics</h3>
         <button
           onClick={downloadCsv}
           className="btn btn-xs btn-ghost gap-1 text-base-content/50"
@@ -52,7 +52,7 @@ export function ChromosomeStats({ rows, fileName }: Props) {
       <div className="border border-base-300 rounded-lg overflow-hidden bg-base-100">
         <div className="overflow-auto" style={{ maxHeight: '500px' }}>
           <table className="table table-xs table-pin-rows">
-            <thead>
+            <thead className="text-base-content">
               <tr className="bg-base-200">
                 <th className="whitespace-nowrap text-base-content">Chromosome</th>
                 <th className="whitespace-nowrap text-base-content text-right">Regions</th>

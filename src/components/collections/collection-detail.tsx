@@ -1,0 +1,278 @@
+import { useState } from 'react';
+import { ChevronLeft, Loader2, AlertCircle, Search, Plus, Check, Copy, CheckCheck, ExternalLink, Terminal, Download, X } from 'lucide-react';
+import { useTab } from '../../contexts/tab-context';
+import { useCart } from '../../contexts/cart-context';
+import { useBedsetMetadata } from '../../queries/use-bedset-metadata';
+import { useBedsetBedfiles } from '../../queries/use-bedset-bedfiles';
+import { API_BASE, fileModelToPlotSlot } from '../../lib/file-model-utils';
+import { BedfileTable } from './bedfile-table';
+
+const linkClass = 'inline-flex items-center gap-1.5 text-xs font-medium text-base-content/60 hover:text-base-content/80 bg-base-200 hover:bg-base-300 px-2.5 py-1.5 rounded-md transition-colors cursor-pointer';
+
+function CodeModal({ id, open, onClose }: { id: string; open: boolean; onClose: () => void }) {
+  const [copied, setCopied] = useState(false);
+  const code = `from geniml.bbclient import bbclient\n\nbbclient.load_bedset('${id}')`;
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+      <div className="bg-base-100 rounded-lg shadow-lg w-full max-w-lg mx-4" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-base-300">
+          <h3 className="text-sm font-semibold">Download BEDset</h3>
+          <button onClick={onClose} className="p-1 rounded hover:bg-base-200 transition-colors cursor-pointer">
+            <X size={16} />
+          </button>
+        </div>
+        <div className="p-4">
+          <div className="relative">
+            <pre className="bg-base-200 rounded-lg p-4 text-xs font-mono overflow-x-auto">
+              <code>{code}</code>
+            </pre>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(code);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              }}
+              className="absolute top-2 right-2 btn btn-xs btn-ghost gap-1"
+            >
+              {copied ? <Check size={12} /> : <Copy size={12} />}
+              {copied ? 'Copied' : 'Copy'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CopyableId({ id }: { id: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(id);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <button
+      onClick={handleCopy}
+      className="inline-flex items-center gap-1 text-xs font-mono text-base-content/30 hover:text-base-content/50 transition-colors cursor-pointer"
+      title="Copy ID"
+    >
+      <span className="truncate">{id}</span>
+      {copied ? <CheckCheck size={12} className="text-success shrink-0" /> : <Copy size={12} className="shrink-0" />}
+    </button>
+  );
+}
+
+function KvTable({ title, rows }: { title: string; rows: { label: string; value: string }[] }) {
+  if (rows.length === 0) return null;
+  return (
+    <div className="space-y-2">
+      <h3 className="text-sm font-semibold text-base-content/50 uppercase tracking-wide">
+        {title}
+      </h3>
+      <div className="overflow-x-auto border border-base-300 rounded-lg bg-white">
+        <table className="table table-sm text-xs w-full">
+          <tbody>
+            {rows.map(({ label, value }) => (
+              <tr key={label}>
+                <td className="font-medium text-base-content/60 w-44">{label}</td>
+                <td>{value}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+export function CollectionDetail({ bedsetId }: { bedsetId: string }) {
+  const { openTab } = useTab();
+  const { addToCart, isInCart } = useCart();
+  const [showCode, setShowCode] = useState(false);
+  const { data: meta, isLoading: metaLoading, error: metaError, refetch } = useBedsetMetadata(bedsetId);
+  const { data: bedfiles } = useBedsetBedfiles(bedsetId);
+
+  if (metaLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full py-16 gap-3">
+        <Loader2 size={28} className="text-primary animate-spin" />
+        <p className="text-sm text-base-content/50">Loading bedset metadata...</p>
+      </div>
+    );
+  }
+
+  if (metaError) {
+    const is404 = (metaError as { response?: { status?: number } })?.response?.status === 404;
+    return (
+      <div className="flex flex-col items-center justify-center h-full py-16 gap-3">
+        <AlertCircle size={28} className={is404 ? 'text-base-content/30' : 'text-error'} />
+        <p className="text-sm font-medium text-base-content">
+          {is404 ? 'Bedset not found' : 'Failed to load bedset'}
+        </p>
+        <p className="text-xs text-base-content/50 max-w-md text-center">
+          {is404
+            ? `No bedset with ID "${bedsetId}" exists in the database.`
+            : String((metaError as Error).message || 'An unexpected error occurred.')}
+        </p>
+        <div className="flex gap-2 mt-1">
+          {!is404 && (
+            <button onClick={() => refetch()} className="btn btn-sm btn-outline">Retry</button>
+          )}
+          <button onClick={() => openTab('collections')} className="btn btn-sm btn-ghost gap-1.5">
+            <Search size={14} /> Back to collections
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!meta) return null;
+
+  const stats = meta.statistics;
+  const meanStats = stats?.mean;
+  const sdStats = stats?.sd;
+
+  // Info rows
+  const infoRows: { label: string; value: string }[] = [];
+  if (meta.author) infoRows.push({ label: 'Author', value: meta.author });
+  if (meta.source) infoRows.push({ label: 'Source', value: meta.source });
+  infoRows.push({ label: 'BED files', value: String(meta.bed_ids?.length ?? 0) });
+  infoRows.push({ label: 'MD5', value: meta.md5sum });
+
+  // Stats rows
+  const statsRows: { label: string; value: string }[] = [];
+  const fmt = (n: number) => n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  const fmtSd = (mean: number, sd?: number | null) =>
+    sd != null ? `${fmt(mean)} ± ${fmt(sd)}` : fmt(mean);
+
+  if (meanStats?.number_of_regions != null)
+    statsRows.push({ label: 'Number of regions', value: fmtSd(meanStats.number_of_regions, sdStats?.number_of_regions) });
+  if (meanStats?.mean_region_width != null)
+    statsRows.push({ label: 'Mean region width', value: fmtSd(meanStats.mean_region_width, sdStats?.mean_region_width) });
+  if (meanStats?.gc_content != null)
+    statsRows.push({ label: 'GC content', value: fmtSd(meanStats.gc_content, sdStats?.gc_content) });
+  if (meanStats?.median_tss_dist != null)
+    statsRows.push({ label: 'Median TSS distance', value: fmtSd(meanStats.median_tss_dist, sdStats?.median_tss_dist) });
+
+  const regionPlot = fileModelToPlotSlot(meta.plots?.region_commonality, 'region_commonality', 'Region commonality');
+
+  const bedfileList = bedfiles?.results ?? [];
+  const allInCart = bedfileList.length > 0 && bedfileList.every((b) => isInCart(b.id));
+
+  const handleAddAll = () => {
+    for (const bed of bedfileList) {
+      if (!isInCart(bed.id)) {
+        addToCart({ id: bed.id, name: bed.name || 'Unnamed', genome: bed.genome_alias || '' });
+      }
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-full overflow-auto p-4 @md:p-6">
+      <button
+        onClick={() => openTab('collections')}
+        className="inline-flex items-center gap-0.5 text-xs text-base-content/40 hover:text-base-content/60 transition-colors cursor-pointer w-fit mb-4"
+      >
+        <ChevronLeft size={14} />
+        Collections
+      </button>
+
+      <div className="space-y-6">
+        {/* Header — matches DatabaseHeader layout */}
+        <div className="space-y-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <div className="flex items-baseline gap-2">
+                <p className="text-lg font-semibold text-base-content">{meta.name}</p>
+                <CopyableId id={bedsetId} />
+              </div>
+              {meta.description && (
+                <p className="text-sm text-base-content/50 mt-1 leading-relaxed">{meta.description}</p>
+              )}
+            </div>
+            <div className="shrink-0 flex flex-col items-end gap-1.5">
+              <div className="flex items-center gap-1 flex-wrap">
+                {bedfileList.length > 0 && (
+                  <button
+                    onClick={handleAddAll}
+                    className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md transition-colors cursor-pointer ${
+                      allInCart
+                        ? 'text-success bg-success/20 hover:bg-success/30'
+                        : 'text-base-content/60 hover:text-base-content/80 bg-base-200 hover:bg-base-300'
+                    }`}
+                  >
+                    {allInCart ? <Check size={13} /> : <Plus size={13} />}
+                    {allInCart ? 'All in cart' : 'Add all to cart'}
+                  </button>
+                )}
+                <button onClick={() => setShowCode(true)} className={linkClass}>
+                  <Terminal size={13} />
+                  Download
+                </button>
+                <a
+                  href={`${API_BASE}/bedset/${bedsetId}/pep`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={linkClass}
+                >
+                  <Download size={13} />
+                  PEP
+                </a>
+                <a
+                  href={`${API_BASE}/bedset/${bedsetId}/metadata`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={linkClass}
+                >
+                  <ExternalLink size={13} />
+                  API
+                </a>
+              </div>
+              {(meta.submission_date || meta.last_update_date) && (
+                <p className="text-[11px] text-base-content/30">
+                  {meta.submission_date && `Created: ${new Date(meta.submission_date).toLocaleDateString()}`}
+                  {meta.submission_date && meta.last_update_date && ' · '}
+                  {meta.last_update_date && `Updated: ${new Date(meta.last_update_date).toLocaleDateString()}`}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 @xl:grid-cols-2 gap-3">
+            <KvTable title="Information" rows={infoRows} />
+            {statsRows.length > 0 && <KvTable title="Statistics (mean ± sd)" rows={statsRows} />}
+          </div>
+        </div>
+
+        {/* Region commonality plot */}
+        {regionPlot && regionPlot.type === 'image' && (
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold text-base-content/50 uppercase tracking-wide">
+              Plots
+            </h3>
+            <div className="border border-base-300 rounded-lg p-4 bg-white inline-block">
+              <img src={regionPlot.thumbnail} alt="Region commonality" className="max-w-full h-auto" />
+            </div>
+          </div>
+        )}
+
+        {/* BED files */}
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold text-base-content/50 uppercase tracking-wide">
+            BED files ({bedfileList.length})
+          </h3>
+          {bedfileList.length > 0 ? (
+            <BedfileTable bedfiles={bedfileList} />
+          ) : (
+            <p className="text-sm text-base-content/40 py-4">No BED files in this bedset.</p>
+          )}
+        </div>
+      </div>
+      <CodeModal id={bedsetId} open={showCode} onClose={() => setShowCode(false)} />
+    </div>
+  );
+}

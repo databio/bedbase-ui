@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import {
   Upload, FileText, ArrowRight, Search,
   BarChart3, Table2, PieChart, Dna, Ruler, Globe, Lock,
@@ -28,8 +28,9 @@ const capabilities = [
 // --- Main component ---
 
 export function AnalysisEmpty() {
+  const [searchQuery, setSearchQuery] = useState('');
   const { bedFile, setBedFile } = useFile();
-  const { openTab, activeTabs } = useTab();
+  const { openTab } = useTab();
   const { data: stats } = useStats();
   const { data: sampleBeds } = useSampleBeds(3);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -66,16 +67,24 @@ export function AnalysisEmpty() {
                   <li>Full analysis pipeline with genomic annotations</li>
                 </ul>
               </div>
-              <div className="border-t border-base-300">
-                <button
-                  onClick={() => {
-                    const existing = activeTabs.find((t) => t.id === 'search');
-                    openTab('search', existing?.param);
+              <div className={`border-t border-base-300 flex items-center gap-3 px-4 transition-colors ${searchQuery.trim() ? 'bg-primary/5' : ''}`} style={{ paddingTop: 11, paddingBottom: 11 }}>
+                <Search size={16} className="text-base-content/30 shrink-0" />
+                <input
+                  type="text"
+                  placeholder="Search BEDbase for a file..."
+                  className="flex-1 bg-transparent outline-none text-sm text-base-content placeholder:text-base-content/50 p-0 m-0 border-0 min-h-0"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && searchQuery.trim()) openTab('search', searchQuery.trim());
                   }}
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-base-200/50 transition-colors cursor-pointer text-left w-full"
+                />
+                <button
+                  onClick={() => { if (searchQuery.trim()) openTab('search', searchQuery.trim()); }}
+                  disabled={!searchQuery.trim()}
+                  className={`p-1 rounded transition-colors ${searchQuery.trim() ? 'cursor-pointer' : 'opacity-30 cursor-default'}`}
                 >
-                  <Search size={16} className="text-base-content/30 shrink-0" />
-                  <span className="text-sm text-base-content/50">Search BEDbase for a file</span>
+                  <Search size={14} className={searchQuery.trim() ? 'text-primary' : 'text-base-content/50'} />
                 </button>
               </div>
             </div>
@@ -99,7 +108,7 @@ export function AnalysisEmpty() {
                 {bedFile ? (
                   <button
                     onClick={handleAnalyzeFile}
-                    className="flex items-center gap-3 px-4 py-3 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer text-left w-full"
+                    className="flex items-center gap-3 px-4 h-11 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer text-left w-full"
                   >
                     <FileText size={16} className="text-primary shrink-0" />
                     <span className="text-sm font-medium text-base-content truncate flex-1 min-w-0">{bedFile.name}</span>
@@ -122,7 +131,7 @@ export function AnalysisEmpty() {
                       const f = e.dataTransfer.files[0];
                       if (f) handleFile(f);
                     }}
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-base-200/50 transition-colors cursor-pointer text-left w-full"
+                    className="flex items-center gap-3 px-4 h-11 hover:bg-base-200/50 transition-colors cursor-pointer text-left w-full"
                   >
                     <Upload size={16} className="text-base-content/30 shrink-0" />
                     <span className="text-sm text-base-content/50">Drop a file here or click to browse</span>

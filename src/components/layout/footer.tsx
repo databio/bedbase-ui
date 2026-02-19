@@ -1,6 +1,7 @@
 import { Github } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useServiceInfo } from '../../queries/use-service-info';
+import { API_BASE } from '../../lib/file-model-utils';
 
 function StatusDot({ className }: { className: string }) {
   return <span className={`inline-block w-2 h-2 rounded-full ${className}`} />;
@@ -69,7 +70,7 @@ export function Footer() {
             Docs
           </a>
           <a
-            href="https://api.bedbase.org/docs"
+            href={API_BASE}
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-base-content transition-colors"

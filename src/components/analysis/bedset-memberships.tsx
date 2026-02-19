@@ -15,7 +15,7 @@ export function BedsetMemberships({ bedsets }: { bedsets: Bedset[] }) {
       </h3>
       <div className="overflow-x-auto border border-base-300 rounded-lg bg-white">
         <table className="table table-sm text-xs w-full">
-          <thead>
+          <thead className="text-base-content">
             <tr>
               <th>Name</th>
               <th>Description</th>

@@ -134,6 +134,12 @@ export function TabProvider({ children }: { children: ReactNode }) {
     const resolvedParam = param ?? (existing ? undefined : lastParams.current[id]);
 
     const target: ActiveTab = { id, param: resolvedParam };
+
+    // Double-click reset: already on this tab with no param → clear saved state
+    if (existing && !resolvedParam) {
+      delete lastParams.current[id];
+    }
+
     if (existing && existing.param === resolvedParam) return;
 
     if (splitTab) {

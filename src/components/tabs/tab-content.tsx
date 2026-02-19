@@ -1,17 +1,10 @@
-import type { ActiveTab, TabId } from '../../contexts/tab-context';
+import type { ActiveTab } from '../../contexts/tab-context';
 import { tabMeta } from '../../lib/tab-meta';
 import { AnalysisView } from '../analysis/analysis-view';
 import { SearchView } from '../search/search-view';
 import { FilePage } from '../file/file-page';
-
-const tabPhase: Record<TabId, string> = {
-  file: 'Phase 2',
-  search: 'Phase 3',
-  analysis: 'Phase 4',
-  umap: 'Phase 5',
-  collections: 'Phase 6',
-  cart: 'Phase 6',
-};
+import { CollectionsView } from '../collections/collections-view';
+import { CartView } from '../cart/cart-view';
 
 function PlaceholderTab({ tab }: { tab: ActiveTab }) {
   const meta = tabMeta[tab.id];
@@ -21,9 +14,7 @@ function PlaceholderTab({ tab }: { tab: ActiveTab }) {
       {tab.param && (
         <p className="text-base-content/80 mt-1 font-mono text-sm">{tab.param}</p>
       )}
-      <p className="text-base-content/60 mt-2">
-        Content goes here ({tabPhase[tab.id]})
-      </p>
+      <p className="text-base-content/60 mt-2">Coming soon</p>
     </div>
   );
 }
@@ -32,5 +23,7 @@ export function TabContent({ tab }: { tab: ActiveTab }) {
   if (tab.id === 'file') return <FilePage />;
   if (tab.id === 'search') return <SearchView param={tab.param} />;
   if (tab.id === 'analysis') return <AnalysisView param={tab.param} />;
+  if (tab.id === 'collections') return <CollectionsView param={tab.param} />;
+  if (tab.id === 'cart') return <CartView />;
   return <PlaceholderTab tab={tab} />;
 }

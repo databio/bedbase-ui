@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useFile } from '../../contexts/file-context';
 import { useTab, type TabId } from '../../contexts/tab-context';
+import { useCart } from '../../contexts/cart-context';
 import { tabMeta, tabIds, tabColorClasses } from '../../lib/tab-meta';
 import { Hub } from '../hub/hub';
 import { TabContent } from '../tabs/tab-content';
@@ -13,6 +14,7 @@ import { Footer } from './footer';
 export function AppLayout() {
   const { activeTabs, openTab, openSplit, closeTab } = useTab();
   const { bedFile } = useFile();
+  const { cartCount } = useCart();
   const navigate = useNavigate();
   const location = useLocation();
   const [dragOverSide, setDragOverSide] = useState<'left' | 'right' | null>(null);
@@ -69,12 +71,27 @@ export function AppLayout() {
     setDragOverSide(null);
   }
 
+  const tabBasePaths: Record<TabId, string> = {
+    file: '/file',
+    search: '/search',
+    analysis: '/analysis',
+    umap: '/umap',
+    collections: '/collections',
+    cart: '/cart',
+  };
+
   function renderTab(id: string, isActive: boolean) {
     const meta = tabMeta[id as keyof typeof tabMeta];
     const Icon = meta.icon;
     const colors = tabColorClasses[meta.color];
 
     const showLabel = id !== 'cart';
+    const href = tabBasePaths[id as TabId];
+    const badge = id === 'cart' && cartCount > 0 ? (
+      <span className="absolute -top-0.5 -right-1 min-w-3 h-3 flex items-center justify-center rounded-full bg-primary text-white text-[7px] font-bold leading-none">
+        {cartCount > 99 ? '99+' : cartCount}
+      </span>
+    ) : null;
 
     if (isActive) {
       return (
@@ -85,14 +102,19 @@ export function AppLayout() {
           onDragEnd={handleDragEnd}
           className={`flex items-center gap-1.5 ${showLabel ? 'px-4' : 'px-3'} py-3 text-sm font-semibold rounded-lg ${colors.bgFaint} text-base-content cursor-grab active:cursor-grabbing`}
         >
-          <button
-            onClick={() => openTab(id as TabId)}
+          <a
+            href={href}
+            onClick={(e) => {
+              if (e.metaKey || e.ctrlKey || e.shiftKey) return;
+              e.preventDefault();
+              openTab(id as TabId);
+            }}
             className="flex items-center gap-1.5 cursor-pointer hover:opacity-70 transition-opacity"
             title={`Back to ${meta.label}`}
           >
-            <span className="flex items-center h-5"><Icon size={14} /></span>
+            <span className="relative flex items-center h-5"><Icon size={14} />{badge}</span>
             {showLabel && <span>{meta.label}</span>}
-          </button>
+          </a>
           <button
             onClick={() => closeTab(id as TabId)}
             className="ml-1 p-0.5 rounded hover:bg-base-300 transition-colors cursor-pointer"
@@ -105,17 +127,22 @@ export function AppLayout() {
     }
 
     return (
-      <button
+      <a
         key={id}
+        href={href}
         draggable
         onDragStart={(e) => handleDragStart(e, id)}
         onDragEnd={handleDragEnd}
-        onClick={() => openTab(id as TabId)}
-        className={`flex items-center gap-1.5 ${showLabel ? 'px-4' : 'px-3'} py-3 text-sm font-medium transition-colors cursor-grab active:cursor-grabbing rounded-lg text-base-content/60 hover:text-base-content hover:bg-base-200`}
+        onClick={(e) => {
+          if (e.metaKey || e.ctrlKey || e.shiftKey) return;
+          e.preventDefault();
+          openTab(id as TabId);
+        }}
+        className={`flex items-center gap-1.5 ${showLabel ? 'px-4' : 'px-3'} py-3 text-sm font-medium transition-colors cursor-grab active:cursor-grabbing rounded-lg text-base-content/60 hover:text-base-content hover:bg-base-200 no-underline`}
       >
-        <span className="flex items-center h-5"><Icon size={14} /></span>
+        <span className="relative flex items-center h-5"><Icon size={14} />{badge}</span>
         {showLabel && <span>{meta.label}</span>}
-      </button>
+      </a>
     );
   }
 

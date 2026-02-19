@@ -10,6 +10,7 @@ type CartContextValue = {
   cart: Record<string, CartItem>;
   addToCart: (item: CartItem) => void;
   removeFromCart: (id: string) => void;
+  clearCart: () => void;
   isInCart: (id: string) => boolean;
   cartCount: number;
 };
@@ -51,11 +52,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const clearCart = () => {
+    const empty: Record<string, CartItem> = {};
+    saveCart(empty);
+    setCart(empty);
+  };
+
   const isInCart = (id: string) => id in cart;
   const cartCount = Object.keys(cart).length;
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, isInCart, cartCount }}>
+    <CartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart, isInCart, cartCount }}>
       {children}
     </CartContext.Provider>
   );
