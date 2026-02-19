@@ -22,7 +22,7 @@ export type DistributionPoint = {
 };
 
 export type BedAnalysis = {
-  source: 'upload' | 'database';
+  source: 'local' | 'database';
 
   // Identity
   id?: string; // database bed file ID (e.g. md5 hash)
@@ -100,7 +100,7 @@ export function fromRegionSet(
   const regionDistribution = (rs.regionDistribution(300) as DistributionPoint[]) ?? [];
 
   return {
-    source: 'upload',
+    source: 'local',
     fileName: file.name,
     fileSize: file.size,
     parseTime: parseTime ?? undefined,

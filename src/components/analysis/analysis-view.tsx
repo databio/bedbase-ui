@@ -41,7 +41,7 @@ function StatsGrid({ analysis }: { analysis: BedAnalysis }) {
 
 // --- Upload header ---
 
-function UploadHeader({ analysis }: { analysis: BedAnalysis }) {
+function LocalHeader({ analysis }: { analysis: BedAnalysis }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-3">
@@ -104,7 +104,7 @@ function DatabaseHeader({ analysis }: { analysis: BedAnalysis }) {
 // --- Header router ---
 
 function AnalysisHeader({ analysis }: { analysis: BedAnalysis }) {
-  if (analysis.source === 'upload') return <UploadHeader analysis={analysis} />;
+  if (analysis.source === 'local') return <LocalHeader analysis={analysis} />;
   return <DatabaseHeader analysis={analysis} />;
 }
 
@@ -127,15 +127,15 @@ function buildPlotSlots(analysis: BedAnalysis): PlotSlot[] {
 
 // --- Upload analysis view ---
 
-function UploadAnalysis() {
-  const { uploadedFile, regionSet, parsing, parseError, parseTime } = useFile();
+function LocalAnalysis() {
+  const { bedFile, regionSet, parsing, parseError, parseTime } = useFile();
 
   const analysis = useMemo<BedAnalysis | null>(() => {
-    if (!regionSet || !uploadedFile) return null;
-    return fromRegionSet(regionSet, uploadedFile, parseTime);
-  }, [regionSet, uploadedFile, parseTime]);
+    if (!regionSet || !bedFile) return null;
+    return fromRegionSet(regionSet, bedFile, parseTime);
+  }, [regionSet, bedFile, parseTime]);
 
-  if (!uploadedFile) return <AnalysisEmpty />;
+  if (!bedFile) return <AnalysisEmpty />;
 
   if (parsing) {
     return (
@@ -179,7 +179,7 @@ function AnalysisPanels({ analysis }: { analysis: BedAnalysis }) {
 // --- Main entry point ---
 
 export function AnalysisView({ param }: { param?: string }) {
-  if (param === 'upload') return <UploadAnalysis />;
+  if (param === 'file') return <LocalAnalysis />;
 
   // Future: if param is a bed file ID, fetch from API
   return <AnalysisEmpty />;

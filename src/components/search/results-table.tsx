@@ -43,7 +43,7 @@ export function ResultsTable({ results }: { results: QdrantSearchResult[] }) {
                 <td className="font-medium max-w-48 truncate">{meta?.name || 'Unnamed'}</td>
                 <td>
                   {meta?.genome_alias ? (
-                    <span className="badge badge-sm badge-primary">{meta.genome_alias}</span>
+                    <span className="badge badge-sm badge-primary text-[10px]">{meta.genome_alias}</span>
                   ) : (
                     <span className="text-base-content/30">—</span>
                   )}

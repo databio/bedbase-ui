@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, FileText } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useFile } from '../../contexts/file-context';
 import { useTab, type TabId } from '../../contexts/tab-context';
@@ -7,13 +7,12 @@ import { tabMeta, tabIds, tabColorClasses } from '../../lib/tab-meta';
 import { Hub } from '../hub/hub';
 import { TabContent } from '../tabs/tab-content';
 import { ReportPage } from '../report/report-page';
-import { UploadPage } from '../upload/upload-page';
 import { MetricsPage } from '../metrics/metrics-page';
 import { Footer } from './footer';
 
 export function AppLayout() {
   const { activeTabs, openTab, openSplit, closeTab } = useTab();
-  const { uploadedFile } = useFile();
+  const { bedFile } = useFile();
   const navigate = useNavigate();
   const location = useLocation();
   const [dragOverSide, setDragOverSide] = useState<'left' | 'right' | null>(null);
@@ -121,12 +120,8 @@ export function AppLayout() {
   }
 
   function renderContent() {
-    if (location.pathname.startsWith('/upload/report')) {
+    if (location.pathname.startsWith('/file/report')) {
       return <ReportPage />;
-    }
-
-    if (location.pathname.startsWith('/upload')) {
-      return <UploadPage />;
     }
 
     if (location.pathname.startsWith('/metrics')) {
@@ -141,7 +136,7 @@ export function AppLayout() {
       return (
         <main className="flex-1 flex flex-col relative">
           {isDragging && (
-            <div className="absolute inset-0 z-10 grid grid-cols-2 gap-4">
+            <div className="absolute inset-0 z-10 grid grid-cols-2">
               <div
                 onDragOver={(e) => handleDragOver(e, 'left')}
                 onDragLeave={handleDragLeave}
@@ -161,7 +156,7 @@ export function AppLayout() {
             </div>
           )}
           <div className={`absolute top-0 inset-x-0 h-6 bg-gradient-to-b ${tabColorClasses[tabMeta[primaryId].color].glowFrom} to-transparent pointer-events-none z-0`} />
-          <div className="@container flex-1 relative z-[1]">
+          <div className="@container flex-1 relative z-[1] flex flex-col">
             <TabContent tab={activeTabs[0]} />
           </div>
         </main>
@@ -171,7 +166,7 @@ export function AppLayout() {
     return (
       <main className="flex-1 grid grid-cols-1 md:grid-cols-2">
         <div
-          className="@container relative"
+          className="@container relative flex flex-col"
           onDragOver={(e) => handleDragOver(e, 'left')}
           onDragLeave={handleDragLeave}
           onDrop={(e) => handleDrop(e, 'left')}
@@ -180,12 +175,12 @@ export function AppLayout() {
             <div className="absolute inset-0 z-10 bg-primary/10 border-2 border-dashed border-primary/30" />
           )}
           <div className={`absolute top-0 inset-x-0 h-6 bg-gradient-to-b ${tabColorClasses[tabMeta[primaryId].color].glowFrom} to-transparent pointer-events-none z-0`} />
-          <div className="relative z-[1]">
+          <div className="relative z-[1] flex-1 flex flex-col">
             <TabContent tab={activeTabs[0]} />
           </div>
         </div>
         <div
-          className={`@container relative border-l border-base-300`}
+          className={`@container relative border-l border-base-300 flex flex-col`}
           onDragOver={(e) => handleDragOver(e, 'right')}
           onDragLeave={handleDragLeave}
           onDrop={(e) => handleDrop(e, 'right')}
@@ -194,7 +189,7 @@ export function AppLayout() {
             <div className="absolute inset-0 z-10 bg-primary/10 border-2 border-dashed border-primary/30" />
           )}
           <div className={`absolute top-0 inset-x-0 h-6 bg-gradient-to-b ${tabColorClasses[tabMeta[splitId!].color].glowFrom} to-transparent pointer-events-none z-0`} />
-          <div className="relative z-[1]">
+          <div className="relative z-[1] flex-1 flex flex-col">
             <TabContent tab={activeTabs[1]} />
           </div>
         </div>
@@ -212,20 +207,7 @@ export function AppLayout() {
           <img src="/bedbase_logo.svg" alt="BEDbase" className="h-8" />
         </button>
         <div className="flex items-center justify-end flex-1 gap-1">
-          {uploadedFile && (
-            <button
-              onClick={() => navigate('/upload')}
-              title="Your file"
-              className={`flex items-center px-3 py-3 text-sm rounded-lg transition-colors cursor-pointer ${
-                location.pathname.startsWith('/upload')
-                  ? 'bg-primary/8 text-primary font-semibold'
-                  : 'text-base-content/60 hover:text-base-content hover:bg-base-200'
-              }`}
-              aria-label="Uploaded file"
-            >
-              <span className="flex items-center h-5"><FileText size={14} /></span>
-            </button>
-          )}
+          {bedFile && renderTab('file', 'file' === primaryId || 'file' === splitId)}
           {tabIds.map((id) =>
             renderTab(id, id === primaryId || id === splitId),
           )}

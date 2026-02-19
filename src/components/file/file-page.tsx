@@ -20,14 +20,14 @@ function formatBytes(bytes: number): string {
 const actions: { id: TabId; param?: string; label: string; description: string; icon: typeof Search }[] = [
   {
     id: 'search',
-    param: 'upload',
+    param: 'file',
     label: 'Find similar files',
     description: 'Search BEDbase for files with similar genomic regions and compare overlap scores.',
     icon: Search,
   },
   {
     id: 'analysis',
-    param: 'upload',
+    param: 'file',
     label: 'Analyze in detail',
     description: 'View statistics, chromosome distributions, and genomic annotations for your regions.',
     icon: FlaskConical,
@@ -47,13 +47,25 @@ const actions: { id: TabId; param?: string; label: string; description: string; 
 ];
 
 function ActionCard({ action }: { action: (typeof actions)[number] }) {
-  const { openTab } = useTab();
+  const { openTab, openSplit, activeTabs } = useTab();
   const colors = tabColorClasses[tabMeta[action.id].color];
   const Icon = action.icon;
 
+  function handleClick() {
+    const isSplit = activeTabs.length > 1;
+    if (isSplit) {
+      const fileIsRight = activeTabs[1]?.id === 'file';
+      // Replace the file tab in whichever half it occupies
+      openSplit(action.id, fileIsRight ? 'right' : 'left', action.param);
+    } else {
+      // File is fullscreen — replace it
+      openTab(action.id, action.param);
+    }
+  }
+
   return (
     <button
-      onClick={() => openTab(action.id, action.param)}
+      onClick={handleClick}
       className="flex items-start gap-3 p-4 rounded-lg border border-base-300 hover:border-base-content/20 hover:bg-base-200/30 transition-colors cursor-pointer text-left"
     >
       <Icon size={18} className={`${colors.text} mt-0.5 shrink-0`} />
@@ -135,28 +147,28 @@ function FilePreview({ file, onClear }: { file: File; onClear: () => void }) {
   );
 }
 
-// --- Upload page ---
+// --- File page ---
 
-export function UploadPage() {
-  const { uploadedFile, setUploadedFile } = useFile();
+export function FilePage() {
+  const { bedFile, setBedFile } = useFile();
+  const { closeTab, openTab } = useTab();
   const navigate = useNavigate();
 
-  // Redirect to hub if no file is loaded
   useEffect(() => {
-    if (!uploadedFile) navigate('/', { replace: true });
-  }, [uploadedFile, navigate]);
+    if (!bedFile) navigate('/search', { replace: true });
+  }, [bedFile, navigate]);
 
-  if (!uploadedFile) return null;
+  if (!bedFile) return null;
 
   function handleClear() {
-    setUploadedFile(null);
-    // useEffect handles the redirect to /
+    setBedFile(null);
+    closeTab('file');
   }
 
   return (
     <div className="flex-1 overflow-auto flex flex-col">
-      <div className="flex flex-col items-center text-center px-4 pt-10 pb-8">
-        <FilePreview file={uploadedFile} onClear={handleClear} />
+      <div className="flex flex-col items-center text-center px-4 pt-16 pb-8">
+        <FilePreview file={bedFile} onClear={handleClear} />
       </div>
 
       <div className="flex-1">
@@ -168,7 +180,7 @@ export function UploadPage() {
             ))}
           </div>
           <button
-            onClick={() => navigate('/upload/report')}
+            onClick={() => navigate('/file/report')}
             className="flex items-start gap-3 p-4 mt-3 rounded-lg border border-base-300 hover:border-base-content/20 hover:bg-base-200/30 transition-colors cursor-pointer text-left max-w-3xl mx-auto w-full"
           >
             <FileBarChart size={18} className="text-primary mt-0.5 shrink-0" />

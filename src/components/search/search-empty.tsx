@@ -15,7 +15,7 @@ export function SearchEmpty() {
   const [query, setQuery] = useState('');
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { uploadedFile, setUploadedFile } = useFile();
+  const { bedFile, setBedFile } = useFile();
   const { openTab } = useTab();
 
   const handleSubmit = () => {
@@ -25,8 +25,8 @@ export function SearchEmpty() {
   };
 
   const handleFileSelect = (file: File) => {
-    setUploadedFile(file);
-    openTab('search', 'upload');
+    setBedFile(file);
+    openTab('search', 'file');
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -66,14 +66,14 @@ export function SearchEmpty() {
         </div>
 
         {/* File upload row or file indicator */}
-        {uploadedFile ? (
+        {bedFile ? (
           <div
             className="flex items-center gap-2 px-3 py-2.5 rounded-b-lg border border-base-300 border-t-0 bg-primary/5 cursor-pointer hover:bg-primary/10 transition-colors"
-            onClick={() => openTab('search', 'upload')}
+            onClick={() => openTab('search', 'file')}
           >
             <FileText size={16} className="text-primary shrink-0 mx-2" />
-            <span className="text-sm font-medium text-base-content/70 truncate flex-1">{uploadedFile.name}</span>
-            <span className="text-xs text-base-content/40">{formatBytes(uploadedFile.size)}</span>
+            <span className="text-sm font-medium text-base-content/70 truncate flex-1">{bedFile.name}</span>
+            <span className="text-xs text-base-content/40">{formatBytes(bedFile.size)}</span>
             <ArrowRight size={14} className="text-primary shrink-0" />
           </div>
         ) : (

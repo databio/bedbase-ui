@@ -38,15 +38,15 @@ export function Footer() {
           <div className="flex flex-wrap items-center gap-1.5 pointer-events-auto">
             {versions ? (
               <>
-                <span className="badge badge-ghost badge-sm border-primary/30 text-primary/70">bedhost {versions.bedhost_version}</span>
-                <span className="badge badge-ghost badge-sm border-primary/30 text-primary/70">bbconf {versions.bbconf_version}</span>
-                <span className="badge badge-ghost badge-sm border-primary/30 text-primary/70">geniml {versions.geniml_version}</span>
+                <span className="badge badge-ghost badge-sm border-primary/30 text-primary/80 font-medium">bedhost {versions.bedhost_version}</span>
+                <span className="badge badge-ghost badge-sm border-primary/30 text-primary/80 font-medium">bbconf {versions.bbconf_version}</span>
+                <span className="badge badge-ghost badge-sm border-primary/30 text-primary/80 font-medium">geniml {versions.geniml_version}</span>
               </>
             ) : (
               <>
-                <span className="badge badge-ghost badge-sm border-primary/30 text-primary/70">bedhost</span>
-                <span className="badge badge-ghost badge-sm border-primary/30 text-primary/70">bbconf</span>
-                <span className="badge badge-ghost badge-sm border-primary/30 text-primary/70">geniml</span>
+                <span className="badge badge-ghost badge-sm border-primary/30 text-primary/80 font-medium">bedhost</span>
+                <span className="badge badge-ghost badge-sm border-primary/30 text-primary/80 font-medium">bbconf</span>
+                <span className="badge badge-ghost badge-sm border-primary/30 text-primary/80 font-medium">geniml</span>
               </>
             )}
           </div>

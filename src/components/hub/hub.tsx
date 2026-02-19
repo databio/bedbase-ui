@@ -1,6 +1,5 @@
 import { useState, useRef, type ReactNode } from 'react';
 import { Search, Upload, FileText, X } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { useFile } from '../../contexts/file-context';
 import { useTab } from '../../contexts/tab-context';
 import { useStats } from '../../queries/use-stats';
@@ -20,8 +19,7 @@ function SearchInput({ onFileSelect }: { onFileSelect: (f: File) => void }) {
   const [query, setQuery] = useState('');
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { uploadedFile, setUploadedFile } = useFile();
-  const navigate = useNavigate();
+  const { bedFile, setBedFile } = useFile();
   const { openTab } = useTab();
 
   const handleDrop = (e: React.DragEvent) => {
@@ -59,16 +57,16 @@ function SearchInput({ onFileSelect }: { onFileSelect: (f: File) => void }) {
       </div>
 
       {/* File upload row or file indicator */}
-      {uploadedFile ? (
+      {bedFile ? (
         <div
           className="flex items-center gap-2 px-3 py-2.5 rounded-b-lg border border-base-300 border-t-0 bg-primary/5 cursor-pointer hover:bg-primary/10 transition-colors"
-          onClick={() => navigate('/upload')}
+          onClick={() => openTab('file')}
         >
           <FileText size={16} className="text-primary shrink-0 mx-2" />
-          <span className="text-sm font-medium text-base-content/70 truncate flex-1">{uploadedFile.name}</span>
-          <span className="text-xs text-base-content/40">{formatBytes(uploadedFile.size)}</span>
+          <span className="text-sm font-medium text-base-content/70 truncate flex-1">{bedFile.name}</span>
+          <span className="text-xs text-base-content/40">{formatBytes(bedFile.size)}</span>
           <button
-            onClick={(e) => { e.stopPropagation(); setUploadedFile(null); }}
+            onClick={(e) => { e.stopPropagation(); setBedFile(null); }}
             className="p-0.5 rounded hover:bg-base-300 transition-colors cursor-pointer"
           >
             <X size={14} className="text-base-content/40" />
@@ -148,13 +146,13 @@ const aboutFeatures: { title: string; description: string; graphic?: ReactNode }
 // --- Hub ---
 
 export function Hub() {
-  const { setUploadedFile } = useFile();
-  const navigate = useNavigate();
+  const { setBedFile } = useFile();
+  const { openTab } = useTab();
   const { data: stats, isLoading: statsLoading } = useStats();
 
   function handleFileSelect(file: File) {
-    setUploadedFile(file);
-    navigate('/upload');
+    setBedFile(file);
+    openTab('file');
   }
 
   return (

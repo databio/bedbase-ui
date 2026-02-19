@@ -28,24 +28,24 @@ const capabilities = [
 // --- Main component ---
 
 export function AnalysisEmpty() {
-  const { uploadedFile, setUploadedFile } = useFile();
+  const { bedFile, setBedFile } = useFile();
   const { openTab, activeTabs } = useTab();
   const { data: stats } = useStats();
   const { data: sampleBeds } = useSampleBeds(3);
   const inputRef = useRef<HTMLInputElement>(null);
 
   function handleFile(file: File) {
-    setUploadedFile(file);
-    openTab('analysis', 'upload');
+    setBedFile(file);
+    openTab('analysis', 'file');
   }
 
-  function handleAnalyzeUploaded() {
-    openTab('analysis', 'upload');
+  function handleAnalyzeFile() {
+    openTab('analysis', 'file');
   }
 
   return (
     <div className="flex-1 overflow-auto">
-      <div className="px-4 md:px-6 pt-10 pb-10">
+      <div className="px-4 md:px-6 pt-12 pb-10">
         <div className="max-w-3xl mx-auto">
 
           {/* Two ways to analyze — with integrated actions */}
@@ -96,14 +96,14 @@ export function AnalysisEmpty() {
                 </ul>
               </div>
               <div className="border-t border-base-300">
-                {uploadedFile ? (
+                {bedFile ? (
                   <button
-                    onClick={handleAnalyzeUploaded}
+                    onClick={handleAnalyzeFile}
                     className="flex items-center gap-3 px-4 py-3 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer text-left w-full"
                   >
                     <FileText size={16} className="text-primary shrink-0" />
-                    <span className="text-sm font-medium text-base-content truncate flex-1 min-w-0">{uploadedFile.name}</span>
-                    <span className="text-xs text-base-content/40 shrink-0">{formatBytes(uploadedFile.size)}</span>
+                    <span className="text-sm font-medium text-base-content truncate flex-1 min-w-0">{bedFile.name}</span>
+                    <span className="text-xs text-base-content/40 shrink-0">{formatBytes(bedFile.size)}</span>
                     <ArrowRight size={14} className="text-primary shrink-0" />
                   </button>
                 ) : (

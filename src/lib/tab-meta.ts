@@ -1,4 +1,4 @@
-import { Search, FlaskConical, ScatterChart, FolderOpen, ShoppingCart, type LucideIcon } from 'lucide-react';
+import { FileText, Search, FlaskConical, ScatterChart, FolderOpen, ShoppingCart, type LucideIcon } from 'lucide-react';
 import type { TabId } from '../contexts/tab-context';
 
 export type TabMeta = {
@@ -9,6 +9,12 @@ export type TabMeta = {
 };
 
 export const tabMeta: Record<TabId, TabMeta> = {
+  file: {
+    label: 'File',
+    icon: FileText,
+    description: 'Your BED file — view details and choose what to do with it.',
+    color: 'secondary',
+  },
   search: {
     label: 'Search',
     icon: Search,
@@ -41,7 +47,8 @@ export const tabMeta: Record<TabId, TabMeta> = {
   },
 };
 
-export const tabIds = Object.keys(tabMeta) as TabId[];
+/** Standard tabs shown in the navbar (file tab is conditional) */
+export const tabIds: TabId[] = ['search', 'analysis', 'umap', 'collections', 'cart'];
 
 export const tabColorClasses: Record<string, {
   text: string;
@@ -53,6 +60,7 @@ export const tabColorClasses: Record<string, {
   bgFaint: string;
   glowFrom: string;
 }> = {
+  secondary: { text: 'text-secondary', bg: 'bg-secondary', borderTop: 'border-t-secondary', borderTopFaint: 'border-t-secondary/60', borderLeft: 'border-l-secondary', bgSubtle: 'bg-secondary/15', bgFaint: 'bg-secondary/8', glowFrom: 'from-secondary/10' },
   primary: { text: 'text-primary', bg: 'bg-primary', borderTop: 'border-t-primary', borderTopFaint: 'border-t-primary/60', borderLeft: 'border-l-primary', bgSubtle: 'bg-primary/15', bgFaint: 'bg-primary/8', glowFrom: 'from-primary/10' },
   info:    { text: 'text-info',    bg: 'bg-info',    borderTop: 'border-t-info',    borderTopFaint: 'border-t-info/60',    borderLeft: 'border-l-info',    bgSubtle: 'bg-info/15',    bgFaint: 'bg-info/8',    glowFrom: 'from-info/20' },
   success: { text: 'text-success', bg: 'bg-success', borderTop: 'border-t-success', borderTopFaint: 'border-t-success/60', borderLeft: 'border-l-success', bgSubtle: 'bg-success/15', bgFaint: 'bg-success/8', glowFrom: 'from-success/10' },

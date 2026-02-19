@@ -34,17 +34,17 @@ function SkeletonTable() {
   return (
     <div className="border border-base-300 rounded-lg overflow-hidden">
       <div className="animate-pulse">
-        <div className="h-9 bg-base-200/50 border-b border-base-300" />
+        <div className="h-9 bg-base-200 border-b border-base-300" />
         {[0, 1, 2, 3, 4].map((i) => (
           <div key={i} className="flex items-center gap-4 px-4 py-3 border-b border-base-300 last:border-b-0">
-            <div className="h-3 w-32 bg-base-300 rounded" />
-            <div className="h-4 w-12 bg-base-300 rounded-full" />
-            <div className="h-3 w-20 bg-base-300 rounded" />
-            <div className="h-3 w-20 bg-base-300 rounded" />
-            <div className="h-3 w-20 bg-base-300 rounded" />
-            <div className="h-3 w-20 bg-base-300 rounded" />
-            <div className="h-3 flex-1 bg-base-300 rounded" />
-            <div className="h-3 w-12 bg-base-300 rounded" />
+            <div className="h-3 w-32 bg-base-300/80 rounded" />
+            <div className="h-4 w-12 bg-base-300/80 rounded-full" />
+            <div className="h-3 w-20 bg-base-300/80 rounded" />
+            <div className="h-3 w-20 bg-base-300/80 rounded" />
+            <div className="h-3 w-20 bg-base-300/80 rounded" />
+            <div className="h-3 w-20 bg-base-300/80 rounded" />
+            <div className="h-3 flex-1 bg-base-300/80 rounded" />
+            <div className="h-3 w-12 bg-base-300/80 rounded" />
           </div>
         ))}
       </div>
@@ -118,7 +118,7 @@ function FilterBar({
       <label className="flex items-center gap-1.5 text-base-content/60">
         Genome
         <select
-          className="select select-xs select-bordered"
+          className="select select-xs border border-base-300"
           value={genome}
           onChange={(e) => setGenome(e.target.value)}
         >
@@ -131,7 +131,7 @@ function FilterBar({
       <label className="flex items-center gap-1.5 text-base-content/60">
         Assay
         <select
-          className="select select-xs select-bordered"
+          className="select select-xs border border-base-300"
           value={assay}
           onChange={(e) => setAssay(e.target.value)}
         >
@@ -144,7 +144,7 @@ function FilterBar({
       <label className="flex items-center gap-1.5 text-base-content/60 ml-auto">
         Limit
         <select
-          className="select select-xs select-bordered"
+          className="select select-xs border border-base-300"
           value={limit}
           onChange={(e) => setLimit(Number(e.target.value))}
         >
@@ -182,7 +182,7 @@ function SearchResults({
 }) {
   return (
     <div className="flex flex-col h-full overflow-auto">
-      <div className="px-6 pt-4 pb-2 flex flex-col gap-2">
+      <div className="px-6 pt-6 pb-2 flex flex-col gap-2">
         {header}
         {filters}
       </div>
@@ -292,25 +292,25 @@ function TextSearchResults({ query }: { query: string }) {
 function BedSearchResults() {
   const [offset, setOffset] = useState(0);
   const [limit, setLimit] = useState(20);
-  const { uploadedFile, setUploadedFile } = useFile();
+  const { bedFile, setBedFile } = useFile();
   const { openTab } = useTab();
-  const { data, isLoading, error, refetch } = useBedSearch(uploadedFile ?? undefined, {
+  const { data, isLoading, error, refetch } = useBedSearch(bedFile ?? undefined, {
     limit,
     offset,
   });
 
   // No file in context — redirect to empty state
-  if (!uploadedFile) {
+  if (!bedFile) {
     return <SearchEmpty />;
   }
 
   const header = (
     <div className="flex items-center gap-3 border border-base-300 rounded-lg px-3 py-2 bg-white">
       <FileText size={16} className="text-primary shrink-0" />
-      <span className="text-sm font-medium text-base-content truncate">{uploadedFile.name}</span>
-      <span className="text-xs text-base-content/40">{formatBytes(uploadedFile.size)}</span>
+      <span className="text-sm font-medium text-base-content truncate">{bedFile.name}</span>
+      <span className="text-xs text-base-content/40">{formatBytes(bedFile.size)}</span>
       <button
-        onClick={() => { setUploadedFile(null); openTab('search'); }}
+        onClick={() => { setBedFile(null); openTab('search'); }}
         className="p-0.5 rounded hover:bg-base-300 transition-colors cursor-pointer ml-auto"
       >
         <X size={14} className="text-base-content/40" />
@@ -323,7 +323,7 @@ function BedSearchResults() {
       <label className="flex items-center gap-1.5 text-base-content/60 ml-auto">
         Limit
         <select
-          className="select select-xs select-bordered"
+          className="select select-xs border border-base-300"
           value={limit}
           onChange={(e) => { setLimit(Number(e.target.value)); setOffset(0); }}
         >
@@ -354,6 +354,6 @@ function BedSearchResults() {
 
 export function SearchView({ param }: { param?: string }) {
   if (!param) return <SearchEmpty />;
-  if (param === 'upload') return <BedSearchResults />;
+  if (param === 'file') return <BedSearchResults />;
   return <TextSearchResults query={param} />;
 }

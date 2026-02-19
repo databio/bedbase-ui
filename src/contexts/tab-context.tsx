@@ -1,11 +1,12 @@
 import { createContext, useContext, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-export type TabId = 'search' | 'analysis' | 'umap' | 'collections' | 'cart';
+export type TabId = 'file' | 'search' | 'analysis' | 'umap' | 'collections' | 'cart';
 
-const TAB_IDS = new Set<string>(['search', 'analysis', 'umap', 'collections', 'cart']);
+const TAB_IDS = new Set<string>(['file', 'search', 'analysis', 'umap', 'collections', 'cart']);
 
 const tabBasePaths: Record<TabId, string> = {
+  file: '/file',
   search: '/search',
   analysis: '/analysis',
   umap: '/umap',
@@ -15,13 +16,18 @@ const tabBasePaths: Record<TabId, string> = {
 
 export type ActiveTab = {
   id: TabId;
-  param?: string; // e.g. bed file ID, bedset ID
+  param?: string; // e.g. bed file ID, search query, 'file'
 };
 
-function pathToActiveTab(pathname: string): ActiveTab | null {
+function pathToActiveTab(pathname: string, search: string): ActiveTab | null {
+  if (pathname.startsWith('/file')) return { id: 'file' };
   if (pathname.startsWith('/search')) {
+    // 'file' stays as a path segment: /search/file
     const match = pathname.match(/^\/search\/(.+)/);
-    return { id: 'search', param: match?.[1] ? decodeURIComponent(match[1]) : undefined };
+    if (match?.[1]) return { id: 'search', param: decodeURIComponent(match[1]) };
+    // Text queries use ?q= param
+    const q = new URLSearchParams(search).get('q');
+    return { id: 'search', param: q || undefined };
   }
   if (pathname.startsWith('/analysis')) {
     const match = pathname.match(/^\/analysis\/(.+)/);
@@ -51,9 +57,32 @@ function encodeSplitParam(tab: ActiveTab): string {
   return tab.param ? `${tab.id}:${tab.param}` : tab.id;
 }
 
+/** Returns just the path portion (no query string) */
 function tabToPath(tab: ActiveTab): string {
+  // Search text queries go in ?q=, only 'file' stays in the path
+  if (tab.id === 'search') {
+    return tab.param === 'file' ? '/search/file' : '/search';
+  }
   const base = tabBasePaths[tab.id];
   return tab.param ? `${base}/${tab.param}` : base;
+}
+
+/** Builds a full URL with path + query params (?q= for search, ?split= for split tab) */
+function buildUrl(primary: ActiveTab, split?: ActiveTab | null): string {
+  const path = tabToPath(primary);
+  const params = new URLSearchParams();
+
+  // Search text queries go in ?q=
+  if (primary.id === 'search' && primary.param && primary.param !== 'file') {
+    params.set('q', primary.param);
+  }
+
+  if (split) {
+    params.set('split', encodeSplitParam(split));
+  }
+
+  const qs = params.toString();
+  return qs ? `${path}?${qs}` : path;
 }
 
 type TabContextValue = {
@@ -71,8 +100,8 @@ export function TabProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
   const primaryTab = useMemo(
-    () => pathToActiveTab(location.pathname),
-    [location.pathname],
+    () => pathToActiveTab(location.pathname, location.search),
+    [location.pathname, location.search],
   );
 
   const splitRaw = new URLSearchParams(location.search).get('split');
@@ -110,20 +139,19 @@ export function TabProvider({ children }: { children: ReactNode }) {
     if (splitTab) {
       if (id === primaryTab?.id) {
         // Updating param of the primary tab — keep split
-        navigate(`${tabToPath(target)}?split=${encodeSplitParam(splitTab)}`);
+        navigate(buildUrl(target, splitTab));
       } else if (id === splitTab.id) {
         // Updating param of the split tab — keep primary
-        navigate(`${tabToPath(primaryTab!)}?split=${encodeSplitParam(target)}`);
+        navigate(buildUrl(primaryTab!, target));
+      } else if (param) {
+        // Programmatic navigation with a param — replace primary, keep split
+        navigate(buildUrl(target, splitTab));
       } else {
-        // Opening a new tab replaces primary, keeps split
-        navigate(`${tabToPath(target)}?split=${encodeSplitParam(splitTab)}`);
+        // Navbar click (no param) — go fullscreen, drop the split
+        navigate(buildUrl(target));
       }
-    } else if (primaryTab && id !== primaryTab.id) {
-      // No split — just navigate to the new tab
-      navigate(tabToPath(target));
     } else {
-      // No split — updating primary or opening fresh
-      navigate(tabToPath(target));
+      navigate(buildUrl(target));
     }
   };
 
@@ -131,17 +159,17 @@ export function TabProvider({ children }: { children: ReactNode }) {
     const resolvedParam = param ?? lastParams.current[id];
     const target: ActiveTab = { id, param: resolvedParam };
     if (!primaryTab) {
-      navigate(tabToPath(target));
+      navigate(buildUrl(target));
       return;
     }
 
     // Swap: dragging an active tab to the other side
     if (splitTab && target.id === splitTab.id && side === 'left') {
-      navigate(`${tabToPath(splitTab)}?split=${encodeSplitParam(primaryTab)}`);
+      navigate(buildUrl(splitTab, primaryTab));
       return;
     }
     if (splitTab && target.id === primaryTab.id && side === 'right') {
-      navigate(`${tabToPath(splitTab)}?split=${encodeSplitParam(primaryTab)}`);
+      navigate(buildUrl(splitTab, primaryTab));
       return;
     }
 
@@ -150,24 +178,21 @@ export function TabProvider({ children }: { children: ReactNode }) {
 
     if (side === 'right') {
       // Keep primary (left), dragged replaces split (right)
-      navigate(`${location.pathname}?split=${encodeSplitParam(target)}`);
+      navigate(buildUrl(primaryTab, target));
     } else {
       // Dragged replaces primary (left), keep split or current primary as split (right)
       const keepRight = splitTab || primaryTab;
-      navigate(`${tabToPath(target)}?split=${encodeSplitParam(keepRight)}`);
+      navigate(buildUrl(target, keepRight));
     }
   };
 
   const closeTab = (id: TabId) => {
     if (id === primaryTab?.id && splitTab) {
       // Closing primary — promote split to primary
-      navigate(tabToPath(splitTab));
+      navigate(buildUrl(splitTab));
     } else if (id === splitTab?.id) {
-      // Closing split — keep primary, drop ?split=
-      const params = new URLSearchParams(location.search);
-      params.delete('split');
-      const paramStr = params.toString();
-      navigate(paramStr ? `${location.pathname}?${paramStr}` : location.pathname);
+      // Closing split — keep primary
+      navigate(buildUrl(primaryTab!));
     } else {
       // Closing only tab — back to hub
       navigate('/');
