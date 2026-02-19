@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { X } from 'lucide-react';
+import { X, FileText } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useFile } from '../../contexts/file-context';
 import { useTab, type TabId } from '../../contexts/tab-context';
 import { tabMeta, tabIds, tabColorClasses } from '../../lib/tab-meta';
 import { Hub } from '../hub/hub';
@@ -11,6 +12,7 @@ import { MetricsPage } from '../metrics/metrics-page';
 
 export function AppLayout() {
   const { activeTabs, openTab, openSplit, closeTab } = useTab();
+  const { uploadedFile } = useFile();
   const navigate = useNavigate();
   const location = useLocation();
   const [dragOverSide, setDragOverSide] = useState<'left' | 'right' | null>(null);
@@ -83,7 +85,7 @@ export function AppLayout() {
           onDragEnd={handleDragEnd}
           className={`flex items-center gap-1.5 ${showLabel ? 'px-4' : 'px-3'} py-3 text-sm font-semibold rounded-lg ${colors.bgFaint} text-base-content cursor-grab active:cursor-grabbing`}
         >
-          <Icon size={14} />
+          <span className="flex items-center h-5"><Icon size={14} /></span>
           {showLabel && <span>{meta.label}</span>}
           <button
             onClick={() => closeTab(id as TabId)}
@@ -105,7 +107,7 @@ export function AppLayout() {
         onClick={() => openTab(id as TabId)}
         className={`flex items-center gap-1.5 ${showLabel ? 'px-4' : 'px-3'} py-3 text-sm font-medium transition-colors cursor-grab active:cursor-grabbing rounded-lg text-base-content/60 hover:text-base-content hover:bg-base-200`}
       >
-        <Icon size={14} />
+        <span className="flex items-center h-5"><Icon size={14} /></span>
         {showLabel && <span>{meta.label}</span>}
       </button>
     );
@@ -196,6 +198,20 @@ export function AppLayout() {
           <img src="/bedbase_logo.svg" alt="BEDbase" className="h-8" />
         </button>
         <div className="flex items-center justify-end flex-1 gap-1">
+          {uploadedFile && (
+            <button
+              onClick={() => navigate('/upload')}
+              title="Your file"
+              className={`flex items-center px-3 py-3 text-sm rounded-lg transition-colors cursor-pointer ${
+                location.pathname.startsWith('/upload')
+                  ? 'bg-primary/8 text-primary font-semibold'
+                  : 'text-base-content/60 hover:text-base-content hover:bg-base-200'
+              }`}
+              aria-label="Uploaded file"
+            >
+              <span className="flex items-center h-5"><FileText size={14} /></span>
+            </button>
+          )}
           {tabIds.map((id) =>
             renderTab(id, id === primaryId || id === splitId),
           )}

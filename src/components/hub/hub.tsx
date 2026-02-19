@@ -150,13 +150,13 @@ export function Hub() {
 
   return (
     <div className="flex-1 overflow-auto flex flex-col">
-      <div className="flex flex-col items-center justify-center text-center px-4 pt-24 pb-32">
+      <div className="flex flex-col items-center justify-center text-center px-4 pt-28 pb-40">
         <h1 className="font-thin text-primary text-7xl mb-5">BEDbase</h1>
-        <p className="text-base font-normal text-base-content/50 max-w-2xl mb-12">
+        <p className="text-base font-normal text-base-content/50 max-w-2xl mb-16">
           The open access platform for aggregating, analyzing, and serving genomic region data.
         </p>
         <SearchInput onFileSelect={handleFileSelect} />
-        <div className="flex items-center gap-4 mt-16 text-sm text-base-content/50">
+        <div className="flex items-center gap-4 mt-20 text-sm text-base-content/50">
           <span><strong className="text-primary">93,026</strong> BED files</span>
           <span className="text-base-content/20">•</span>
           <span><strong className="text-success">18,547</strong> BEDsets</span>
