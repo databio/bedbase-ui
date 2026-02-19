@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Loader2, FileText, AlertCircle, Search, Copy, CheckCheck, X, ChevronLeft, Dna } from 'lucide-react';
 import { useFile } from '../../contexts/file-context';
 import { useTab } from '../../contexts/tab-context';
-import { fromRegionSet, fromApiResponse, type BedAnalysis } from '../../lib/bed-analysis';
+import { fromApiResponse, type BedAnalysis } from '../../lib/bed-analysis';
 import type { PlotSlot } from '../../lib/plot-specs';
 import { regionDistributionSlot } from './plots/region-distribution';
 import { useBedMetadata } from '../../queries/use-bed-metadata';
@@ -123,7 +123,22 @@ function LocalHeader({ analysis }: { analysis: BedAnalysis }) {
 
 // --- Key-value table helper ---
 
-function KvTable({ title, rows }: { title: string; rows: { label: string; value: string }[] }) {
+type KvRow = { label: string; value: string; href?: string };
+
+function externalIdUrl(id: string, kind: 'sample' | 'experiment'): string | undefined {
+  if (id.includes('geo:')) {
+    return `https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=${id.replace('geo:', '')}`;
+  }
+  if (id.includes('encode:')) {
+    const accession = id.replace('encode:', '');
+    return kind === 'sample'
+      ? `https://www.encodeproject.org/files/${accession}`
+      : `https://www.encodeproject.org/experiments/${accession}`;
+  }
+  return undefined;
+}
+
+function KvTable({ title, rows }: { title: string; rows: KvRow[] }) {
   if (rows.length === 0) return null;
   return (
     <div className="space-y-2">
@@ -133,10 +148,16 @@ function KvTable({ title, rows }: { title: string; rows: { label: string; value:
       <div className="overflow-x-auto border border-base-300 rounded-lg bg-white">
         <table className="table table-sm text-xs w-full">
           <tbody>
-            {rows.map(({ label, value }) => (
+            {rows.map(({ label, value, href }) => (
               <tr key={label}>
                 <td className="font-medium text-base-content/60 w-44">{label}</td>
-                <td>{value}</td>
+                <td>
+                  {href ? (
+                    <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      {value}
+                    </a>
+                  ) : value}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -272,7 +293,7 @@ function DatabaseHeader({ analysis }: { analysis: BedAnalysis }) {
   const { data: genomeStats } = useGenomeStats(analysis.id);
 
   // Stats table rows
-  const statsRows: { label: string; value: string }[] = [
+  const statsRows: KvRow[] = [
     { label: 'Regions', value: summary.regions.toLocaleString() },
     { label: 'Mean width', value: `${Math.round(summary.meanRegionWidth).toLocaleString()} bp` },
   ];
@@ -290,7 +311,7 @@ function DatabaseHeader({ analysis }: { analysis: BedAnalysis }) {
   if (analysis.licenseId) statsRows.push({ label: 'License', value: analysis.licenseId });
 
   // Annotation table rows
-  const annoRows: { label: string; value: string }[] = [];
+  const annoRows: KvRow[] = [];
   if (metadata?.species) annoRows.push({ label: 'Species name', value: metadata.species });
   if (metadata?.speciesId) annoRows.push({ label: 'Species ID', value: metadata.speciesId });
   if (metadata?.cellLine) annoRows.push({ label: 'Cell line', value: metadata.cellLine });
@@ -301,8 +322,8 @@ function DatabaseHeader({ analysis }: { analysis: BedAnalysis }) {
   if (metadata?.target) annoRows.push({ label: 'Target', value: metadata.target });
   if (metadata?.treatment) annoRows.push({ label: 'Treatment', value: metadata.treatment });
   if (metadata?.librarySource) annoRows.push({ label: 'Library source', value: metadata.librarySource });
-  if (metadata?.globalSampleId) annoRows.push({ label: 'Global sample ID', value: metadata.globalSampleId });
-  if (metadata?.globalExperimentId) annoRows.push({ label: 'Global experiment ID', value: metadata.globalExperimentId });
+  if (metadata?.globalSampleId) annoRows.push({ label: 'Global sample ID', value: metadata.globalSampleId, href: externalIdUrl(metadata.globalSampleId, 'sample') });
+  if (metadata?.globalExperimentId) annoRows.push({ label: 'Global experiment ID', value: metadata.globalExperimentId, href: externalIdUrl(metadata.globalExperimentId, 'experiment') });
   if (metadata?.originalFileName) annoRows.push({ label: 'Original file name', value: metadata.originalFileName });
 
   return (
@@ -315,9 +336,9 @@ function DatabaseHeader({ analysis }: { analysis: BedAnalysis }) {
             </p>
             {analysis.id && <CopyableId id={analysis.id} />}
           </div>
-          {metadata?.description && (
-            <p className="text-sm text-base-content/50 mt-1 leading-relaxed">{metadata.description}</p>
-          )}
+          <p className="text-sm text-base-content/50 mt-1 leading-relaxed">
+            {metadata?.description || <span className="text-base-content/30 italic">No description available</span>}
+          </p>
         </div>
         <div className="shrink-0 flex flex-col @lg:items-end gap-1.5">
           <ActionBar analysis={analysis} />
@@ -381,20 +402,26 @@ function buildPlotSlots(analysis: BedAnalysis): PlotSlot[] {
 // --- Upload analysis view ---
 
 function LocalAnalysis() {
-  const { bedFile, regionSet, parsing, parseError, parseTime } = useFile();
-
-  const analysis = useMemo<BedAnalysis | null>(() => {
-    if (!regionSet || !bedFile) return null;
-    return fromRegionSet(regionSet, bedFile, parseTime);
-  }, [regionSet, bedFile, parseTime]);
+  const { bedFile, parsing, parseError, parseProgress, analysis, analyzing, analysisProgress } = useFile();
 
   if (!bedFile) return <AnalysisEmpty />;
 
-  if (parsing) {
+  if (parsing || analyzing || (!analysis && !parseError)) {
+    const progress = parsing ? parseProgress * 0.5 : 0.5 + analysisProgress * 0.5;
     return (
-      <div className="flex flex-col items-center justify-center h-full py-16 gap-3">
-        <Loader2 size={28} className="text-success animate-spin" />
-        <p className="text-sm text-base-content/50">Parsing BED file...</p>
+      <div className="flex flex-col items-center justify-center h-full py-16 gap-4 px-4">
+        <div className="w-full max-w-xs space-y-2">
+          <div className="flex items-center justify-between text-xs text-base-content/50">
+            <span>{parsing ? 'Parsing BED file...' : 'Analyzing regions...'}</span>
+            <span>{Math.round(progress * 100)}%</span>
+          </div>
+          <div className="w-full h-1.5 bg-base-200 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-primary rounded-full transition-[width] duration-150 ease-out"
+              style={{ width: `${progress * 100}%` }}
+            />
+          </div>
+        </div>
       </div>
     );
   }

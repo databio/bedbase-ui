@@ -202,14 +202,31 @@ export function fromApiResponse(data: BedMetadataAll): BedAnalysis {
   };
 }
 
-export function fromRegionSet(
+/**
+ * Build a BedAnalysis from a RegionSet in steps, yielding between each
+ * so the browser can repaint and update a progress bar.
+ *
+ * @param onProgress - called with 0–1 between steps
+ */
+export async function fromRegionSet(
   rs: RegionSet,
   file: File,
   parseTime: number | null,
-): BedAnalysis {
+  onProgress?: (p: number) => void,
+): Promise<BedAnalysis> {
+  // Step 1: basic stats + classify (~instant)
   const classify = rs.classify;
+  const summary = {
+    regions: rs.numberOfRegions,
+    meanRegionWidth: rs.meanRegionWidth,
+    nucleotides: rs.nucleotidesLength,
+    dataFormat: classify?.data_format ?? null,
+    bedCompliance: classify?.bed_compliance ?? null,
+  };
+  onProgress?.(0.2);
+  await yieldToMain();
 
-  // Chromosome stats
+  // Step 2: chromosome statistics (~heavy)
   const chromosomeStats: ChromosomeRow[] = [];
   const calc = rs.chromosomeStatistics();
   if (calc) {
@@ -235,25 +252,27 @@ export function fromRegionSet(
       a.chromosome.localeCompare(b.chromosome, undefined, { numeric: true, sensitivity: 'base' }),
     );
   }
+  onProgress?.(0.7);
+  await yieldToMain();
 
-  // Region distribution
+  // Step 3: region distribution (~heavy)
   const regionDistribution = (rs.regionDistribution(300) as DistributionPoint[]) ?? [];
+  onProgress?.(1);
 
   return {
     source: 'local',
     fileName: file.name,
     fileSize: file.size,
     parseTime: parseTime ?? undefined,
-    summary: {
-      regions: rs.numberOfRegions,
-      meanRegionWidth: rs.meanRegionWidth,
-      nucleotides: rs.nucleotidesLength,
-      dataFormat: classify?.data_format ?? null,
-      bedCompliance: classify?.bed_compliance ?? null,
-    },
+    summary,
     chromosomeStats,
     plots: {
       regionDistribution: regionDistribution.length > 0 ? regionDistribution : undefined,
     },
   };
+}
+
+/** Yield to the main thread so the browser can repaint */
+function yieldToMain(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
 }

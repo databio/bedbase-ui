@@ -8,6 +8,7 @@ import {
 } from 'react';
 import { RegionSet } from '@databio/gtars';
 import { parseBedFile } from '../lib/bed-parser';
+import { fromRegionSet, type BedAnalysis } from '../lib/bed-analysis';
 
 type FileContextValue = {
   bedFile: File | null;
@@ -17,6 +18,9 @@ type FileContextValue = {
   parseProgress: number;
   parseError: string | null;
   parseTime: number | null;
+  analysis: BedAnalysis | null;
+  analyzing: boolean;
+  analysisProgress: number;
 };
 
 const FileContext = createContext<FileContextValue | null>(null);
@@ -28,6 +32,9 @@ export function FileProvider({ children }: { children: ReactNode }) {
   const [parseProgress, setParseProgress] = useState(0);
   const [parseError, setParseError] = useState<string | null>(null);
   const [parseTime, setParseTime] = useState<number | null>(null);
+  const [analysis, setAnalysis] = useState<BedAnalysis | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysisProgress, setAnalysisProgress] = useState(0);
   const rsRef = useRef<RegionSet | null>(null);
 
   useEffect(() => {
@@ -45,6 +52,9 @@ export function FileProvider({ children }: { children: ReactNode }) {
       setParseError(null);
       setParseTime(null);
       setParseProgress(0);
+      setAnalysis(null);
+      setAnalyzing(false);
+      setAnalysisProgress(0);
       return;
     }
 
@@ -85,13 +95,29 @@ export function FileProvider({ children }: { children: ReactNode }) {
         rsRef.current = rs;
         setRegionSet(rs);
         setParseTime(elapsed);
+        setParsing(false);
+
+        // Run stepped analysis
+        if (!cancelled) {
+          setAnalyzing(true);
+          setAnalysisProgress(0);
+          try {
+            const result = await fromRegionSet(rs, file, elapsed, (p) => {
+              if (!cancelled) setAnalysisProgress(p);
+            });
+            if (!cancelled) setAnalysis(result);
+          } catch {
+            // Analysis failed — regionSet is still available
+          } finally {
+            if (!cancelled) setAnalyzing(false);
+          }
+        }
       } catch (err) {
         if (!cancelled) {
           setParseError(err instanceof Error ? err.message : 'Failed to parse BED file');
           setRegionSet(null);
+          setParsing(false);
         }
-      } finally {
-        if (!cancelled) setParsing(false);
       }
     }
 
@@ -104,7 +130,7 @@ export function FileProvider({ children }: { children: ReactNode }) {
 
   return (
     <FileContext.Provider
-      value={{ bedFile, setBedFile, regionSet, parsing, parseProgress, parseError, parseTime }}
+      value={{ bedFile, setBedFile, regionSet, parsing, parseProgress, parseError, parseTime, analysis, analyzing, analysisProgress }}
     >
       {children}
     </FileContext.Provider>
