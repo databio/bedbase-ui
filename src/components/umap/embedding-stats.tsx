@@ -70,7 +70,7 @@ export function EmbeddingStats({ selectedPoints, colorGrouping, legendItems, pin
   const maxCount = showBackground ? maxTotal : maxRows;
 
   return (
-    <div className="border border-base-300 rounded-lg bg-white flex flex-col min-h-0 flex-1">
+    <div className="border border-base-300 rounded-lg bg-base-100 flex flex-col min-h-0 flex-1">
       <div className="px-3 py-2 border-b border-base-300 bg-base-200 text-xs font-bold">
         Selection Count
       </div>

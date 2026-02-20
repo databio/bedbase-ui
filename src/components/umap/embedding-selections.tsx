@@ -43,7 +43,7 @@ export function EmbeddingSelections({ currentSelection }: Props) {
   const handleCancelEdit = () => setEditingId(null);
 
   return (
-    <div className="border border-base-300 rounded-lg overflow-clip bg-white shrink-0 max-h-[33%] overflow-y-auto">
+    <div className="border border-base-300 rounded-lg overflow-clip bg-base-100 shrink-0 max-h-[33%] overflow-y-auto">
       <div className="px-3 py-2 border-b border-base-300 bg-base-200 flex items-center justify-between">
         <span className="text-xs font-bold">Selections{validPoints.length > 0 && <span className="hidden @2xs:inline font-normal text-base-content/50 ml-1">({validPoints.length})</span>}</span>
         <span className="flex items-center gap-1 -my-0.5">

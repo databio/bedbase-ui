@@ -113,7 +113,7 @@ export function AppLayout() {
     const showLabel = id !== 'cart';
     const href = tabBasePaths[id as TabId];
     const badge = id === 'cart' && cartCount > 0 ? (
-      <span className="absolute -top-0.5 -right-1 min-w-3 h-3 flex items-center justify-center rounded-full bg-primary text-white text-[7px] font-bold leading-none">
+      <span className="absolute -top-0.75 -right-1.25 min-w-3 h-3 flex items-center justify-center rounded-full bg-primary text-white text-[7px] font-bold leading-none">
         {cartCount > 99 ? '99+' : cartCount}
       </span>
     ) : null;

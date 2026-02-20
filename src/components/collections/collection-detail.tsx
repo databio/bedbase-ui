@@ -260,7 +260,7 @@ export function CollectionDetail({ bedsetId }: { bedsetId: string }) {
             <h3 className="text-sm font-semibold text-base-content/50 uppercase tracking-wide">
               Plots
             </h3>
-            <div className="border border-base-300 rounded-lg p-4 bg-white inline-block">
+            <div className="border border-base-300 rounded-lg p-4 bg-base-100 inline-block">
               <img src={regionPlot.thumbnail} alt="Region commonality" className="max-w-full h-auto" />
             </div>
           </div>

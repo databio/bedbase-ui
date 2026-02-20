@@ -10,7 +10,7 @@ export function BedfileTable({ bedfiles }: { bedfiles: BedMetadataBasic[] }) {
   const { addToCart, removeFromCart, isInCart } = useCart();
 
   return (
-    <div className="overflow-x-auto border border-base-300 rounded-lg bg-white">
+    <div className="overflow-x-auto border border-base-300 rounded-lg bg-base-100">
       <table className="table table-sm text-xs w-full">
         <thead className="text-base-content">
           <tr>

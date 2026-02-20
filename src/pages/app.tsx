@@ -5,6 +5,7 @@ import { ApiProvider } from '../contexts/api-context';
 import { CartProvider } from '../contexts/cart-context';
 import { MosaicCoordinatorProvider } from '../contexts/mosaic-coordinator-context';
 import { BucketProvider } from '../contexts/bucket-context';
+import { SettingsProvider } from '../contexts/settings-context';
 import { AppLayout } from '../components/layout/app-layout';
 
 const queryClient = new QueryClient({
@@ -18,6 +19,7 @@ const queryClient = new QueryClient({
 
 export function App() {
   return (
+    <SettingsProvider>
     <ApiProvider>
       <QueryClientProvider client={queryClient}>
         <CartProvider>
@@ -33,5 +35,6 @@ export function App() {
         </CartProvider>
       </QueryClientProvider>
     </ApiProvider>
+    </SettingsProvider>
   );
 }

@@ -7,7 +7,7 @@ export function KvTable({ title, rows }: { title: string; rows: KvRow[] }) {
       <h3 className="text-sm font-semibold text-base-content/50 uppercase tracking-wide">
         {title}
       </h3>
-      <div className="overflow-x-auto border border-base-300 rounded-lg bg-white">
+      <div className="overflow-x-auto border border-base-300 rounded-lg bg-base-100">
         <table className="table table-sm text-xs w-full">
           <tbody>
             {rows.map(({ label, value, href }, i) => (

@@ -102,7 +102,7 @@ export function BedsetList() {
           Curated collections of BED files grouped by experiment, cell type, or other criteria.
         </p>
         <div className="flex flex-col gap-2 pt-1">
-          <div className="flex items-center gap-2 border border-base-300 rounded-lg px-3 py-2 bg-white">
+          <div className="flex items-center gap-2 border border-base-300 rounded-lg px-3 py-2 bg-base-100">
             <input
               type="text"
               className="flex-1 bg-transparent outline-none text-sm text-base-content placeholder:text-base-content/50"
@@ -149,7 +149,7 @@ export function BedsetList() {
             </div>
           ) : data?.results && data.results.length > 0 ? (
             <>
-              <div className="overflow-x-auto border border-base-300 rounded-lg bg-white">
+              <div className="overflow-x-auto border border-base-300 rounded-lg bg-base-100">
                 <table className="table table-sm text-xs w-full">
                   <thead className="text-base-content">
                     <tr>

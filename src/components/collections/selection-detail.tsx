@@ -153,7 +153,7 @@ export function SelectionDetail({ selectionId }: { selectionId: string }) {
             BED files ({bucket.bedIds.length})
           </h3>
           {bucket.bedIds.length > 0 ? (
-            <div className="overflow-x-auto border border-base-300 rounded-lg bg-white">
+            <div className="overflow-x-auto border border-base-300 rounded-lg bg-base-100">
               <table className="table table-sm text-xs w-full">
                 <thead className="text-base-content">
                   <tr>

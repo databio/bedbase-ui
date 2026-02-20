@@ -273,7 +273,7 @@ function TextSearchResults({ query }: { query: string }) {
   };
 
   const header = (
-    <div className="flex items-center gap-2 border border-base-300 rounded-lg px-3 py-2 bg-white">
+    <div className="flex items-center gap-2 border border-base-300 rounded-lg px-3 py-2 bg-base-100">
       <input
         type="text"
         className="flex-1 bg-transparent outline-none text-sm text-base-content placeholder:text-base-content/50"
@@ -348,7 +348,7 @@ function BedSearchResults() {
   }
 
   const header = (
-    <div className="flex items-center gap-3 border border-base-300 rounded-lg px-3 py-2 bg-white">
+    <div className="flex items-center gap-3 border border-base-300 rounded-lg px-3 py-2 bg-base-100">
       <FileText size={16} className="text-primary shrink-0" />
       <span className="text-sm font-medium text-base-content truncate">{bedFile.name}</span>
       <span className="text-xs text-base-content/40">{formatBytes(bedFile.size)}</span>

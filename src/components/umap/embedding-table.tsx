@@ -17,7 +17,7 @@ export function EmbeddingTable({ selectedPoints, centerOnBedId, className }: Pro
   const truncated = filtered.length > TABLE_ROW_LIMIT;
 
   return (
-    <div className={`border border-base-300 rounded-lg overflow-auto overscroll-contain bg-white ${className || ''}`}>
+    <div className={`border border-base-300 rounded-lg overflow-auto overscroll-contain bg-base-100 ${className || ''}`}>
       {filtered.length === 0 ? (
         <div className="h-full flex items-center justify-center">
           <span className="text-xs text-base-content/40 flex items-center gap-1.5">

@@ -202,7 +202,7 @@ function GenomeSection({
                 : topMatch.tier_ranking === 3
                   ? 'bg-warning/20 border-warning/40 hover:bg-warning/25'
                   : 'bg-error/10 border-error/30 hover:bg-error/15'
-            : 'bg-white border-base-300'
+            : 'bg-base-100 border-base-300'
         } ${sorted.length > 0 ? 'cursor-pointer' : ''}`}
       >
         <div className="flex items-center gap-2 shrink-0">

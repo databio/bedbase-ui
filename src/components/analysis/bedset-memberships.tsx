@@ -13,7 +13,7 @@ export function BedsetMemberships({ bedsets }: { bedsets: Bedset[] }) {
       <h3 className="text-sm font-semibold text-base-content/50 uppercase tracking-wide">
         BEDset memberships
       </h3>
-      <div className="overflow-x-auto border border-base-300 rounded-lg bg-white">
+      <div className="overflow-x-auto border border-base-300 rounded-lg bg-base-100">
         <table className="table table-sm text-xs w-full">
           <thead className="text-base-content">
             <tr>

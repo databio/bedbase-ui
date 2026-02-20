@@ -174,7 +174,7 @@ export function UmapView() {
             {preselectedIds.length > 0 && (
               <div className="absolute top-2 left-2 z-10">
                 {preselectedMatch.matched > 0 ? (
-                  <div className="inline-flex items-center gap-1.5 text-xs font-medium bg-white rounded-md overflow-hidden">
+                  <div className="inline-flex items-center gap-1.5 text-xs font-medium bg-base-100 rounded-md overflow-hidden">
                     <div className="inline-flex items-center gap-1.5 bg-primary/10 px-2.5 py-1.5">
                     <button
                       onClick={() => {
@@ -200,7 +200,7 @@ export function UmapView() {
                     </div>
                   </div>
                 ) : preselectedMatch.total > 0 ? (
-                  <div className="inline-flex items-center gap-1.5 text-xs font-medium bg-white rounded-md overflow-hidden">
+                  <div className="inline-flex items-center gap-1.5 text-xs font-medium bg-base-100 rounded-md overflow-hidden">
                     <div className="inline-flex items-center gap-1.5 bg-warning/10 px-2.5 py-1.5">
                     <Pin size={12} className="text-warning shrink-0" />
                     <span className="text-warning">

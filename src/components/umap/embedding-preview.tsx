@@ -9,11 +9,10 @@ export function EmbeddingPreview() {
   if (webglStatus.error) return null;
 
   return (
-    <div className="relative w-full h-full cursor-pointer" onClick={() => openTab('umap')}>
+    <div className="relative w-full h-full flex flex-col cursor-pointer" onClick={() => openTab('umap')}>
       {/* Transparent overlay blocks all plot interaction — click navigates to UMAP tab */}
       <div className="absolute inset-0 z-10" />
       <EmbeddingPlot
-        height={192}
         simpleTooltip
         showStatus={false}
         persistentPoints={[]}

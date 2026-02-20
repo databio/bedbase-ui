@@ -28,7 +28,7 @@ export function EmbeddingLegend({
   const pinnedSet = new Set(pinnedCategories);
 
   return (
-    <div className="border border-base-300 rounded-lg overflow-clip bg-white flex flex-col min-h-0 flex-1">
+    <div className="border border-base-300 rounded-lg overflow-clip bg-base-100 flex flex-col min-h-0 flex-1">
       <div className="px-3 py-2 border-b border-base-300 bg-base-200 flex items-center justify-between">
         <span className="flex items-center gap-1.5">
           <span className="text-xs font-bold">Legend</span>

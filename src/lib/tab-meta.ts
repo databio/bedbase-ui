@@ -60,11 +60,11 @@ export const tabColorClasses: Record<string, {
   bgFaint: string;
   glowFrom: string;
 }> = {
-  secondary: { text: 'text-secondary', bg: 'bg-secondary', borderTop: 'border-t-secondary', borderTopFaint: 'border-t-secondary/60', borderLeft: 'border-l-secondary', bgSubtle: 'bg-secondary/15', bgFaint: 'bg-secondary/8', glowFrom: 'from-secondary/10' },
-  primary: { text: 'text-primary', bg: 'bg-primary', borderTop: 'border-t-primary', borderTopFaint: 'border-t-primary/60', borderLeft: 'border-l-primary', bgSubtle: 'bg-primary/15', bgFaint: 'bg-primary/8', glowFrom: 'from-primary/10' },
-  info:    { text: 'text-info',    bg: 'bg-info',    borderTop: 'border-t-info',    borderTopFaint: 'border-t-info/60',    borderLeft: 'border-l-info',    bgSubtle: 'bg-info/15',    bgFaint: 'bg-info/8',    glowFrom: 'from-info/20' },
-  success: { text: 'text-success', bg: 'bg-success', borderTop: 'border-t-success', borderTopFaint: 'border-t-success/60', borderLeft: 'border-l-success', bgSubtle: 'bg-success/15', bgFaint: 'bg-success/8', glowFrom: 'from-success/10' },
-  warning: { text: 'text-warning', bg: 'bg-warning', borderTop: 'border-t-warning', borderTopFaint: 'border-t-warning/60', borderLeft: 'border-l-warning', bgSubtle: 'bg-warning/15', bgFaint: 'bg-warning/8', glowFrom: 'from-warning/10' },
-  accent:  { text: 'text-accent',  bg: 'bg-accent',  borderTop: 'border-t-accent',  borderTopFaint: 'border-t-accent/60',  borderLeft: 'border-l-accent',  bgSubtle: 'bg-accent/15',  bgFaint: 'bg-accent/8',  glowFrom: 'from-accent/10' },
-  error:   { text: 'text-error',   bg: 'bg-error',   borderTop: 'border-t-error',   borderTopFaint: 'border-t-error/60',   borderLeft: 'border-l-error',   bgSubtle: 'bg-error/15',   bgFaint: 'bg-error/8',   glowFrom: 'from-error/10' },
+  secondary: { text: 'text-secondary', bg: 'bg-secondary', borderTop: 'border-t-secondary', borderTopFaint: 'border-t-secondary/60', borderLeft: 'border-l-secondary', bgSubtle: 'bg-secondary/15', bgFaint: 'bg-secondary/8 dark:bg-secondary/20', glowFrom: 'from-secondary/10 dark:from-secondary/25' },
+  primary: { text: 'text-primary', bg: 'bg-primary', borderTop: 'border-t-primary', borderTopFaint: 'border-t-primary/60', borderLeft: 'border-l-primary', bgSubtle: 'bg-primary/15', bgFaint: 'bg-primary/8 dark:bg-primary/20', glowFrom: 'from-primary/10 dark:from-primary/25' },
+  info:    { text: 'text-info',    bg: 'bg-info',    borderTop: 'border-t-info',    borderTopFaint: 'border-t-info/60',    borderLeft: 'border-l-info',    bgSubtle: 'bg-info/15',    bgFaint: 'bg-info/8 dark:bg-info/20',       glowFrom: 'from-info/20 dark:from-info/35' },
+  success: { text: 'text-success', bg: 'bg-success', borderTop: 'border-t-success', borderTopFaint: 'border-t-success/60', borderLeft: 'border-l-success', bgSubtle: 'bg-success/15', bgFaint: 'bg-success/8 dark:bg-success/20', glowFrom: 'from-success/10 dark:from-success/25' },
+  warning: { text: 'text-warning', bg: 'bg-warning', borderTop: 'border-t-warning', borderTopFaint: 'border-t-warning/60', borderLeft: 'border-l-warning', bgSubtle: 'bg-warning/15', bgFaint: 'bg-warning/8 dark:bg-warning/20', glowFrom: 'from-warning/10 dark:from-warning/25' },
+  accent:  { text: 'text-accent',  bg: 'bg-accent',  borderTop: 'border-t-accent',  borderTopFaint: 'border-t-accent/60',  borderLeft: 'border-l-accent',  bgSubtle: 'bg-accent/15',  bgFaint: 'bg-accent/8 dark:bg-accent/20',   glowFrom: 'from-accent/10 dark:from-accent/25' },
+  error:   { text: 'text-error',   bg: 'bg-error',   borderTop: 'border-t-error',   borderTopFaint: 'border-t-error/60',   borderLeft: 'border-l-error',   bgSubtle: 'bg-error/15',   bgFaint: 'bg-error/8 dark:bg-error/20',     glowFrom: 'from-error/10 dark:from-error/25' },
 };

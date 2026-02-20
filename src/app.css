@@ -2,6 +2,8 @@
 @plugin "@tailwindcss/typography";
 @plugin "daisyui";
 
+@variant dark ([data-theme="bedbase-dark"] &);
+
 @plugin "daisyui/theme" {
   name: "bedbase";
   default: true;
@@ -37,6 +39,56 @@
 
   /* Error — brick red #B33A3A */
   --color-error: oklch(52.4% 0.157 24.3);
+  --color-error-content: oklch(98% 0.005 24.3);
+
+  --radius-box: 0.5rem;
+  --radius-field: 0.25rem;
+  --radius-selector: 0.5rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
+}
+
+@plugin "daisyui/theme" {
+  name: "bedbase-dark";
+  color-scheme: dark;
+
+  /* Primary — teal, slightly brighter for dark backgrounds */
+  --color-primary: oklch(60% 0.105 194.8);
+  --color-primary-content: oklch(15% 0.02 194.8);
+
+  /* Secondary — lighter navy */
+  --color-secondary: oklch(50% 0.089 251.1);
+  --color-secondary-content: oklch(98% 0.005 251.1);
+
+  /* Accent — lighter plum */
+  --color-accent: oklch(55% 0.076 342.5);
+  --color-accent-content: oklch(98% 0.005 342.5);
+
+  /* Neutral */
+  --color-neutral: oklch(40% 0.015 210.4);
+  --color-neutral-content: oklch(85% 0.01 210.4);
+
+  /* Dark base surfaces */
+  --color-base-100: oklch(16% 0.01 210.4);
+  --color-base-200: oklch(20% 0.012 210.4);
+  --color-base-300: oklch(26% 0.015 210.4);
+  --color-base-content: oklch(90% 0.01 210.4);
+
+  /* Info */
+  --color-info: oklch(55% 0.06 232.2);
+  --color-info-content: oklch(98% 0.005 232.2);
+
+  /* Success */
+  --color-success: oklch(60% 0.09 152.7);
+  --color-success-content: oklch(98% 0.005 152.7);
+
+  /* Warning */
+  --color-warning: oklch(77.2% 0.134 58.1);
+  --color-warning-content: oklch(25% 0.05 58.1);
+
+  /* Error */
+  --color-error: oklch(60% 0.157 24.3);
   --color-error-content: oklch(98% 0.005 24.3);
 
   --radius-box: 0.5rem;
