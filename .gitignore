@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# Env files — committed base files are safe; local overrides and secrets are not
+env/*.local
+env/.env.secret
+env/.env.*.secret
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
