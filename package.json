@@ -8,7 +8,9 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "generate-types": "npx openapi-typescript https://api-dev.bedbase.org/openapi.json -o src/bedbase-types.d.ts"
+    "generate-types": "npx openapi-typescript https://api-dev.bedbase.org/openapi.json -o src/bedbase-types.d.ts",
+    "deploy": "npm run build && wrangler deploy",
+    "deploy:preview": "npm run build && wrangler dev"
   },
   "dependencies": {
     "@databio/gtars": "^0.6.1",
