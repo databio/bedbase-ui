@@ -28,6 +28,14 @@ export function EmbeddingPreview({ bedIds, height = 200, className }: Props) {
           height={height}
           simpleTooltip
           showStatus={false}
+          persistentPoints={[]}
+          interactivePoints={[]}
+          pendingPoints={null}
+          onPreselectedChange={() => {}}
+          onBucketChange={() => {}}
+          onInteractiveChange={() => {}}
+          onSetPending={() => {}}
+          onApplyPending={() => {}}
         />
       </div>
     </div>

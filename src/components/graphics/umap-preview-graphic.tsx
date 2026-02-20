@@ -16,6 +16,14 @@ export function UmapPreviewGraphic() {
         height={192}
         simpleTooltip
         showStatus={false}
+        persistentPoints={[]}
+        interactivePoints={[]}
+        pendingPoints={null}
+        onPreselectedChange={() => {}}
+        onBucketChange={() => {}}
+        onInteractiveChange={() => {}}
+        onSetPending={() => {}}
+        onApplyPending={() => {}}
       />
     </div>
   );

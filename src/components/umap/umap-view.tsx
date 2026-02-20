@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback, useReducer } from 'react';
 import { Upload, X, Crosshair, Loader2, Pin } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { useFile } from '../../contexts/file-context';
@@ -10,6 +10,43 @@ import { EmbeddingTable } from './embedding-table';
 import { EmbeddingSelections } from './embedding-selections';
 import { EmbeddingStats } from './embedding-stats';
 import type { UmapPoint, LegendItem } from '../../lib/umap-utils';
+
+type SelectionState = {
+  preselected: UmapPoint[];
+  bucket: UmapPoint[];
+  interactive: UmapPoint[];
+  pending: UmapPoint[] | null;
+};
+
+type SelectionAction =
+  | { type: 'SET_PRESELECTED'; points: UmapPoint[] }
+  | { type: 'SET_BUCKET'; points: UmapPoint[] }
+  | { type: 'SET_INTERACTIVE'; points: UmapPoint[] }
+  | { type: 'SET_PENDING'; points: UmapPoint[] | null }
+  | { type: 'APPLY_PENDING' }
+  | { type: 'CLEAR_INTERACTIVE' };
+
+function selectionReducer(state: SelectionState, action: SelectionAction): SelectionState {
+  switch (action.type) {
+    case 'SET_PRESELECTED': return { ...state, preselected: action.points };
+    case 'SET_BUCKET': return { ...state, bucket: action.points };
+    case 'SET_INTERACTIVE': return { ...state, interactive: action.points };
+    case 'SET_PENDING': return { ...state, pending: action.points };
+    case 'APPLY_PENDING': return { ...state, interactive: state.pending || [], pending: null };
+    case 'CLEAR_INTERACTIVE': return { ...state, interactive: [] };
+  }
+}
+
+function dedup(...arrays: UmapPoint[][]): UmapPoint[] {
+  const seen = new Set<string>();
+  const merged: UmapPoint[] = [];
+  for (const arr of arrays) {
+    for (const p of arr) {
+      if (!seen.has(p.identifier)) { seen.add(p.identifier); merged.push(p); }
+    }
+  }
+  return merged;
+}
 
 export function UmapView() {
   const { bedFile, setBedFile } = useFile();
@@ -24,10 +61,28 @@ export function UmapView() {
   const [colorGrouping, setColorGrouping] = useState('cell_line_category');
   const [legendItems, setLegendItems] = useState<LegendItem[]>([]);
   const [filterSelection, setFilterSelection] = useState<LegendItem | null>(null);
-  const [selectedPoints, setSelectedPoints] = useState<UmapPoint[]>([]);
-  const [persistentPoints, setPersistentPoints] = useState<UmapPoint[]>([]);
   const [customCoordinates, setCustomCoordinates] = useState<number[] | null>(null);
   const [preselectedMatch, setPreselectedMatch] = useState<{ matched: number; total: number }>({ matched: 0, total: 0 });
+
+  // Consolidated selection state
+  const [selection, dispatch] = useReducer(selectionReducer, {
+    preselected: [],
+    bucket: [],
+    interactive: [],
+    pending: null,
+  });
+
+  // Derived: persistent = preselected + bucket (deduplicated)
+  const persistentPoints = useMemo(
+    () => dedup(selection.preselected, selection.bucket),
+    [selection.preselected, selection.bucket],
+  );
+
+  // Derived: all visible = persistent + interactive (for table, selections, stats)
+  const allVisiblePoints = useMemo(
+    () => dedup(persistentPoints, selection.interactive),
+    [persistentPoints, selection.interactive],
+  );
 
   // URL params → preselected IDs (sticky until cleared)
   const preselectedIds = useMemo(() => {
@@ -43,19 +98,6 @@ export function UmapView() {
     const ids = new Set([...preselectedIds, ...enabledBedIds]);
     return Array.from(ids);
   }, [preselectedIds, enabledBedIds]);
-
-  // Combined view: persistent + interactive (for table, selections, stats)
-  const allVisiblePoints = useMemo(() => {
-    const seen = new Set<string>();
-    const merged: UmapPoint[] = [];
-    for (const p of persistentPoints) {
-      if (!seen.has(p.identifier)) { seen.add(p.identifier); merged.push(p); }
-    }
-    for (const p of selectedPoints) {
-      if (!seen.has(p.identifier)) { seen.add(p.identifier); merged.push(p); }
-    }
-    return merged;
-  }, [persistentPoints, selectedPoints]);
 
   const clearPreselection = () => {
     setSearchParams((prev) => {
@@ -113,7 +155,7 @@ export function UmapView() {
   );
 
   const handleLocateCustomPoint = () => {
-    plotRef.current?.centerOnBedId('custom_point', 0.3);
+    plotRef.current?.centerOnBedId('custom_point', 0.3, true);
   };
 
   return (
@@ -215,9 +257,14 @@ export function UmapView() {
               colorGrouping={colorGrouping}
               filterSelection={filterSelection}
               onFilterSelectionChange={setFilterSelection}
-              selectedPoints={selectedPoints}
-              onSelectedPointsChange={setSelectedPoints}
-              onPersistentPointsChange={setPersistentPoints}
+              persistentPoints={persistentPoints}
+              interactivePoints={selection.interactive}
+              pendingPoints={selection.pending}
+              onPreselectedChange={(points) => dispatch({ type: 'SET_PRESELECTED', points })}
+              onBucketChange={(points) => dispatch({ type: 'SET_BUCKET', points })}
+              onInteractiveChange={(points) => dispatch({ type: 'SET_INTERACTIVE', points })}
+              onSetPending={(points) => dispatch({ type: 'SET_PENDING', points })}
+              onApplyPending={() => dispatch({ type: 'APPLY_PENDING' })}
               onPreselectedMatchChange={(matched, total) => setPreselectedMatch({ matched, total })}
               onLegendItemsChange={setLegendItems}
               highlightPoints={[]}

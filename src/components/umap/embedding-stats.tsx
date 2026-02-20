@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import * as vg from '@uwdata/vgplot';
 import { useMosaicCoordinator } from '../../contexts/mosaic-coordinator-context';
 import type { UmapPoint, LegendItem } from '../../lib/umap-utils';
 
@@ -15,10 +16,11 @@ export function EmbeddingStats({ selectedPoints, colorGrouping, legendItems, fil
 
   useEffect(() => {
     if (!coordinator || legendItems.length === 0) return;
+    const q = vg.Query.from('data')
+      .select({ category: vg.column(colorGrouping), count: vg.sql`COUNT(*)` })
+      .groupby(vg.column(colorGrouping));
     coordinator
-      .query(`SELECT ${colorGrouping} as category, COUNT(*) as count FROM data GROUP BY ${colorGrouping}`, {
-        type: 'json',
-      })
+      .query(q, { type: 'json' })
       .then((result: any) => {
         const map = new Map<number, number>();
         for (const row of result) map.set(row.category, Number(row.count));

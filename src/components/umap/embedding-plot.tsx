@@ -3,7 +3,8 @@ import { useEffect, useState, useRef, useMemo, forwardRef, useImperativeHandle }
 import * as vg from '@uwdata/vgplot';
 
 import { tableau20 } from '../../lib/tableau20';
-import { isPointInPolygon, type UmapPoint } from '../../lib/umap-utils';
+import { isIn } from '@uwdata/mosaic-sql';
+import { umapSelectParams, pointInPolygonPredicate, boundingRect, type UmapPoint } from '../../lib/umap-utils';
 import { AtlasTooltip } from './atlas-tooltip';
 import { useMosaicCoordinator } from '../../contexts/mosaic-coordinator-context';
 import { useTab } from '../../contexts/tab-context';
@@ -20,9 +21,16 @@ type Props = {
   onLegendItemsChange?: (items: any[]) => void;
   filterSelection?: any;
   onFilterSelectionChange?: (selection: any) => void;
-  selectedPoints?: UmapPoint[];
-  onSelectedPointsChange?: (points: UmapPoint[]) => void;
-  onPersistentPointsChange?: (points: UmapPoint[]) => void;
+  // Selection state from parent reducer
+  persistentPoints: UmapPoint[];
+  interactivePoints: UmapPoint[];
+  pendingPoints: UmapPoint[] | null;
+  // Selection callbacks to parent reducer
+  onPreselectedChange: (points: UmapPoint[]) => void;
+  onBucketChange: (points: UmapPoint[]) => void;
+  onInteractiveChange: (points: UmapPoint[]) => void;
+  onSetPending: (points: UmapPoint[] | null) => void;
+  onApplyPending: () => void;
   onPreselectedMatchChange?: (matched: number, total: number) => void;
   highlightPoints?: UmapPoint[];
   className?: string;
@@ -50,9 +58,14 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
     onLegendItemsChange,
     filterSelection,
     onFilterSelectionChange,
-    selectedPoints,
-    onSelectedPointsChange,
-    onPersistentPointsChange,
+    persistentPoints,
+    interactivePoints,
+    pendingPoints,
+    onPreselectedChange,
+    onBucketChange,
+    onInteractiveChange,
+    onSetPending,
+    onApplyPending,
     onPreselectedMatchChange,
     highlightPoints,
     className,
@@ -64,54 +77,32 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Persistent points in state so they participate in visualSelection recomputation
-  const [persistentPoints, setPersistentPoints] = useState<UmapPoint[]>([]);
-  const persistentRef = useRef<{ preselected: UmapPoint[]; bucket: UmapPoint[] }>({ preselected: [], bucket: [] });
-
-  const updatePersistent = (key: 'preselected' | 'bucket', points: UmapPoint[]) => {
-    persistentRef.current[key] = points;
-    const seen = new Set<string>();
-    const merged: UmapPoint[] = [];
-    for (const p of persistentRef.current.preselected) {
-      if (!seen.has(p.identifier)) { seen.add(p.identifier); merged.push(p); }
-    }
-    for (const p of persistentRef.current.bucket) {
-      if (!seen.has(p.identifier)) { seen.add(p.identifier); merged.push(p); }
-    }
-    setPersistentPoints(merged);
-    onPersistentPointsChange?.(merged);
-  };
-
   const [containerWidth, setContainerWidth] = useState(900);
   const [containerHeight, setContainerHeight] = useState(500);
   const [isReady, setIsReady] = useState(false);
   const [tooltipPoint, setTooltipPoint] = useState<any>(null);
   const [viewportState, setViewportState] = useState<any>(null);
   const [dataVersion, setDataVersion] = useState(0);
-  const [pendingSelection, setPendingSelection] = useState<UmapPoint[] | null>(null);
   const [rangeSelectionValue, setRangeSelectionValue] = useState<any>(undefined);
 
   const filter = useMemo(() => vg.Selection.intersect(), []);
   const legendFilterSource = useMemo(() => ({}), []);
 
-  // visualSelection: always includes persistent points so they never disappear
+  // visualSelection: merge persistent + interactive + highlight (single dedup pass)
   const visualSelection = useMemo(() => {
     const seen = new Set<string>();
     const merged: UmapPoint[] = [];
-    // Persistent points first (always rendered)
     for (const p of persistentPoints) {
       if (!seen.has(p.identifier)) { seen.add(p.identifier); merged.push(p); }
     }
-    // Then interactive selection
-    for (const p of (selectedPoints || [])) {
+    for (const p of interactivePoints) {
       if (!seen.has(p.identifier)) { seen.add(p.identifier); merged.push(p); }
     }
-    // Then highlight points
     for (const p of (highlightPoints || [])) {
       if (!seen.has(p.identifier)) { seen.add(p.identifier); merged.push(p); }
     }
     return merged;
-  }, [selectedPoints, highlightPoints, persistentPoints]);
+  }, [persistentPoints, interactivePoints, highlightPoints]);
 
   const centerOnPoint = (point: any, scale = 1, tooltip = true) => {
     if (tooltip) {
@@ -123,13 +114,10 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
 
   const queryPoints = async (ids: string[]): Promise<UmapPoint[]> => {
     if (ids.length === 0) return [];
-    const result: any = await coordinator.query(
-      `SELECT x, y, cell_line_category, assay_category, ${colorGrouping} as category,
-        name as text, id as identifier,
-        {'Description': description, 'Assay': assay, 'Cell Line': cell_line} as fields
-       FROM data WHERE id IN ('${ids.join("','")}')`,
-      { type: 'json' },
-    );
+    const q = vg.Query.from('data')
+      .select(umapSelectParams(colorGrouping))
+      .where(isIn(vg.column('id'), ids.map((id) => vg.literal(id))));
+    const result: any = await coordinator.query(q, { type: 'json' });
     return result || [];
   };
 
@@ -138,9 +126,12 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
     const points = await queryPoints([bedId]);
     if (points.length > 0) {
       centerOnPoint(points[0], scale, true);
-      if (reselect) onSelectedPointsChange?.([points[0]]);
+      if (reselect) onInteractiveChange([points[0]]);
     }
   };
+
+  // Post-remount action (e.g., center on custom point after file upload)
+  const postRemountRef = useRef<(() => void) | null>(null);
 
   const handleFileUpload = async () => {
     try {
@@ -149,19 +140,15 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
         coordinator.clear();
         const updatedLegend = await fetchLegendItems(coordinator);
         onLegendItemsChange?.(updatedLegend);
-        // After remount, center on custom point and add to selection (non-sticky)
-        setDataVersion((v) => v + 1);
-        setTimeout(async () => {
+        // Schedule post-remount action, then trigger remount
+        postRemountRef.current = async () => {
           const points = await queryPoints(['custom_point']);
           if (points.length > 0) {
             centerOnPoint(points[0], 0.3, true);
-            // Merge with preselected points
-            const merged = [...persistentPoints];
-            const seen = new Set(merged.map((p) => p.identifier));
-            if (!seen.has(points[0].identifier)) merged.push(points[0]);
-            onSelectedPointsChange?.(merged);
+            onInteractiveChange([points[0]]);
           }
-        }, 200);
+        };
+        setDataVersion((v) => v + 1);
       }
     } catch (error) {
       console.error('Error getting UMAP coordinates:', error);
@@ -174,8 +161,8 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
       coordinator.clear();
       const updatedLegend = await fetchLegendItems(coordinator);
       onLegendItemsChange?.(updatedLegend);
-      const newSelection = selectedPoints?.filter((p) => p.identifier !== 'custom_point');
-      setPendingSelection(newSelection || []);
+      const newSelection = interactivePoints.filter((p) => p.identifier !== 'custom_point');
+      onSetPending(newSelection);
       setDataVersion((v) => v + 1);
     } catch (error) {
       console.error('Error removing file:', error);
@@ -187,34 +174,32 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
 
   const fetchLegendItems = async (coord: any) => {
     const colName = colorGrouping.replace('_category', '');
-    const query = `SELECT
-      CASE
-        WHEN ${colorGrouping} = ${UPLOADED_CATEGORY} THEN 'Uploaded BED'
-        WHEN ${colorGrouping} = ${OTHER_CATEGORY} THEN 'Other'
-        ELSE MIN(${colName})
-      END as name,
-      ${colorGrouping} as category
-      FROM data
-      GROUP BY ${colorGrouping}
-      ORDER BY ${colorGrouping}`;
-    return (await coord.query(query, { type: 'json' })) as any[];
+    const q = vg.Query.from('data')
+      .select({
+        name: vg.sql`CASE
+          WHEN ${vg.column(colorGrouping)} = ${UPLOADED_CATEGORY} THEN 'Uploaded BED'
+          WHEN ${vg.column(colorGrouping)} = ${OTHER_CATEGORY} THEN 'Other'
+          ELSE MIN(${vg.column(colName)})
+        END`,
+        category: vg.column(colorGrouping),
+      })
+      .groupby(vg.column(colorGrouping))
+      .orderby(vg.column(colorGrouping));
+    return (await coord.query(q, { type: 'json' })) as any[];
   };
 
   const queryByCategory = async (category: string): Promise<UmapPoint[]> => {
-    const result: any = await coordinator.query(
-      `SELECT x, y, cell_line_category, assay_category,
-        name as text, id as identifier,
-        {'Description': description, 'Assay': assay, 'Cell Line': cell_line} as fields
-       FROM data WHERE ${colorGrouping} = '${category}'`,
-      { type: 'json' },
-    );
+    const q = vg.Query.from('data')
+      .select(umapSelectParams(colorGrouping))
+      .where(vg.eq(vg.column(colorGrouping), vg.literal(Number(category))));
+    const result: any = await coordinator.query(q, { type: 'json' });
     return result || [];
   };
 
   const handleLegendClick = (item: any) => {
     setRangeSelectionValue(null);
     // Clear interactive selection — persistent points stay via visualSelection
-    onSelectedPointsChange?.([]);
+    onInteractiveChange([]);
     if (filterSelection?.category === item.category) {
       onFilterSelectionChange?.(null);
       filter.update({ source: legendFilterSource, value: null, predicate: null });
@@ -230,78 +215,60 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
 
   const handlePointSelection = (dataPoints: any[] | null) => {
     if (!dataPoints || dataPoints.length === 0) {
-      // Empty click — clear interactive selection (persistent points stay via visualSelection)
-      onSelectedPointsChange?.([]);
+      onInteractiveChange([]);
       return;
     }
-    // Set interactive selection — persistent points are merged in visualSelection
-    onSelectedPointsChange?.(dataPoints.filter((p) => p != null));
+    onInteractiveChange(dataPoints.filter((p) => p != null));
   };
 
   const handleRangeSelection = async (coord: any, value: any) => {
     if (!value) return;
 
     let result: any[] | undefined;
-    const filterClause = filterSelection
-      ? ` AND ${colorGrouping} = '${filterSelection.category}'`
-      : '';
+    const filterPredicates = filterSelection
+      ? [vg.eq(vg.column(colorGrouping), vg.literal(filterSelection.category))]
+      : [];
 
     if (typeof value === 'object' && 'xMin' in value) {
-      result = (await coord.query(
-        `SELECT x, y, cell_line_category, assay_category, ${colorGrouping} as category,
-          name as text, id as identifier,
-          {'Description': description, 'Assay': assay, 'Cell Line': cell_line} as fields
-         FROM data
-         WHERE x >= ${value.xMin} AND x <= ${value.xMax} AND y >= ${value.yMin} AND y <= ${value.yMax}${filterClause}`,
-        { type: 'json' },
-      )) as any[];
-    } else if (Array.isArray(value) && value.length > 0) {
-      const xCoords = value.map((p: any) => p.x);
-      const yCoords = value.map((p: any) => p.y);
-      const xMin = Math.min(...xCoords);
-      const xMax = Math.max(...xCoords);
-      const yMin = Math.min(...yCoords);
-      const yMax = Math.max(...yCoords);
-
-      const candidates: any = await coord.query(
-        `SELECT x, y, id as identifier FROM data
-         WHERE x >= ${xMin} AND x <= ${xMax} AND y >= ${yMin} AND y <= ${yMax}${filterClause}`,
-        { type: 'json' },
+      // Rectangle selection
+      const predicate = vg.and(
+        vg.isBetween(vg.column('x'), [value.xMin, value.xMax]),
+        vg.isBetween(vg.column('y'), [value.yMin, value.yMax]),
+        ...filterPredicates,
       );
-      const filteredIds = candidates
-        .filter((point: any) => isPointInPolygon(point, value))
-        .map((p: any) => `'${p.identifier}'`)
-        .join(',');
-
-      if (filteredIds) {
-        result = (await coord.query(
-          `SELECT x, y, cell_line_category, assay_category, ${colorGrouping} as category,
-            name as text, id as identifier,
-            {'Description': description, 'Assay': assay, 'Cell Line': cell_line} as fields
-           FROM data WHERE id IN (${filteredIds})${filterClause}`,
-          { type: 'json' },
-        )) as any[];
-      } else {
-        result = [];
-      }
+      const q = vg.Query.from('data').select(umapSelectParams(colorGrouping)).where(predicate);
+      result = (await coord.query(q, { type: 'json' })) as any[];
+    } else if (Array.isArray(value) && value.length >= 3) {
+      // Polygon/lasso selection — single SQL query with point-in-polygon predicate
+      const bounds = boundingRect(value);
+      const predicate = vg.and(
+        vg.isBetween(vg.column('x'), [bounds.xMin, bounds.xMax]),
+        vg.isBetween(vg.column('y'), [bounds.yMin, bounds.yMax]),
+        pointInPolygonPredicate(vg.column('x'), vg.column('y'), value),
+        ...filterPredicates,
+      );
+      const q = vg.Query.from('data').select(umapSelectParams(colorGrouping)).where(predicate);
+      result = (await coord.query(q, { type: 'json' })) as any[];
     }
 
-    // Set interactive selection — persistent points are merged in visualSelection
-    onSelectedPointsChange?.(result || []);
+    onInteractiveChange(result || []);
   };
 
-  // Apply pending selection after dataVersion change
+  // After dataVersion change (remount): apply pending selection and post-remount action
+  // Uses setTimeout to wait for the remounted EmbeddingViewMosaic to initialize
   useEffect(() => {
-    if (pendingSelection !== null) {
-      setTimeout(() => {
-        onSelectedPointsChange?.(pendingSelection);
-        setPendingSelection(null);
-      }, 100);
+    if (pendingPoints !== null) {
+      setTimeout(() => onApplyPending(), 200);
     }
-  }, [dataVersion, pendingSelection]);
+    if (postRemountRef.current) {
+      const fn = postRemountRef.current;
+      postRemountRef.current = null;
+      setTimeout(() => fn(), 200);
+    }
+  }, [dataVersion]);
 
   useEffect(() => {
-    if (isReady && customCoordinates && !pendingSelection) {
+    if (isReady && customCoordinates && pendingPoints === null) {
       handleFileUpload();
     }
   }, [customCoordinates, isReady]);
@@ -330,22 +297,20 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
   // Preselection: URL param IDs only — sticky, center if single
   useEffect(() => {
     if (!isReady || !preselectedIds || preselectedIds.length === 0) {
-      updatePersistent('preselected', []);
+      onPreselectedChange([]);
       onPreselectedMatchChange?.(0, 0);
       return;
     }
     let cancelled = false;
     const run = async () => {
-      await new Promise((r) => setTimeout(r, 50));
-      if (cancelled) return;
       const points = await queryPoints(preselectedIds);
       if (cancelled) return;
       onPreselectedMatchChange?.(points?.length ?? 0, preselectedIds.length);
       if (!points || points.length === 0) {
-        updatePersistent('preselected', []);
+        onPreselectedChange([]);
         return;
       }
-      updatePersistent('preselected', points);
+      onPreselectedChange(points);
       if (points.length === 1) {
         centerOnPoint(points[0], 0.1, true);
       }
@@ -362,17 +327,15 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
     const bucketOnlyIds = (bedIds || []).filter((id) => !preselectedSet.has(id));
 
     if (bucketOnlyIds.length === 0) {
-      updatePersistent('bucket', []);
+      onBucketChange([]);
       return;
     }
 
     let cancelled = false;
     const run = async () => {
-      await new Promise((r) => setTimeout(r, 100));
-      if (cancelled) return;
       const bucketPoints = await queryPoints(bucketOnlyIds);
       if (cancelled) return;
-      updatePersistent('bucket', bucketPoints || []);
+      onBucketChange(bucketPoints || []);
     };
     run();
     return () => { cancelled = true; };
@@ -401,7 +364,7 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
       queryByCategory,
       clearRangeSelection: () => setRangeSelectionValue(null),
     }),
-    [filterSelection, colorGrouping, selectedPoints],
+    [filterSelection, colorGrouping, interactivePoints],
   );
 
   if (webglStatus.error) {
