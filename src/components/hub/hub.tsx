@@ -6,6 +6,7 @@ import { useStats } from '../../queries/use-stats';
 import { FileSearchGraphic } from '../graphics/file-search-graphic';
 import { BedAnalyzerGraphic } from '../graphics/bed-analyzer-graphic';
 import { CodeSnippetGraphic } from '../graphics/code-snippet-graphic';
+import { UmapPreviewGraphic } from '../graphics/umap-preview-graphic';
 
 function formatBytes(bytes: number): string {
   if (bytes >= 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
@@ -85,16 +86,19 @@ function SearchInput({ onFileSelect }: { onFileSelect: (f: File) => void }) {
           <Upload size={16} className="text-base-content/30 shrink-0 mx-2" />
           <div className="flex flex-col items-start">
             <span className="text-sm font-medium text-base-content/70">Upload BED file</span>
-            <span className="text-[11px] text-base-content/45">.bed, .bigbed, .gz</span>
+            <span className="text-[11px] text-base-content/45">.bed, .bed.gz</span>
           </div>
           <input
             ref={fileInputRef}
             type="file"
-            accept=".bed,.bigbed,.bb,.gz,application/gzip,application/x-gzip"
+            accept=".bed,.gz"
             className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0];
-              if (f) onFileSelect(f);
+              if (!f) return;
+              const name = f.name.toLowerCase();
+              if (!name.endsWith('.bed') && !name.endsWith('.bed.gz')) return;
+              onFileSelect(f);
             }}
           />
         </div>
@@ -140,6 +144,7 @@ const aboutFeatures: { title: string; description: string; graphic?: ReactNode }
     title: 'Visualize BED file similarity',
     description:
       'Explore BED file similarity using an interactive UMAP of hg38-based embeddings. Compare existing BEDbase data and upload your own BED file to see how it relates to other genomic region sets.',
+    graphic: <UmapPreviewGraphic />,
   },
 ];
 
@@ -160,7 +165,7 @@ export function Hub() {
       <div className="flex flex-col items-center justify-center text-center px-4 pt-28 pb-40">
         <h1 className="font-thin text-primary text-7xl mb-5">BEDbase</h1>
         <p className="text-base font-normal text-base-content/50 max-w-2xl mb-16">
-          The open access platform for aggregating, analyzing, and serving genomic region data.
+          The open access platform for accessing, aggregating, and analyzing genomic region data.
         </p>
         <SearchInput onFileSelect={handleFileSelect} />
         <div className="flex items-center gap-4 mt-20 text-sm text-base-content/50">

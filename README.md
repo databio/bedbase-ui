@@ -1,6 +1,6 @@
 # BEDbase UI
 
-Web interface for [BEDbase](https://bedbase.org) — the open access platform for aggregating, analyzing, and serving genomic region data.
+Web interface for [BEDbase](https://bedbase.org) — the open access platform for accessing, aggregating, and analyzing genomic region data.
 
 ## Stack
 

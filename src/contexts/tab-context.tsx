@@ -33,7 +33,10 @@ function pathToActiveTab(pathname: string, search: string): ActiveTab | null {
     const match = pathname.match(/^\/analysis\/(.+)/);
     return { id: 'analysis', param: match?.[1] };
   }
-  if (pathname.startsWith('/umap')) return { id: 'umap' };
+  if (pathname.startsWith('/umap')) {
+    const bed = new URLSearchParams(search).get('bed');
+    return { id: 'umap', param: bed || undefined };
+  }
   if (pathname.startsWith('/collections')) {
     const match = pathname.match(/^\/collections\/(.+)/);
     return { id: 'collections', param: match?.[1] };
@@ -63,6 +66,8 @@ function tabToPath(tab: ActiveTab): string {
   if (tab.id === 'search') {
     return tab.param === 'file' ? '/search/file' : '/search';
   }
+  // UMAP bed ID goes in ?bed= query param, not in the path
+  if (tab.id === 'umap') return '/umap';
   const base = tabBasePaths[tab.id];
   return tab.param ? `${base}/${tab.param}` : base;
 }
@@ -75,6 +80,11 @@ function buildUrl(primary: ActiveTab, split?: ActiveTab | null): string {
   // Search text queries go in ?q=
   if (primary.id === 'search' && primary.param && primary.param !== 'file') {
     params.set('q', primary.param);
+  }
+
+  // UMAP bed ID goes in ?bed=
+  if (primary.id === 'umap' && primary.param) {
+    params.set('bed', primary.param);
   }
 
   if (split) {
@@ -128,10 +138,13 @@ export function TabProvider({ children }: { children: ReactNode }) {
   }, [activeTabs]);
 
   const openTab = (id: TabId, param?: string) => {
+    window.scrollTo(0, 0);
     const existing = activeTabs.find((t) => t.id === id);
 
-    // No explicit param + tab not currently active → restore last known param
-    const resolvedParam = param ?? (existing ? undefined : lastParams.current[id]);
+    // Empty string means "explicitly no param" — clear any saved state
+    // undefined means "no preference" → restore last known param if tab not active
+    const resolvedParam = param === '' ? undefined : (param ?? (existing ? undefined : lastParams.current[id]));
+    if (param === '') delete lastParams.current[id];
 
     const target: ActiveTab = { id, param: resolvedParam };
 

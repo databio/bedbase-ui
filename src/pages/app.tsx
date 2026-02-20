@@ -3,6 +3,8 @@ import { TabProvider } from '../contexts/tab-context';
 import { FileProvider } from '../contexts/file-context';
 import { ApiProvider } from '../contexts/api-context';
 import { CartProvider } from '../contexts/cart-context';
+import { MosaicCoordinatorProvider } from '../contexts/mosaic-coordinator-context';
+import { BucketProvider } from '../contexts/bucket-context';
 import { AppLayout } from '../components/layout/app-layout';
 
 const queryClient = new QueryClient({
@@ -20,9 +22,13 @@ export function App() {
       <QueryClientProvider client={queryClient}>
         <CartProvider>
           <FileProvider>
-            <TabProvider>
-              <AppLayout />
-            </TabProvider>
+            <MosaicCoordinatorProvider>
+              <BucketProvider>
+                <TabProvider>
+                  <AppLayout />
+                </TabProvider>
+              </BucketProvider>
+            </MosaicCoordinatorProvider>
           </FileProvider>
         </CartProvider>
       </QueryClientProvider>

@@ -89,16 +89,19 @@ export function SearchEmpty() {
             <Upload size={16} className="text-base-content/30 shrink-0 mx-2" />
             <div className="flex flex-col items-start">
               <span className="text-sm font-medium text-base-content/70">Upload BED file to search by similarity</span>
-              <span className="text-[11px] text-base-content/45">.bed, .bigbed, .gz</span>
+              <span className="text-[11px] text-base-content/45">.bed, .bed.gz</span>
             </div>
             <input
               ref={fileInputRef}
               type="file"
-              accept=".bed,.bigbed,.bb,.gz,application/gzip,application/x-gzip"
+              accept=".bed,.gz"
               className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0];
-                if (f) handleFileSelect(f);
+                if (!f) return;
+                const name = f.name.toLowerCase();
+                if (!name.endsWith('.bed') && !name.endsWith('.bed.gz')) return;
+                handleFileSelect(f);
               }}
             />
           </div>

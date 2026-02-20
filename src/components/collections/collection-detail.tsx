@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { ChevronLeft, Loader2, AlertCircle, Search, Plus, Check, Copy, CheckCheck, ExternalLink, Terminal, Download, X } from 'lucide-react';
+import { ChevronLeft, Loader2, AlertCircle, Search, Plus, Check, Copy, CheckCheck, ExternalLink, Terminal, Download, X, ScatterChart } from 'lucide-react';
 import { useTab } from '../../contexts/tab-context';
 import { useCart } from '../../contexts/cart-context';
+import { useBucket } from '../../contexts/bucket-context';
 import { useBedsetMetadata } from '../../queries/use-bedset-metadata';
 import { useBedsetBedfiles } from '../../queries/use-bedset-bedfiles';
 import { API_BASE, fileModelToPlotSlot } from '../../lib/file-model-utils';
@@ -92,6 +93,7 @@ function KvTable({ title, rows }: { title: string; rows: { label: string; value:
 export function CollectionDetail({ bedsetId }: { bedsetId: string }) {
   const { openTab } = useTab();
   const { addToCart, isInCart } = useCart();
+  const { createBucket } = useBucket();
   const [showCode, setShowCode] = useState(false);
   const { data: meta, isLoading: metaLoading, error: metaError, refetch } = useBedsetMetadata(bedsetId);
   const { data: bedfiles } = useBedsetBedfiles(bedsetId);
@@ -231,6 +233,18 @@ export function CollectionDetail({ bedsetId }: { bedsetId: string }) {
                   <ExternalLink size={13} />
                   API
                 </a>
+                {bedfileList.length > 0 && (
+                  <button
+                    onClick={() => {
+                      createBucket(`Bedset: ${meta.name}`, bedfileList.map((b) => b.id));
+                      openTab('umap');
+                    }}
+                    className={linkClass}
+                  >
+                    <ScatterChart size={13} />
+                    View on UMAP
+                  </button>
+                )}
               </div>
               {(meta.submission_date || meta.last_update_date) && (
                 <p className="text-[11px] text-base-content/30">

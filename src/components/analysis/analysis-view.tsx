@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Loader2, FileText, AlertCircle, Search, Copy, CheckCheck, X, ChevronLeft, Dna } from 'lucide-react';
+import { Loader2, FileText, AlertCircle, Search, Copy, CheckCheck, X, ChevronLeft, Dna, ScatterChart } from 'lucide-react';
 import { useFile } from '../../contexts/file-context';
 import { useTab } from '../../contexts/tab-context';
 import { fromApiResponse, type BedAnalysis } from '../../lib/bed-analysis';
@@ -88,9 +88,16 @@ function LocalHeader({ analysis }: { analysis: BedAnalysis }) {
           </p>
         </div>
         <button
+          onClick={() => openTab('umap', '')}
+          title="View on UMAP"
+          className="p-1 rounded hover:bg-base-300 transition-colors cursor-pointer ml-auto"
+        >
+          <ScatterChart size={16} className="text-base-content/40" />
+        </button>
+        <button
           onClick={() => { setBedFile(null); openTab('analysis'); }}
           title="Clear file"
-          className="p-1 rounded hover:bg-base-300 transition-colors cursor-pointer ml-auto"
+          className="p-1 rounded hover:bg-base-300 transition-colors cursor-pointer"
         >
           <X size={16} className="text-base-content/40" />
         </button>
@@ -526,6 +533,7 @@ function AnalysisPanels({ analysis }: { analysis: BedAnalysis }) {
       )}
 
       {isDatabase && analysis.id && <SimilarFiles bedId={analysis.id} />}
+
 
       {analysis.bedsets && analysis.bedsets.length > 0 && (
         <BedsetMemberships bedsets={analysis.bedsets} />

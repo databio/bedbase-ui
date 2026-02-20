@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Search, AlertCircle, RefreshCw } from 'lucide-react';
+import { Search, AlertCircle, RefreshCw, ScatterChart, Trash2, Check, X, GripVertical } from 'lucide-react';
 import { useTab } from '../../contexts/tab-context';
+import { useBucket, type SelectionBucket } from '../../contexts/bucket-context';
 import { useBedsetList } from '../../queries/use-bedset-list';
 
 const LIMIT_OPTIONS = [10, 20, 50] as const;
@@ -62,6 +63,183 @@ function Pagination({
   );
 }
 
+// --- Buckets section ---
+
+function BucketsTable() {
+  const { buckets, toggleBucket, renameBucket, deleteBucket, reorderBuckets, clearBuckets } = useBucket();
+  const { openTab } = useTab();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+
+  const handleStartEdit = (bucket: SelectionBucket) => {
+    setEditingId(bucket.id);
+    setEditValue(bucket.name);
+  };
+
+  const handleConfirmEdit = () => {
+    if (editingId && editValue.trim()) renameBucket(editingId, editValue.trim());
+    setEditingId(null);
+  };
+
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    e.dataTransfer.setData('text/plain', id);
+    e.dataTransfer.effectAllowed = 'move';
+    setDragId(id);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    const sourceId = e.dataTransfer.getData('text/plain');
+    if (sourceId === targetId) return;
+    const ids = buckets.map((b) => b.id);
+    const from = ids.indexOf(sourceId);
+    const to = ids.indexOf(targetId);
+    if (from < 0 || to < 0) return;
+    ids.splice(from, 1);
+    ids.splice(to, 0, sourceId);
+    reorderBuckets(ids);
+    setDragId(null);
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-base-content/50 uppercase tracking-wide">
+          My Buckets
+        </h3>
+        {buckets.length > 0 && (
+          showClearConfirm ? (
+            <span className="flex items-center gap-1 text-xs">
+              <span className="text-base-content/50">Clear all?</span>
+              <button className="btn btn-xs btn-error" onClick={() => { clearBuckets(); setShowClearConfirm(false); }}>Yes</button>
+              <button className="btn btn-xs btn-ghost" onClick={() => setShowClearConfirm(false)}>No</button>
+            </span>
+          ) : (
+            <button
+              onClick={() => setShowClearConfirm(true)}
+              className="btn btn-xs btn-ghost text-error/60 hover:text-error"
+            >
+              Clear all
+            </button>
+          )
+        )}
+      </div>
+      {buckets.length === 0 ? (
+        <div className="flex flex-col items-center py-6 gap-2">
+          <ScatterChart size={24} className="text-base-content/20" />
+          <p className="text-xs text-base-content/40 text-center max-w-xs">
+            No buckets yet. Buckets are created when you view search results or collection members on the UMAP.
+          </p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto border border-base-300 rounded-lg bg-white">
+          <table className="table table-sm text-xs w-full">
+            <thead className="text-base-content">
+              <tr>
+                <th className="w-6" />
+                <th className="w-8">On</th>
+                <th>Name</th>
+                <th className="text-right">Files</th>
+                <th>Created</th>
+                <th className="w-20" />
+              </tr>
+            </thead>
+            <tbody>
+              {buckets.map((bucket) => (
+                <tr
+                  key={bucket.id}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, bucket.id)}
+                  onDragEnd={() => setDragId(null)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => handleDrop(e, bucket.id)}
+                  className={`transition-colors ${dragId === bucket.id ? 'opacity-50' : 'hover:bg-base-200'}`}
+                >
+                  <td className="cursor-grab active:cursor-grabbing">
+                    <GripVertical size={12} className="text-base-content/30" />
+                  </td>
+                  <td>
+                    <input
+                      type="checkbox"
+                      className="checkbox checkbox-xs"
+                      checked={bucket.enabled}
+                      onChange={() => toggleBucket(bucket.id)}
+                    />
+                  </td>
+                  <td>
+                    {editingId === bucket.id ? (
+                      <span className="flex items-center gap-1">
+                        <input
+                          className="input input-xs w-32 text-xs"
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          onBlur={() => setEditingId(null)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleConfirmEdit();
+                            if (e.key === 'Escape') setEditingId(null);
+                          }}
+                          autoFocus
+                        />
+                        <button
+                          className="text-success cursor-pointer"
+                          onMouseDown={(e) => { e.preventDefault(); handleConfirmEdit(); }}
+                        >
+                          <Check size={12} />
+                        </button>
+                        <button
+                          className="text-error cursor-pointer"
+                          onMouseDown={(e) => { e.preventDefault(); setEditingId(null); }}
+                        >
+                          <X size={12} />
+                        </button>
+                      </span>
+                    ) : (
+                      <span
+                        className="cursor-pointer hover:underline"
+                        onClick={() => handleStartEdit(bucket)}
+                      >
+                        {bucket.name}
+                      </span>
+                    )}
+                  </td>
+                  <td className="text-right">
+                    <span className="badge badge-sm">{bucket.bedIds.length}</span>
+                  </td>
+                  <td className="text-base-content/40">
+                    {new Date(bucket.createdAt).toLocaleDateString()}
+                  </td>
+                  <td>
+                    <span className="flex items-center gap-1">
+                      <button
+                        onClick={() => openTab('umap')}
+                        className="btn btn-xs btn-ghost p-0.5"
+                        title="View on UMAP"
+                      >
+                        <ScatterChart size={11} />
+                      </button>
+                      <button
+                        onClick={() => deleteBucket(bucket.id)}
+                        className="text-error/60 hover:text-error cursor-pointer p-0.5"
+                        title="Delete bucket"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// --- Main collections list ---
+
 export function CollectionsList() {
   const [query, setQuery] = useState('');
   const [submitted, setSubmitted] = useState('');
@@ -82,10 +260,20 @@ export function CollectionsList() {
 
   return (
     <div className="flex flex-col h-full overflow-auto px-4 @md:px-6">
-      <div className="flex flex-col items-center px-4 pt-12 pb-8">
-        <h2 className="text-2xl font-bold text-base-content mb-2">BEDsets</h2>
-        <p className="text-base-content/50 text-sm max-w-md text-center">
-          BEDsets are curated collections of BED files grouped by experiment, cell type, or other criteria. Browse or search to explore.
+      {/* Buckets section */}
+      <div className="pt-8 pb-6">
+        <BucketsTable />
+      </div>
+
+      <div className="border-b border-base-300 mb-6" />
+
+      {/* BEDsets section */}
+      <div className="space-y-3 pb-6">
+        <h3 className="text-sm font-semibold text-base-content/50 uppercase tracking-wide">
+          BEDsets
+        </h3>
+        <p className="text-base-content/50 text-sm">
+          Curated collections of BED files grouped by experiment, cell type, or other criteria.
         </p>
       </div>
       <div className="flex flex-col gap-2 pb-4">

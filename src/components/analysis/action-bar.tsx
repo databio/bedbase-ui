@@ -1,5 +1,7 @@
-import { Download, Plus, Check, ExternalLink } from 'lucide-react';
+import { Download, Plus, Check, ExternalLink, ScatterChart } from 'lucide-react';
 import { useCart } from '../../contexts/cart-context';
+import { useTab } from '../../contexts/tab-context';
+import { useMosaicCoordinator } from '../../contexts/mosaic-coordinator-context';
 import type { BedAnalysis } from '../../lib/bed-analysis';
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? 'https://api.bedbase.org/v1';
@@ -8,9 +10,12 @@ const linkClass = 'inline-flex items-center gap-1.5 text-xs font-medium text-bas
 
 export function ActionBar({ analysis }: { analysis: BedAnalysis }) {
   const { addToCart, removeFromCart, isInCart } = useCart();
+  const { openTab } = useTab();
+  const { umapBedIds } = useMosaicCoordinator();
 
   const inCart = analysis.id ? isInCart(analysis.id) : false;
   const { downloadUrls } = analysis;
+  const isInUmap = analysis.id ? umapBedIds.has(analysis.id) : false;
 
   const handleCart = () => {
     if (!analysis.id) return;
@@ -61,6 +66,15 @@ export function ActionBar({ analysis }: { analysis: BedAnalysis }) {
             <ExternalLink size={13} />
             API
           </a>
+          {isInUmap && (
+            <button
+              onClick={() => openTab('umap', analysis.id)}
+              className={linkClass}
+            >
+              <ScatterChart size={13} />
+              UMAP
+            </button>
+          )}
         </>
       )}
     </div>

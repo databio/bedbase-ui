@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Search, FileText, AlertCircle, RefreshCw, X, ChevronLeft } from 'lucide-react';
+import { Search, FileText, AlertCircle, RefreshCw, X, ChevronLeft, ScatterChart } from 'lucide-react';
 import { useTab } from '../../contexts/tab-context';
 import { useFile } from '../../contexts/file-context';
+import { useBucket } from '../../contexts/bucket-context';
 import { useTextSearch } from '../../queries/use-text-search';
 import { useBedSearch } from '../../queries/use-bed-search';
 import { useGenomes } from '../../queries/use-genomes';
@@ -169,6 +170,7 @@ function SearchResults({
   offset,
   limit,
   onOffsetChange,
+  bucketLabel,
 }: {
   header: React.ReactNode;
   filters?: React.ReactNode;
@@ -179,19 +181,36 @@ function SearchResults({
   offset: number;
   limit: number;
   onOffsetChange: (offset: number) => void;
+  bucketLabel?: string;
 }) {
   const { openTab } = useTab();
+  const { createBucket } = useBucket();
+
+  const handleViewOnUmap = () => {
+    if (!data?.results) return;
+    const ids = data.results.map((r) => r.metadata?.id).filter(Boolean) as string[];
+    if (ids.length === 0) return;
+    createBucket(bucketLabel || 'Search results', ids);
+    openTab('umap');
+  };
 
   return (
     <div className="flex flex-col h-full overflow-auto p-4 @md:p-6">
       <div className="flex flex-col gap-2 pb-4">
-        <button
-          onClick={() => openTab('search')}
-          className="inline-flex items-center gap-0.5 text-xs text-base-content/40 hover:text-base-content/60 transition-colors cursor-pointer w-fit"
-        >
-          <ChevronLeft size={14} />
-          Search
-        </button>
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => openTab('search')}
+            className="inline-flex items-center gap-0.5 text-xs text-base-content/40 hover:text-base-content/60 transition-colors cursor-pointer w-fit"
+          >
+            <ChevronLeft size={14} />
+            Search
+          </button>
+          {data?.results && data.results.length > 0 && (
+            <button onClick={handleViewOnUmap} className="btn btn-xs btn-ghost gap-1">
+              <ScatterChart size={12} /> View on UMAP
+            </button>
+          )}
+        </div>
         {header}
         {filters}
       </div>
@@ -302,6 +321,7 @@ function TextSearchResults({ query }: { query: string }) {
       offset={offset}
       limit={limit}
       onOffsetChange={setOffset}
+      bucketLabel={`Search: ${query}`}
     />
   );
 }
@@ -365,6 +385,7 @@ function BedSearchResults() {
       offset={offset}
       limit={limit}
       onOffsetChange={setOffset}
+      bucketLabel={`Similar: ${bedFile?.name || 'uploaded file'}`}
     />
   );
 }

@@ -192,11 +192,14 @@ export function AnalysisEmpty() {
       <input
         ref={inputRef}
         type="file"
-        accept=".bed,.bed.gz,.gz"
+        accept=".bed,.gz"
         className="hidden"
         onChange={(e) => {
           const f = e.target.files?.[0];
-          if (f) handleFile(f);
+          if (!f) return;
+          const name = f.name.toLowerCase();
+          if (!name.endsWith('.bed') && !name.endsWith('.bed.gz')) return;
+          handleFile(f);
         }}
       />
     </div>

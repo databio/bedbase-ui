@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { X } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useFile } from '../../contexts/file-context';
@@ -9,6 +9,7 @@ import { Hub } from '../hub/hub';
 import { TabContent } from '../tabs/tab-content';
 import { ReportPage } from '../report/report-page';
 import { MetricsPage } from '../metrics/metrics-page';
+import { UmapView } from '../umap/umap-view';
 import { Footer } from './footer';
 
 export function AppLayout() {
@@ -23,6 +24,11 @@ export function AppLayout() {
   const primaryId = activeTabs[0]?.id;
   const splitId = activeTabs[1]?.id;
   const isSplit = activeTabs.length > 1;
+
+  // Keep-mounted UMAP: once opened, never unmount (DuckDB WASM init is slow)
+  const umapEverOpened = useRef(false);
+  const isUmapActive = primaryId === 'umap';
+  if (isUmapActive) umapEverOpened.current = true;
 
   function handleDragStart(e: React.DragEvent, tabId: string) {
     e.dataTransfer.setData('text/plain', tabId);
@@ -159,6 +165,9 @@ export function AppLayout() {
       return <Hub />;
     }
 
+    // UMAP tab is rendered by the keep-mounted section below
+    if (isUmapActive && !isSplit) return null;
+
     if (!isSplit) {
       return (
         <main className="flex-1 flex flex-col relative">
@@ -241,6 +250,39 @@ export function AppLayout() {
         </div>
       </header>
       {renderContent()}
+      {/* Keep-mounted UMAP: rendered once opened, hidden when not active */}
+      {umapEverOpened.current && (
+        <div
+          style={{ display: isUmapActive && !isSplit ? 'contents' : 'none' }}
+        >
+          <main className="flex-1 flex flex-col relative">
+            {isDragging && (
+              <div className="absolute inset-0 z-10 grid grid-cols-2">
+                <div
+                  onDragOver={(e) => handleDragOver(e, 'left')}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, 'left')}
+                  className={`transition-colors ${
+                    dragOverSide === 'left' ? 'bg-primary/10 border-2 border-dashed border-primary/30' : ''
+                  }`}
+                />
+                <div
+                  onDragOver={(e) => handleDragOver(e, 'right')}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, 'right')}
+                  className={`transition-colors ${
+                    dragOverSide === 'right' ? 'bg-primary/10 border-2 border-dashed border-primary/30' : ''
+                  }`}
+                />
+              </div>
+            )}
+            <div className={`absolute top-0 inset-x-0 h-6 bg-gradient-to-b ${tabColorClasses[tabMeta['umap'].color].glowFrom} to-transparent pointer-events-none z-0`} />
+            <div className="@container flex-1 relative z-[1] flex flex-col">
+              <UmapView />
+            </div>
+          </main>
+        </div>
+      )}
       <Footer />
     </div>
   );
