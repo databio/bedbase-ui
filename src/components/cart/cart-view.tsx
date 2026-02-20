@@ -138,7 +138,7 @@ export function CartView() {
             {items.map((item) => (
               <tr
                 key={item.id}
-                onClick={() => openTab('analysis', item.id)}
+                onClick={() => openTab('analysis', 'bed/' + item.id)}
                 className="hover:bg-primary/5 cursor-pointer transition-colors"
               >
                 <td className="font-medium max-w-64 truncate">{item.name}</td>

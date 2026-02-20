@@ -16,6 +16,7 @@ import { BedsetMemberships } from './bedset-memberships';
 import { ActionBar } from './action-bar';
 import { ComparisonStrip } from './comparison-strip';
 import { GenomeCompatModal } from './genome-compat-modal';
+import { KvTable, type KvRow } from '../shared/kv-table';
 
 function formatBytes(bytes: number): string {
   if (bytes >= 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
@@ -128,10 +129,6 @@ function LocalHeader({ analysis }: { analysis: BedAnalysis }) {
   );
 }
 
-// --- Key-value table helper ---
-
-type KvRow = { label: string; value: string; href?: string };
-
 function externalIdUrl(id: string, kind: 'sample' | 'experiment'): string | undefined {
   if (id.includes('geo:')) {
     return `https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=${id.replace('geo:', '')}`;
@@ -143,35 +140,6 @@ function externalIdUrl(id: string, kind: 'sample' | 'experiment'): string | unde
       : `https://www.encodeproject.org/experiments/${accession}`;
   }
   return undefined;
-}
-
-function KvTable({ title, rows }: { title: string; rows: KvRow[] }) {
-  if (rows.length === 0) return null;
-  return (
-    <div className="space-y-2">
-      <h3 className="text-sm font-semibold text-base-content/50 uppercase tracking-wide">
-        {title}
-      </h3>
-      <div className="overflow-x-auto border border-base-300 rounded-lg bg-white">
-        <table className="table table-sm text-xs w-full">
-          <tbody>
-            {rows.map(({ label, value, href }) => (
-              <tr key={label}>
-                <td className="font-medium text-base-content/60 w-44">{label}</td>
-                <td>
-                  {href ? (
-                    <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                      {value}
-                    </a>
-                  ) : value}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
 }
 
 // --- Inline copy ID ---
@@ -547,6 +515,6 @@ function AnalysisPanels({ analysis }: { analysis: BedAnalysis }) {
 
 export function AnalysisView({ param }: { param?: string }) {
   if (param === 'file') return <LocalAnalysis />;
-  if (param) return <DatabaseAnalysis bedId={param} />;
+  if (param?.startsWith('bed/')) return <DatabaseAnalysis bedId={param.slice(4)} />;
   return <AnalysisEmpty />;
 }

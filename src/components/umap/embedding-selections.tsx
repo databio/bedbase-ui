@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Trash2, Check, X } from 'lucide-react';
+import { Trash2, Check, X, Save, ShoppingCart } from 'lucide-react';
 import { useBucket } from '../../contexts/bucket-context';
+import { useCart } from '../../contexts/cart-context';
 import type { UmapPoint } from '../../lib/umap-utils';
 
 type Props = {
@@ -9,16 +10,22 @@ type Props = {
 
 export function EmbeddingSelections({ currentSelection }: Props) {
   const { buckets, createBucket, deleteBucket, toggleBucket, renameBucket } = useBucket();
+  const { addToCart } = useCart();
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
 
+  const validPoints = currentSelection.filter((p) => p.identifier !== 'custom_point');
+
   const handleSave = () => {
-    const ids = currentSelection
-      .map((p) => p.identifier)
-      .filter((id) => id !== 'custom_point');
-    if (ids.length === 0) return;
-    createBucket(`Selection ${buckets.length + 1}`, ids);
+    if (validPoints.length === 0) return;
+    createBucket(`Selection ${buckets.length + 1}`, validPoints.map((p) => p.identifier));
+  };
+
+  const handleAddToCart = () => {
+    for (const p of validPoints) {
+      addToCart({ id: p.identifier, name: p.text || p.identifier, genome: '' });
+    }
   };
 
   const handleStartEdit = (id: string, name: string) => {
@@ -36,16 +43,43 @@ export function EmbeddingSelections({ currentSelection }: Props) {
   const handleCancelEdit = () => setEditingId(null);
 
   return (
-    <div className="border border-base-300 rounded-lg overflow-clip bg-white">
-      <div className="px-3 py-2 border-b border-base-300 flex items-center justify-between">
-        <span className="text-xs font-bold">Selections</span>
-        <button
-          className="btn btn-xs h-[18px] min-h-0 text-[10px] px-1.5 -my-0.5 btn-ghost"
-          disabled={currentSelection.length === 0}
-          onClick={handleSave}
-        >
-          Save Selection ({currentSelection.filter((p) => p.identifier !== 'custom_point').length})
-        </button>
+    <div className="border border-base-300 rounded-lg overflow-clip bg-white shrink-0 max-h-[33%] overflow-y-auto">
+      <div className="px-3 py-2 border-b border-base-300 bg-base-200 flex items-center justify-between">
+        <span className="text-xs font-bold">Selections{validPoints.length > 0 && <span className="hidden @2xs:inline font-normal text-base-content/50 ml-1">({validPoints.length})</span>}</span>
+        <span className="flex items-center gap-1 -my-0.5">
+          {/* Narrow: plain colored icons */}
+          <button
+            className="@2xs:hidden p-1 text-secondary disabled:opacity-30 cursor-pointer disabled:cursor-default"
+            disabled={validPoints.length === 0}
+            onClick={handleSave}
+            title="Save selection"
+          >
+            <Save size={12} />
+          </button>
+          <button
+            className="@2xs:hidden p-1 text-primary disabled:opacity-30 cursor-pointer disabled:cursor-default"
+            disabled={validPoints.length === 0}
+            onClick={handleAddToCart}
+            title="Add to cart"
+          >
+            <ShoppingCart size={12} />
+          </button>
+          {/* Wide: full buttons */}
+          <button
+            className="hidden @2xs:inline-flex btn btn-xs btn-soft btn-secondary h-[18px] min-h-0 text-[10px] px-1.5"
+            disabled={validPoints.length === 0}
+            onClick={handleSave}
+          >
+            Save
+          </button>
+          <button
+            className="hidden @2xs:inline-flex btn btn-xs btn-soft btn-primary h-[18px] min-h-0 text-[10px] px-1.5"
+            disabled={validPoints.length === 0}
+            onClick={handleAddToCart}
+          >
+            Add to Cart
+          </button>
+        </span>
       </div>
       <div className="p-0">
         {buckets.length === 0 ? (
@@ -98,13 +132,13 @@ export function EmbeddingSelections({ currentSelection }: Props) {
                       ) : (
                         <>
                           <span
-                            className="cursor-text hover:underline truncate max-w-32"
+                            className="cursor-text hover:underline truncate max-w-20 @2xs:max-w-32"
                             onClick={() => handleStartEdit(bucket.id, bucket.name)}
                             title={bucket.name}
                           >
                             {bucket.name}
                           </span>
-                          <span className="text-base-content/40 shrink-0">({bucket.bedIds.length})</span>
+                          <span className="hidden @2xs:inline text-base-content/40 shrink-0">({bucket.bedIds.length})</span>
                         </>
                       )}
                     </span>

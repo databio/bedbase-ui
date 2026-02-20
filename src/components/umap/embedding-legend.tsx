@@ -1,3 +1,4 @@
+import { Dna, FlaskConical } from 'lucide-react';
 import { tableau20 } from '../../lib/tableau20';
 import type { LegendItem } from '../../lib/umap-utils';
 
@@ -23,10 +24,19 @@ export function EmbeddingLegend({
   onSaveCategory,
 }: Props) {
   return (
-    <div className="border border-base-300 rounded-lg overflow-clip bg-white">
-      <div className="px-3 py-2 border-b border-base-300 flex items-center justify-between">
+    <div className="border border-base-300 rounded-lg overflow-clip bg-white flex flex-col min-h-0 flex-1">
+      <div className="px-3 py-2 border-b border-base-300 bg-base-200 flex items-center justify-between">
         <span className="text-xs font-bold">Legend</span>
-        <div className="join -my-0.5">
+        {/* Narrow: icon toggle */}
+        <button
+          className="@2xs:hidden btn btn-xs btn-ghost h-[18px] min-h-0 px-1 -my-0.5"
+          onClick={() => setColorGrouping(colorGrouping === 'cell_line_category' ? 'assay_category' : 'cell_line_category')}
+          title={colorGrouping === 'cell_line_category' ? 'Cell Line' : 'Assay'}
+        >
+          {colorGrouping === 'cell_line_category' ? <Dna size={12} /> : <FlaskConical size={12} />}
+        </button>
+        {/* Wide: radio group */}
+        <div className="join -my-0.5 hidden @2xs:flex">
           <input
             type="radio"
             name="color_legend"
@@ -47,7 +57,7 @@ export function EmbeddingLegend({
           />
         </div>
       </div>
-      <div className="overflow-y-auto overscroll-contain" style={{ maxHeight: '40vh' }}>
+      <div className="overflow-y-auto overscroll-contain flex-1 min-h-0">
         <table className="table table-sm text-xs w-full">
           <tbody>
             {legendItems?.map((item) => (

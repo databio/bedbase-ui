@@ -1,4 +1,4 @@
-import { ArrowUpRight, Table2 } from 'lucide-react';
+import { FlaskConical, Table2 } from 'lucide-react';
 import { useTab } from '../../contexts/tab-context';
 import type { UmapPoint } from '../../lib/umap-utils';
 
@@ -23,7 +23,7 @@ export function EmbeddingTable({ selectedPoints, centerOnBedId, className }: Pro
         </div>
       ) : (
         <table className="table w-full text-[11px] [&_th]:py-1 [&_th]:px-2 [&_td]:py-0.5 [&_td]:px-2">
-          <thead className="sticky top-0 bg-white z-10 text-[11px] text-black">
+          <thead className="sticky top-0 bg-base-200 z-10 text-[11px] font-bold text-base-content">
             <tr className="whitespace-nowrap">
               <th>BED Name</th>
               <th>Assay</th>
@@ -39,21 +39,21 @@ export function EmbeddingTable({ selectedPoints, centerOnBedId, className }: Pro
                 className="cursor-pointer hover:bg-base-200 transition-colors"
                 onClick={() => centerOnBedId?.(point.identifier, 0.5)}
               >
-                <td className="whitespace-nowrap max-w-40 truncate">{point.text}</td>
-                <td className="whitespace-nowrap">{point.fields?.Assay}</td>
-                <td className="whitespace-nowrap">{point.fields?.['Cell Line']}</td>
-                <td className="max-w-xs truncate">{point.fields?.Description}</td>
+                <td className="whitespace-nowrap max-w-40 truncate text-base-content/70">{point.text}</td>
+                <td className="whitespace-nowrap text-base-content/50">{point.fields?.Assay}</td>
+                <td className="whitespace-nowrap text-base-content/50">{point.fields?.['Cell Line']}</td>
+                <td className="max-w-xs truncate text-base-content/50">{point.fields?.Description}</td>
                 <td>
-                  <button
+                  <a
                     onClick={(e) => {
                       e.stopPropagation();
-                      openTab('analysis', point.identifier);
+                      openTab('analysis', 'bed/' + point.identifier);
                     }}
-                    className="btn btn-xs btn-ghost p-0.5"
+                    className="text-base-content/30 hover:text-primary cursor-pointer transition-colors"
                     title="View analysis"
                   >
-                    <ArrowUpRight size={10} />
-                  </button>
+                    <FlaskConical size={11} />
+                  </a>
                 </td>
               </tr>
             ))}

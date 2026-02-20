@@ -15,6 +15,7 @@ type BucketContextValue = {
   deleteBucket: (id: string) => void;
   toggleBucket: (id: string) => void;
   renameBucket: (id: string, name: string) => void;
+  removeBedFromBucket: (bucketId: string, bedId: string) => void;
   reorderBuckets: (orderedIds: string[]) => void;
   clearBuckets: () => void;
   enabledBedIds: string[];
@@ -84,6 +85,14 @@ export function BucketProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  const removeBedFromBucket = (bucketId: string, bedId: string) => {
+    setBuckets((prev) =>
+      prev.map((b) =>
+        b.id === bucketId ? { ...b, bedIds: b.bedIds.filter((id) => id !== bedId) } : b,
+      ).filter((b) => b.bedIds.length > 0),
+    );
+  };
+
   const reorderBuckets = (orderedIds: string[]) => {
     setBuckets((prev) =>
       prev.map((b) => {
@@ -111,6 +120,7 @@ export function BucketProvider({ children }: { children: ReactNode }) {
     deleteBucket,
     toggleBucket,
     renameBucket,
+    removeBedFromBucket,
     reorderBuckets,
     clearBuckets,
     enabledBedIds,

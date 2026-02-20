@@ -37,7 +37,7 @@ export function ResultsTable({ results }: { results: QdrantSearchResult[] }) {
             return (
               <tr
                 key={r.id}
-                onClick={() => meta?.id && openTab('analysis', meta.id)}
+                onClick={() => meta?.id && openTab('analysis', 'bed/' + meta.id)}
                 className="hover:bg-primary/5 cursor-pointer transition-colors"
               >
                 <td className="font-medium max-w-48 truncate">{meta?.name || 'Unnamed'}</td>

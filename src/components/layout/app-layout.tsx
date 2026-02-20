@@ -200,32 +200,32 @@ export function AppLayout() {
     }
 
     return (
-      <main className="flex-1 grid grid-cols-1 md:grid-cols-2">
+      <main className="grid grid-cols-1 md:grid-cols-2 overflow-hidden h-[calc(100vh-52px)]">
         <div
-          className="@container relative flex flex-col"
+          className="@container relative flex flex-col overflow-hidden min-h-0"
           onDragOver={(e) => handleDragOver(e, 'left')}
           onDragLeave={handleDragLeave}
           onDrop={(e) => handleDrop(e, 'left')}
         >
           {isDragging && dragOverSide === 'left' && (
-            <div className="absolute inset-0 z-10 bg-primary/10 border-2 border-dashed border-primary/30" />
+            <div className="absolute inset-0 z-20 bg-primary/10 border-2 border-dashed border-primary/30" />
           )}
-          <div className={`absolute top-0 inset-x-0 h-6 bg-gradient-to-b ${tabColorClasses[tabMeta[primaryId].color].glowFrom} to-transparent pointer-events-none z-0`} />
-          <div className="relative z-[1] flex-1 flex flex-col">
+          <div className={`absolute top-0 inset-x-0 h-6 bg-gradient-to-b ${tabColorClasses[tabMeta[primaryId].color].glowFrom} to-transparent pointer-events-none z-10`} />
+          <div className="flex-1 overflow-y-auto min-h-0 flex flex-col">
             <TabContent tab={activeTabs[0]} />
           </div>
         </div>
         <div
-          className={`@container relative border-l border-base-300 flex flex-col`}
+          className={`@container relative border-l border-base-300 flex flex-col overflow-hidden min-h-0`}
           onDragOver={(e) => handleDragOver(e, 'right')}
           onDragLeave={handleDragLeave}
           onDrop={(e) => handleDrop(e, 'right')}
         >
           {isDragging && dragOverSide === 'right' && (
-            <div className="absolute inset-0 z-10 bg-primary/10 border-2 border-dashed border-primary/30" />
+            <div className="absolute inset-0 z-20 bg-primary/10 border-2 border-dashed border-primary/30" />
           )}
-          <div className={`absolute top-0 inset-x-0 h-6 bg-gradient-to-b ${tabColorClasses[tabMeta[splitId!].color].glowFrom} to-transparent pointer-events-none z-0`} />
-          <div className="relative z-[1] flex-1 flex flex-col">
+          <div className={`absolute top-0 inset-x-0 h-6 bg-gradient-to-b ${tabColorClasses[tabMeta[splitId!].color].glowFrom} to-transparent pointer-events-none z-10`} />
+          <div className="flex-1 overflow-y-auto min-h-0 flex flex-col">
             <TabContent tab={activeTabs[1]} />
           </div>
         </div>

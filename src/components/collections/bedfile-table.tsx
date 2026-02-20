@@ -26,7 +26,7 @@ export function BedfileTable({ bedfiles }: { bedfiles: BedMetadataBasic[] }) {
             return (
               <tr
                 key={bed.id}
-                onClick={() => openTab('analysis', bed.id)}
+                onClick={() => openTab('analysis', 'bed/' + bed.id)}
                 className="hover:bg-primary/5 cursor-pointer transition-colors"
               >
                 <td className="font-medium max-w-48 truncate">{bed.name || 'Unnamed'}</td>

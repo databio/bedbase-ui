@@ -7,6 +7,7 @@ import { useBedsetMetadata } from '../../queries/use-bedset-metadata';
 import { useBedsetBedfiles } from '../../queries/use-bedset-bedfiles';
 import { API_BASE, fileModelToPlotSlot } from '../../lib/file-model-utils';
 import { BedfileTable } from './bedfile-table';
+import { KvTable } from '../shared/kv-table';
 
 const linkClass = 'inline-flex items-center gap-1.5 text-xs font-medium text-base-content/60 hover:text-base-content/80 bg-base-200 hover:bg-base-300 px-2.5 py-1.5 rounded-md transition-colors cursor-pointer';
 
@@ -67,32 +68,10 @@ function CopyableId({ id }: { id: string }) {
   );
 }
 
-function KvTable({ title, rows }: { title: string; rows: { label: string; value: string }[] }) {
-  if (rows.length === 0) return null;
-  return (
-    <div className="space-y-2">
-      <h3 className="text-sm font-semibold text-base-content/50 uppercase tracking-wide">
-        {title}
-      </h3>
-      <div className="overflow-x-auto border border-base-300 rounded-lg bg-white">
-        <table className="table table-sm text-xs w-full">
-          <tbody>
-            {rows.map(({ label, value }) => (
-              <tr key={label}>
-                <td className="font-medium text-base-content/60 w-44">{label}</td>
-                <td>{value}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
 
 export function CollectionDetail({ bedsetId }: { bedsetId: string }) {
   const { openTab } = useTab();
-  const { addToCart, isInCart } = useCart();
+  const { addToCart, removeFromCart, isInCart } = useCart();
   const { createBucket } = useBucket();
   const [showCode, setShowCode] = useState(false);
   const { data: meta, isLoading: metaLoading, error: metaError, refetch } = useBedsetMetadata(bedsetId);
@@ -102,7 +81,7 @@ export function CollectionDetail({ bedsetId }: { bedsetId: string }) {
     return (
       <div className="flex flex-col items-center justify-center h-full py-16 gap-3">
         <Loader2 size={28} className="text-primary animate-spin" />
-        <p className="text-sm text-base-content/50">Loading bedset metadata...</p>
+        <p className="text-sm text-base-content/50">Loading BEDset metadata...</p>
       </div>
     );
   }
@@ -113,19 +92,19 @@ export function CollectionDetail({ bedsetId }: { bedsetId: string }) {
       <div className="flex flex-col items-center justify-center h-full py-16 gap-3">
         <AlertCircle size={28} className={is404 ? 'text-base-content/30' : 'text-error'} />
         <p className="text-sm font-medium text-base-content">
-          {is404 ? 'Bedset not found' : 'Failed to load bedset'}
+          {is404 ? 'BEDset not found' : 'Failed to load BEDset'}
         </p>
         <p className="text-xs text-base-content/50 max-w-md text-center">
           {is404
-            ? `No bedset with ID "${bedsetId}" exists in the database.`
+            ? `No BEDset with ID "${bedsetId}" exists in the database.`
             : String((metaError as Error).message || 'An unexpected error occurred.')}
         </p>
         <div className="flex gap-2 mt-1">
           {!is404 && (
             <button onClick={() => refetch()} className="btn btn-sm btn-outline">Retry</button>
           )}
-          <button onClick={() => openTab('collections')} className="btn btn-sm btn-ghost gap-1.5">
-            <Search size={14} /> Back to collections
+          <button onClick={() => openTab('collections', 'bedset')} className="btn btn-sm btn-ghost gap-1.5">
+            <Search size={14} /> Back to BEDsets
           </button>
         </div>
       </div>
@@ -163,12 +142,18 @@ export function CollectionDetail({ bedsetId }: { bedsetId: string }) {
   const regionPlot = fileModelToPlotSlot(meta.plots?.region_commonality, 'region_commonality', 'Region commonality');
 
   const bedfileList = bedfiles?.results ?? [];
-  const allInCart = bedfileList.length > 0 && bedfileList.every((b) => isInCart(b.id));
+  const inCartCount = bedfileList.filter((b) => isInCart(b.id)).length;
+  const allInCart = bedfileList.length > 0 && inCartCount === bedfileList.length;
+  const someInCart = inCartCount > 0 && !allInCart;
 
-  const handleAddAll = () => {
-    for (const bed of bedfileList) {
-      if (!isInCart(bed.id)) {
-        addToCart({ id: bed.id, name: bed.name || 'Unnamed', genome: bed.genome_alias || '' });
+  const handleCartToggle = () => {
+    if (allInCart) {
+      for (const bed of bedfileList) removeFromCart(bed.id);
+    } else {
+      for (const bed of bedfileList) {
+        if (!isInCart(bed.id)) {
+          addToCart({ id: bed.id, name: bed.name || 'Unnamed', genome: bed.genome_alias || '' });
+        }
       }
     }
   };
@@ -176,11 +161,11 @@ export function CollectionDetail({ bedsetId }: { bedsetId: string }) {
   return (
     <div className="flex flex-col h-full overflow-auto p-4 @md:p-6">
       <button
-        onClick={() => openTab('collections')}
+        onClick={() => openTab('collections', 'bedset')}
         className="inline-flex items-center gap-0.5 text-xs text-base-content/40 hover:text-base-content/60 transition-colors cursor-pointer w-fit mb-4"
       >
         <ChevronLeft size={14} />
-        Collections
+        BEDsets
       </button>
 
       <div className="space-y-6">
@@ -200,15 +185,33 @@ export function CollectionDetail({ bedsetId }: { bedsetId: string }) {
               <div className="flex items-center gap-1 flex-wrap">
                 {bedfileList.length > 0 && (
                   <button
-                    onClick={handleAddAll}
+                    onClick={() => {
+                      createBucket(`BEDset: ${meta.name}`, bedfileList.map((b) => b.id));
+                      openTab('umap');
+                    }}
+                    className={linkClass}
+                  >
+                    <ScatterChart size={13} />
+                    View on UMAP
+                  </button>
+                )}
+                {bedfileList.length > 0 && (
+                  <button
+                    onClick={handleCartToggle}
                     className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md transition-colors cursor-pointer ${
                       allInCart
                         ? 'text-success bg-success/20 hover:bg-success/30'
-                        : 'text-base-content/60 hover:text-base-content/80 bg-base-200 hover:bg-base-300'
+                        : someInCart
+                          ? 'text-primary bg-primary/10 hover:bg-primary/20'
+                          : 'text-base-content/60 hover:text-base-content/80 bg-base-200 hover:bg-base-300'
                     }`}
                   >
                     {allInCart ? <Check size={13} /> : <Plus size={13} />}
-                    {allInCart ? 'All in cart' : 'Add all to cart'}
+                    {allInCart
+                      ? `${bedfileList.length} in cart`
+                      : someInCart
+                        ? `Add ${bedfileList.length - inCartCount} more to cart`
+                        : `Add ${bedfileList.length} to cart`}
                   </button>
                 )}
                 <button onClick={() => setShowCode(true)} className={linkClass}>
@@ -233,18 +236,6 @@ export function CollectionDetail({ bedsetId }: { bedsetId: string }) {
                   <ExternalLink size={13} />
                   API
                 </a>
-                {bedfileList.length > 0 && (
-                  <button
-                    onClick={() => {
-                      createBucket(`Bedset: ${meta.name}`, bedfileList.map((b) => b.id));
-                      openTab('umap');
-                    }}
-                    className={linkClass}
-                  >
-                    <ScatterChart size={13} />
-                    View on UMAP
-                  </button>
-                )}
               </div>
               {(meta.submission_date || meta.last_update_date) && (
                 <p className="text-[11px] text-base-content/30">

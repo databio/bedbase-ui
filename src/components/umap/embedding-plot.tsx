@@ -446,7 +446,7 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
             props: {
               showLink: true,
               simpleTooltip,
-              onNavigate: (id: string) => openTab('analysis', id),
+              onNavigate: (id: string) => openTab('analysis', 'bed/' + id),
             },
           }}
           selection={visualSelection}

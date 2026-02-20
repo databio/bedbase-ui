@@ -164,7 +164,7 @@ export function AnalysisEmpty() {
             {sampleBeds ? sampleBeds.map((bed) => (
               <button
                 key={bed.id}
-                onClick={() => openTab('analysis', bed.id)}
+                onClick={() => openTab('analysis', 'bed/' + bed.id)}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-base-300 hover:border-base-content/20 hover:bg-base-200/30 transition-colors cursor-pointer text-left"
               >
                 <FileText size={14} className="text-base-content/30 shrink-0" />

@@ -1,5 +1,6 @@
 import { useState, useRef, type ReactNode } from 'react';
-import { Search, Upload, FileText, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Search, Upload, FileText, X, Forward } from 'lucide-react';
 import { useFile } from '../../contexts/file-context';
 import { useTab } from '../../contexts/tab-context';
 import { useStats } from '../../queries/use-stats';
@@ -38,7 +39,7 @@ function SearchInput({ onFileSelect }: { onFileSelect: (f: File) => void }) {
   return (
     <div className="w-full max-w-2xl">
       {/* Text search row */}
-      <div className="flex items-center gap-2 border border-base-300 rounded-t-lg px-3 py-2.5">
+      <div className="flex items-center gap-2 border-[1.5px] border-primary/30 rounded-t-lg px-3 py-2.5">
         <input
           type="text"
           placeholder="Search for BED files..."
@@ -60,7 +61,7 @@ function SearchInput({ onFileSelect }: { onFileSelect: (f: File) => void }) {
       {/* File upload row or file indicator */}
       {bedFile ? (
         <div
-          className="flex items-center gap-2 px-3 py-2.5 rounded-b-lg border border-base-300 border-t-0 bg-primary/5 cursor-pointer hover:bg-primary/10 transition-colors"
+          className="flex items-center gap-2 px-3 py-2.5 rounded-b-lg border-[1.5px] border-t-0 border-dotted border-primary/30 bg-primary/5 cursor-pointer hover:bg-primary/10 transition-colors"
           onClick={() => openTab('file')}
         >
           <FileText size={16} className="text-primary shrink-0 mx-2" />
@@ -75,15 +76,17 @@ function SearchInput({ onFileSelect }: { onFileSelect: (f: File) => void }) {
         </div>
       ) : (
         <div
-          className={`flex items-center gap-2 px-3 py-2.5 rounded-b-lg border border-dashed border-t-0 transition-colors cursor-pointer ${
-            isDragOver ? 'border-primary bg-primary/10' : 'border-base-300 bg-primary/5'
+          className={`flex items-center gap-2 px-3 py-2.5 rounded-b-lg border-[1.5px] border-t-0 border-dotted transition-colors cursor-pointer ${
+            isDragOver ? 'border-primary bg-primary/10' : 'border-primary/30 bg-primary/5'
           }`}
           onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
           onDragLeave={() => setIsDragOver(false)}
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
         >
-          <Upload size={16} className="text-base-content/30 shrink-0 mx-2" />
+          <div className="shrink-0 flex items-center justify-center w-8 h-8 rounded bg-primary/10">
+              <Upload size={14} className="text-primary" />
+            </div>
           <div className="flex flex-col items-start">
             <span className="text-sm font-medium text-base-content/70">Upload BED file</span>
             <span className="text-[11px] text-base-content/45">.bed, .bed.gz</span>
@@ -184,6 +187,8 @@ export function Hub() {
               <span><strong className="text-success">{stats.bedsets_number.toLocaleString()}</strong> BEDsets</span>
               <span className="text-base-content/20">•</span>
               <span><strong className="text-info">{stats.genomes_number.toLocaleString()}</strong> genomes</span>
+              <span className="text-base-content/20">•</span>
+              <Link to="/metrics" className="hover:text-base-content transition-colors inline-flex items-center gap-1"><strong>more</strong> metrics <Forward size={14} /></Link>
             </>
           ) : null}
         </div>

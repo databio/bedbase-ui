@@ -200,8 +200,8 @@ function UsageCharts({ data }: { data: NonNullable<ReturnType<typeof useDetailed
   const charts: ChartInfo[] = [];
   if (hasData(data.bed_metadata)) charts.push({ title: 'Most viewed BED files', kind: 'bar', data: data.bed_metadata });
   if (hasData(data.bed_search_terms)) charts.push({ title: 'Top BED search terms', kind: 'bar', data: data.bed_search_terms });
-  if (hasData(data.bedset_metadata)) charts.push({ title: 'Most viewed bedsets', kind: 'bar', data: data.bedset_metadata });
-  if (hasData(data.bedset_search_terms)) charts.push({ title: 'Top bedset search terms', kind: 'bar', data: data.bedset_search_terms });
+  if (hasData(data.bedset_metadata)) charts.push({ title: 'Most viewed BEDsets', kind: 'bar', data: data.bedset_metadata });
+  if (hasData(data.bedset_search_terms)) charts.push({ title: 'Top BEDset search terms', kind: 'bar', data: data.bedset_search_terms });
   if (hasData(data.bed_downloads)) charts.push({ title: 'Most downloaded BED files', kind: 'bar', data: data.bed_downloads });
   return <ChartGrid charts={charts} />;
 }

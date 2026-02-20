@@ -68,11 +68,11 @@ export function EmbeddingStats({ selectedPoints, colorGrouping, legendItems, fil
   const maxCount = showBackground ? maxTotal : maxRows;
 
   return (
-    <div className="border border-base-300 rounded-lg bg-white">
-      <div className="px-3 py-2 border-b border-base-300 text-xs font-bold">
+    <div className="border border-base-300 rounded-lg bg-white flex flex-col min-h-0 flex-1">
+      <div className="px-3 py-2 border-b border-base-300 bg-base-200 text-xs font-bold">
         Selection Count
       </div>
-      <div className="p-2 overflow-y-auto overscroll-contain" style={{ maxHeight: '30vh' }}>
+      <div className="p-2 overflow-y-auto overscroll-contain flex-1 min-h-0">
         <div className="flex flex-col gap-0.5">
           {rows.map((row) => {
             const total = totalCounts.get(row.category) ?? 0;

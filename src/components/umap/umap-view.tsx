@@ -234,7 +234,7 @@ export function UmapView() {
             className="h-48 shrink-0"
           />
         </div>
-        <div className="flex-[22.5] flex flex-col gap-3 overflow-y-auto overscroll-contain">
+        <div className="@container flex-[22.5] flex flex-col gap-2 overflow-hidden min-h-0">
           <EmbeddingLegend
             legendItems={legendItems}
             filterSelection={filterSelection}

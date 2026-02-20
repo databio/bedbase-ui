@@ -25,7 +25,7 @@ export function BedsetMemberships({ bedsets }: { bedsets: Bedset[] }) {
             {bedsets.map((bs) => (
               <tr
                 key={bs.id}
-                onClick={() => openTab('collections', bs.id)}
+                onClick={() => openTab('collections', 'bedset/' + bs.id)}
                 className="hover:bg-primary/5 cursor-pointer transition-colors"
               >
                 <td className="font-medium text-primary">{bs.name}</td>

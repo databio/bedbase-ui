@@ -46,6 +46,15 @@ export function ActionBar({ analysis }: { analysis: BedAnalysis }) {
       )}
       {analysis.id && (
         <>
+          {isInUmap && (
+            <button
+              onClick={() => openTab('umap', analysis.id)}
+              className={linkClass}
+            >
+              <ScatterChart size={13} />
+              View on UMAP
+            </button>
+          )}
           <button
             onClick={handleCart}
             className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md transition-colors cursor-pointer ${
@@ -66,15 +75,6 @@ export function ActionBar({ analysis }: { analysis: BedAnalysis }) {
             <ExternalLink size={13} />
             API
           </a>
-          {isInUmap && (
-            <button
-              onClick={() => openTab('umap', analysis.id)}
-              className={linkClass}
-            >
-              <ScatterChart size={13} />
-              UMAP
-            </button>
-          )}
         </>
       )}
     </div>
