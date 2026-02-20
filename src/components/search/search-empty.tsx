@@ -109,7 +109,7 @@ export function SearchEmpty() {
         )}
 
         {/* Example queries */}
-        <div className="flex items-center gap-2 mt-4 flex-wrap justify-center">
+        <div className="flex items-center gap-1.5 mt-4 flex-wrap justify-center">
           <span className="text-base-content/30 text-xs">Try:</span>
           {EXAMPLE_QUERIES.map((term) => (
             <button

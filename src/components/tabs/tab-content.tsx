@@ -19,12 +19,31 @@ function PlaceholderTab({ tab }: { tab: ActiveTab }) {
   );
 }
 
+function buildTitle(tab: ActiveTab): string {
+  const { id, param } = tab;
+  if (id === 'analysis' && param?.startsWith('bed/'))
+    return `BEDbase | ${param.slice(4)}`;
+  if (id === 'search' && param && param !== 'file')
+    return `BEDbase | Search: ${param}`;
+  if (id === 'collections' && param?.startsWith('bedset/'))
+    return `BEDbase | ${param.slice(7)}`;
+  return `BEDbase | ${tabMeta[id].label}`;
+}
+
 export function TabContent({ tab }: { tab: ActiveTab }) {
-  if (tab.id === 'file') return <FilePage />;
-  if (tab.id === 'search') return <SearchView param={tab.param} />;
-  if (tab.id === 'analysis') return <AnalysisView param={tab.param} />;
-  if (tab.id === 'umap') return null; // Rendered via portal in app-layout
-  if (tab.id === 'collections') return <CollectionsView param={tab.param} />;
-  if (tab.id === 'cart') return <CartView />;
-  return <PlaceholderTab tab={tab} />;
+  let content: React.ReactNode;
+  if (tab.id === 'file') content = <FilePage />;
+  else if (tab.id === 'search') content = <SearchView param={tab.param} />;
+  else if (tab.id === 'analysis') content = <AnalysisView param={tab.param} />;
+  else if (tab.id === 'umap') content = null; // Rendered via portal in app-layout
+  else if (tab.id === 'collections') content = <CollectionsView param={tab.param} />;
+  else if (tab.id === 'cart') content = <CartView />;
+  else content = <PlaceholderTab tab={tab} />;
+
+  return (
+    <>
+      <title>{buildTitle(tab)}</title>
+      {content}
+    </>
+  );
 }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronLeft, GripVertical, Trash2, ChevronRight } from 'lucide-react';
+import { ChevronLeft, GripVertical, Trash2 } from 'lucide-react';
 import { useTab } from '../../contexts/tab-context';
 import { useBucket } from '../../contexts/bucket-context';
 

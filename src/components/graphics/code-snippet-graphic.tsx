@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Copy, Check } from 'lucide-react';
 import hljs from 'highlight.js/lib/core';
 import python from 'highlight.js/lib/languages/python';
 import r from 'highlight.js/lib/languages/r';
@@ -46,6 +47,13 @@ let bed_id: String = bbc
 
 export function CodeSnippetGraphic() {
   const [active, setActive] = useState(0);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(snippets[active].code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
 
   const highlighted = useMemo(
     () => hljs.highlight(snippets[active].code, { language: snippets[active].hlLang }).value,
@@ -68,6 +76,12 @@ export function CodeSnippetGraphic() {
             {s.language}
           </button>
         ))}
+        <button
+          onClick={handleCopy}
+          className="ml-auto p-1 rounded text-base-content/30 hover:text-base-content/60 hover:bg-base-200 transition-colors cursor-pointer"
+        >
+          {copied ? <Check size={12} /> : <Copy size={12} />}
+        </button>
       </div>
       <pre className="flex-1 overflow-auto px-3 pb-2 !bg-transparent">
         <code

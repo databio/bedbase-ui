@@ -14,7 +14,6 @@ import { PlotGallery } from './plot-gallery';
 import { SimilarFiles } from './similar-files';
 import { BedsetMemberships } from './bedset-memberships';
 import { ActionBar } from './action-bar';
-import { ComparisonStrip } from './comparison-strip';
 import { GenomeCompatModal } from './genome-compat-modal';
 import { KvTable, type KvRow } from '../shared/kv-table';
 
@@ -167,13 +166,11 @@ function CopyableId({ id }: { id: string }) {
 
 function GenomeSection({
   genomeAlias,
-  genomeDigest,
   genomeStats,
   showModal,
   onShowModal,
 }: {
   genomeAlias?: string;
-  genomeDigest?: string;
   genomeStats?: import('../../bedbase-types').components['schemas']['RefGenValidReturnModel'];
   showModal: boolean;
   onShowModal: (v: boolean) => void;
@@ -333,7 +330,6 @@ function DatabaseHeader({ analysis }: { analysis: BedAnalysis }) {
       {(analysis.genomeAlias || genomeStats) && (
         <GenomeSection
           genomeAlias={analysis.genomeAlias}
-          genomeDigest={analysis.genomeDigest}
           genomeStats={genomeStats ?? undefined}
           showModal={showGenomeModal}
           onShowModal={setShowGenomeModal}

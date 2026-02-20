@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Search, Upload, FileText, X, Forward } from 'lucide-react';
 import { useFile } from '../../contexts/file-context';
 import { useTab } from '../../contexts/tab-context';
+import { EXAMPLE_QUERIES } from '../../lib/const';
 import { useStats } from '../../queries/use-stats';
 import { FileSearchGraphic } from '../graphics/file-search-graphic';
 import { BedAnalyzerGraphic } from '../graphics/bed-analyzer-graphic';
@@ -106,9 +107,9 @@ function SearchInput({ onFileSelect }: { onFileSelect: (f: File) => void }) {
           />
         </div>
       )}
-      <div className="flex items-center gap-2 mt-3 flex-wrap justify-center">
+      <div className="flex items-center gap-1.5 mt-3 flex-wrap justify-center">
         <span className="text-base-content/30 text-xs">Try:</span>
-        {['K562 CTCF', 'ENCODE DNase-seq', 'H3K27ac ChIP-seq', 'promoter regions'].map((term) => (
+        {EXAMPLE_QUERIES.map((term) => (
           <button
             key={term}
             onClick={() => setQuery(term)}
@@ -165,6 +166,7 @@ export function Hub() {
 
   return (
     <div className="flex-1 overflow-auto flex flex-col">
+      <title>BEDbase</title>
       <div className="flex flex-col items-center justify-center text-center px-4 pt-28 pb-40">
         <h1 className="font-thin text-primary text-7xl mb-5">BEDbase</h1>
         <p className="text-base font-normal text-base-content/50 max-w-2xl mb-16">
@@ -206,7 +208,7 @@ export function Hub() {
                   <h3 className="text-lg font-medium text-base-content mb-2">{feature.title}</h3>
                   <p className="text-base-content/60 text-sm leading-relaxed text-balance">{feature.description}</p>
                 </div>
-                <div className="flex-1 w-full">
+                <div className="flex-1 w-full min-w-0">
                   <div className="border border-base-300 rounded-lg h-48 bg-base-100 overflow-hidden">
                     {feature.graphic}
                   </div>

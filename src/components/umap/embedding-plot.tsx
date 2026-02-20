@@ -463,7 +463,7 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
               onNavigate: (id: string) => openTab('analysis', 'bed/' + id),
             },
           }}
-          selection={visualSelection}
+          selection={visualSelection as any}
           onSelection={handlePointSelection}
           rangeSelectionValue={rangeSelectionValue}
           onRangeSelection={(e: any) => {
