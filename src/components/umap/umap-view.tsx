@@ -98,6 +98,14 @@ export function UmapView() {
   // Disable stale buckets on mount unless navigated via "View on UMAP"
   useEffect(() => { resetBucketsOnMount(); }, []);
 
+  // When preselection changes (e.g. "View on UMAP" clicked from split analysis), center on the point
+  const firstPreselectedId = preselectedIds[0];
+  useEffect(() => {
+    if (firstPreselectedId) {
+      plotRef.current?.centerOnBedId(firstPreselectedId, 0.2);
+    }
+  }, [firstPreselectedId]);
+
   // All highlighted IDs: preselected + buckets (deduplicated)
   const bedIds = useMemo(() => {
     const ids = new Set([...preselectedIds, ...enabledBedIds]);

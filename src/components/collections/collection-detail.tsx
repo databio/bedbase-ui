@@ -171,7 +171,7 @@ export function CollectionDetail({ bedsetId }: { bedsetId: string }) {
       <div className="space-y-6">
         {/* Header — matches DatabaseHeader layout */}
         <div className="space-y-5">
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col @5xl:flex-row @5xl:items-start @5xl:justify-between gap-3">
             <div className="min-w-0">
               <div className="flex items-baseline gap-2">
                 <p className="text-lg font-semibold text-base-content">{meta.name}</p>
@@ -181,7 +181,7 @@ export function CollectionDetail({ bedsetId }: { bedsetId: string }) {
                 <p className="text-sm text-base-content/50 mt-1 leading-relaxed">{meta.description}</p>
               )}
             </div>
-            <div className="shrink-0 flex flex-col items-end gap-1.5">
+            <div className="shrink-0 flex flex-col @5xl:items-end gap-1.5">
               <div className="flex items-center gap-1 flex-wrap">
                 {bedfileList.length > 0 && (
                   <button

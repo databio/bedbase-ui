@@ -3,6 +3,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 export type TabId = 'file' | 'search' | 'analysis' | 'umap' | 'collections' | 'cart';
 
+/** Provided by each tab panel so in-content navigation knows which tab it originated from. */
+export const TabPanelContext = createContext<TabId | null>(null);
+
 const TAB_IDS = new Set<string>(['file', 'search', 'analysis', 'umap', 'collections', 'cart']);
 
 const tabBasePaths: Record<TabId, string> = {
@@ -98,7 +101,7 @@ function buildUrl(primary: ActiveTab, split?: ActiveTab | null): string {
 
 type TabContextValue = {
   activeTabs: ActiveTab[];
-  openTab: (id: TabId, param?: string) => void;
+  openTab: (id: TabId, param?: string, source?: TabId) => void;
   openSplit: (id: TabId, side: 'left' | 'right', param?: string) => void;
   closeTab: (id: TabId) => void;
   closeAll: () => void;
@@ -138,7 +141,7 @@ export function TabProvider({ children }: { children: ReactNode }) {
     }
   }, [activeTabs]);
 
-  const openTab = (id: TabId, param?: string) => {
+  const openTab = (id: TabId, param?: string, source?: TabId) => {
     window.scrollTo(0, 0);
     const existing = activeTabs.find((t) => t.id === id);
 
@@ -164,8 +167,12 @@ export function TabProvider({ children }: { children: ReactNode }) {
         // Updating param of the split tab — keep primary
         navigate(buildUrl(primaryTab!, target));
       } else if (param) {
-        // Programmatic navigation with a param — replace primary, keep split
-        navigate(buildUrl(target, splitTab));
+        // Replace the panel that didn't originate the navigation, keep the one that did
+        if (source === splitTab.id) {
+          navigate(buildUrl(target, splitTab));
+        } else {
+          navigate(buildUrl(primaryTab!, target));
+        }
       } else {
         // Navbar click (no param) — go fullscreen, drop the split
         navigate(buildUrl(target));
@@ -228,6 +235,10 @@ export function TabProvider({ children }: { children: ReactNode }) {
 
 export function useTab() {
   const ctx = useContext(TabContext);
+  const panelTabId = useContext(TabPanelContext);
   if (!ctx) throw new Error('useTab must be used within a TabProvider');
-  return ctx;
+  return {
+    ...ctx,
+    openTab: (id: TabId, param?: string) => ctx.openTab(id, param, panelTabId ?? undefined),
+  };
 }

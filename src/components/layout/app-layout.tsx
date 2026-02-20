@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useFile } from '../../contexts/file-context';
-import { useTab, type TabId } from '../../contexts/tab-context';
+import { useTab, TabPanelContext, type TabId } from '../../contexts/tab-context';
 import { useCart } from '../../contexts/cart-context';
 import { tabMeta, tabIds, tabColorClasses } from '../../lib/tab-meta';
 import { Hub } from '../hub/hub';
@@ -211,9 +211,11 @@ export function AppLayout() {
           {isUmapPrimary ? (
             <div ref={umapSlotRef} className="@container flex-1 relative z-[1] flex flex-col" />
           ) : (
-            <div className="@container flex-1 relative z-[1] flex flex-col">
-              <TabContent tab={activeTabs[0]} />
-            </div>
+            <TabPanelContext.Provider value={activeTabs[0].id}>
+              <div className="@container flex-1 relative z-[1] flex flex-col">
+                <TabContent tab={activeTabs[0]} />
+              </div>
+            </TabPanelContext.Provider>
           )}
         </main>
       );
@@ -227,16 +229,23 @@ export function AppLayout() {
           onDragLeave={handleDragLeave}
           onDrop={(e) => handleDrop(e, 'left')}
         >
-          {isDragging && dragOverSide === 'left' && (
-            <div className="absolute inset-0 z-20 bg-primary/10 border-2 border-dashed border-primary/30" />
+          {isDragging && (
+            <div
+              className={`absolute inset-0 z-[9999] transition-colors ${dragOverSide === 'left' ? 'bg-primary/10 border-2 border-dashed border-primary/30' : ''}`}
+              onDragOver={(e) => handleDragOver(e, 'left')}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, 'left')}
+            />
           )}
           <div className={`absolute top-0 inset-x-0 h-6 bg-gradient-to-b ${tabColorClasses[tabMeta[primaryId].color].glowFrom} to-transparent pointer-events-none z-10`} />
           {isUmapPrimary ? (
             <div ref={umapSlotRef} className="flex-1 overflow-y-auto min-h-0 flex flex-col" />
           ) : (
-            <div className="flex-1 overflow-y-auto min-h-0 flex flex-col">
-              <TabContent tab={activeTabs[0]} />
-            </div>
+            <TabPanelContext.Provider value={activeTabs[0].id}>
+              <div className="flex-1 overflow-y-auto min-h-0 flex flex-col">
+                <TabContent tab={activeTabs[0]} />
+              </div>
+            </TabPanelContext.Provider>
           )}
         </div>
         <div
@@ -245,16 +254,23 @@ export function AppLayout() {
           onDragLeave={handleDragLeave}
           onDrop={(e) => handleDrop(e, 'right')}
         >
-          {isDragging && dragOverSide === 'right' && (
-            <div className="absolute inset-0 z-20 bg-primary/10 border-2 border-dashed border-primary/30" />
+          {isDragging && (
+            <div
+              className={`absolute inset-0 z-[9999] transition-colors ${dragOverSide === 'right' ? 'bg-primary/10 border-2 border-dashed border-primary/30' : ''}`}
+              onDragOver={(e) => handleDragOver(e, 'right')}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, 'right')}
+            />
           )}
           <div className={`absolute top-0 inset-x-0 h-6 bg-gradient-to-b ${tabColorClasses[tabMeta[splitId!].color].glowFrom} to-transparent pointer-events-none z-10`} />
           {isUmapSplit ? (
             <div ref={umapSlotRef} className="flex-1 overflow-y-auto min-h-0 flex flex-col" />
           ) : (
-            <div className="flex-1 overflow-y-auto min-h-0 flex flex-col">
-              <TabContent tab={activeTabs[1]} />
-            </div>
+            <TabPanelContext.Provider value={activeTabs[1].id}>
+              <div className="flex-1 overflow-y-auto min-h-0 flex flex-col">
+                <TabContent tab={activeTabs[1]} />
+              </div>
+            </TabPanelContext.Provider>
           )}
         </div>
       </main>
@@ -282,7 +298,12 @@ export function AppLayout() {
       {umapEverOpened.current && umapContainerRef.current && (
         <>
           {!isUmapVisible && <div style={{ display: 'none' }} ref={umapSlotRef} />}
-          {createPortal(<UmapView />, umapContainerRef.current)}
+          {createPortal(
+            <TabPanelContext.Provider value="umap">
+              <UmapView />
+            </TabPanelContext.Provider>,
+            umapContainerRef.current,
+          )}
         </>
       )}
       <Footer />
