@@ -16,9 +16,9 @@ const THEME_KEY = 'bedbase-theme';
 const FONT_SIZE_KEY = 'bedbase-font-size';
 
 const fontSizePx: Record<FontSize, string> = {
-  sm: '14px',
-  md: '16px',
-  lg: '18px',
+  sm: '16px',
+  md: '18px',
+  lg: '20px',
 };
 
 function resolveThemeName(theme: Theme): 'bedbase' | 'bedbase-dark' {
@@ -49,7 +49,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     () => (localStorage.getItem(THEME_KEY) as Theme | null) ?? 'auto',
   );
   const [fontSize, setFontSizeState] = useState<FontSize>(
-    () => (localStorage.getItem(FONT_SIZE_KEY) as FontSize | null) ?? 'lg',
+    () => (localStorage.getItem(FONT_SIZE_KEY) as FontSize | null) ?? 'md',
   );
   const fontSizeMounted = useRef(false);
 
