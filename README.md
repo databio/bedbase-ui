@@ -113,7 +113,7 @@ Production builds use `VITE_API_BASE` from `.env.production` (`https://api.bedba
 
 Deployed to Cloudflare Pages via GitHub Actions (`.github/workflows/deploy.yml`).
 
-- **`main` branch** builds with `VITE_API_BASE=https://api.bedbase.org/v1` (production)
+- **`master` branch** builds with `VITE_API_BASE=https://api.bedbase.org/v1` (production)
 - **`dev` branch** and PRs build with `VITE_API_BASE=https://api-dev.bedbase.org/v1`
 
 Requires `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets in the GitHub repository.

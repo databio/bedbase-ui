@@ -2,9 +2,9 @@ name: Deploy to Cloudflare Pages
 
 on:
   push:
-    branches: [main, dev]
+    branches: [master, dev]
   pull_request:
-    branches: [main]
+    branches: [master]
 
 jobs:
   build-and-deploy:
@@ -24,13 +24,13 @@ jobs:
       - run: npm ci
 
       - name: Build (production)
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/master'
         run: npm run build
         env:
           VITE_API_BASE: https://api.bedbase.org/v1
 
       - name: Build (dev)
-        if: github.ref != 'refs/heads/main'
+        if: github.ref != 'refs/heads/master'
         run: npm run build
         env:
           VITE_API_BASE: https://api-dev.bedbase.org/v1

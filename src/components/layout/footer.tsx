@@ -78,7 +78,7 @@ export function Footer() {
             API
           </a>
           <a
-            href="https://github.com/databio"
+            href="https://github.com/databio/bedbase-ui"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-base-content transition-colors"
