@@ -53,7 +53,10 @@ export function AnalysisEmpty() {
         <div className="max-w-3xl mx-auto">
 
           {/* Two ways to analyze — with integrated actions */}
-          <h2 className="text-2xl font-bold text-base-content mb-4 text-center">Analyze a BED file</h2>
+          <h2 className="text-2xl font-bold text-base-content mb-1 text-center">Analyze a BED file</h2>
+          <p className="text-base-content/50 text-sm max-w-md mx-auto text-center mb-8">
+            Open any BED file from BEDbase to explore statistics and metadata, or upload your own for instant client-side analysis.
+          </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {/* Database card */}
             <div className="flex flex-col rounded-lg border border-base-300 overflow-hidden">

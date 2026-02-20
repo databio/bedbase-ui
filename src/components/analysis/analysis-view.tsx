@@ -300,7 +300,7 @@ function DatabaseHeader({ analysis }: { analysis: BedAnalysis }) {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-col @lg:flex-row @lg:items-start @lg:justify-between gap-3">
+      <div className="flex flex-col @5xl:flex-row @5xl:items-start @5xl:justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-baseline gap-2 flex-wrap">
             <p className="text-lg font-semibold text-base-content">
@@ -312,7 +312,7 @@ function DatabaseHeader({ analysis }: { analysis: BedAnalysis }) {
             {metadata?.description || <span className="text-base-content/30 italic">No description available</span>}
           </p>
         </div>
-        <div className="shrink-0 flex flex-col @lg:items-end gap-1.5">
+        <div className="shrink-0 flex flex-col @5xl:items-end gap-1.5">
           <ActionBar analysis={analysis} />
           {(analysis.submissionDate || analysis.lastUpdateDate) && (
             <p className="text-[11px] text-base-content/30">

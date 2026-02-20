@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import init from '@databio/gtars';
 import './app.css';
+import 'devicon/devicon.min.css';
 import { App } from './pages/app';
 
 // Initialize gtars WASM before React mounts

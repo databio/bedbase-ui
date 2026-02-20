@@ -40,4 +40,4 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=bedbase-ui --branch=${{ github.ref_name }}
+          command: pages deploy --project-name=bedbase-ui --branch=${{ github.ref_name }}

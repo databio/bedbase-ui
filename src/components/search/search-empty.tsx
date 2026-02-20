@@ -37,8 +37,8 @@ export function SearchEmpty() {
 
   return (
     <div className="flex flex-col items-center justify-center h-full min-h-64 px-4 py-12">
-      <h2 className="text-2xl font-bold text-base-content mb-2">Search BEDbase</h2>
-      <p className="text-base-content/50 text-sm mb-8 max-w-md text-center">
+      <h2 className="text-2xl font-bold text-base-content mb-1">Search BEDbase</h2>
+      <p className="text-base-content/50 text-sm max-w-md mx-auto text-center mb-8">
         Search by text query to find BED files by metadata, or upload a BED file to find similar genomic regions.
       </p>
 

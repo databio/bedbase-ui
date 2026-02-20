@@ -142,12 +142,24 @@ function SearchInput({ onFileSelect }: { onFileSelect: (f: File) => void }) {
 
 // --- About features ---
 
-const aboutFeatures: { title: string; description: string; graphic?: ReactNode }[] = [
+type AboutFeature = {
+  title: string;
+  description: string;
+  graphic?: ReactNode;
+  links?: { label: string; href: string; icon: string }[];
+};
+
+const aboutFeatures: AboutFeature[] = [
   {
     title: 'Download and cache your data locally',
     description:
       'Use the BEDbase clients to access BED files and BED sets programmatically. The clients handle downloading and caching, enabling efficient reuse of genomic region data without manual API calls. Available in Python, Rust, and R.',
     graphic: <CodeSnippetGraphic />,
+    links: [
+      { label: 'Python', href: 'https://pypi.org/project/geniml/', icon: 'devicon-python-plain' },
+      { label: 'R', href: 'https://github.com/waldronlab/bedbaser', icon: 'devicon-r-plain' },
+      { label: 'Rust', href: 'https://crates.io/crates/gtars', icon: 'devicon-rust-original' },
+    ],
   },
   {
     title: 'Search for BED files',
@@ -158,7 +170,7 @@ const aboutFeatures: { title: string; description: string; graphic?: ReactNode }
   {
     title: 'Analyze your BED files',
     description:
-      'Upload a BED file or provide a URL to quickly explore its contents. The BED Analyzer generates key statistics, summary tables, and visualizations for region counts, lengths, genome coverage, and more.',
+      'Upload a BED file for instant WASM-powered statistics, or explore region counts, length distributions, genome coverage, and more for any file on BEDbase.',
     graphic: <BedAnalyzerGraphic />,
   },
   {
@@ -224,6 +236,22 @@ export function Hub() {
                 <div className="flex-1">
                   <h3 className="text-lg font-medium text-base-content mb-2">{feature.title}</h3>
                   <p className="text-base-content/60 text-sm leading-relaxed text-balance">{feature.description}</p>
+                  {feature.links && (
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
+                      {feature.links.map((link) => (
+                        <a
+                          key={link.label}
+                          href={link.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-xs font-medium text-base-content/60 hover:text-base-content/80 bg-base-200 hover:bg-base-300 px-2.5 py-1.5 rounded-md transition-colors"
+                        >
+                          <i className={`${link.icon} text-base`} />
+                          {link.label}
+                        </a>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="flex-1 w-full min-w-0">
                   <div className="border border-base-300 rounded-lg h-48 bg-base-100 overflow-hidden">

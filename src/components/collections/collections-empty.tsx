@@ -19,7 +19,7 @@ export function CollectionsEmpty() {
       <div className="px-4 md:px-6 pt-12 pb-10">
         <div className="max-w-3xl mx-auto">
           <h2 className="text-2xl font-bold text-base-content mb-1 text-center">Collections</h2>
-          <p className="text-base-content/50 text-sm max-w-md mx-auto text-center mb-6">
+          <p className="text-base-content/50 text-sm max-w-md mx-auto text-center mb-8">
             Browse curated BEDsets or manage your saved selections from the UMAP embeddings.
           </p>
 

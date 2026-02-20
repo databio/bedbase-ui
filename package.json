@@ -16,6 +16,7 @@
     "@uwdata/mosaic-sql": "^0.21.1",
     "@uwdata/vgplot": "^0.21.1",
     "axios": "^1.13.5",
+    "devicon": "^2.17.0",
     "embedding-atlas": "^0.15.0",
     "highlight.js": "^11.11.1",
     "lucide-react": "^0.574.0",
