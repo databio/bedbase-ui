@@ -132,7 +132,7 @@ export function EmbeddingSelections({ currentSelection }: Props) {
                       ) : (
                         <>
                           <span
-                            className="cursor-text hover:underline truncate max-w-20 @2xs:max-w-32"
+                            className="cursor-text hover:underline truncate max-w-20 @2xs:max-w-32 @xs:max-w-48 @sm:max-w-64"
                             onClick={() => handleStartEdit(bucket.id, bucket.name)}
                             title={bucket.name}
                           >

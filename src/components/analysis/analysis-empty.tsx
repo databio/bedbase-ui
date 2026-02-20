@@ -7,6 +7,8 @@ import { useFile } from '../../contexts/file-context';
 import { useTab } from '../../contexts/tab-context';
 import { useStats } from '../../queries/use-stats';
 import { useSampleBeds } from '../../queries/use-sample-beds';
+import { useBedMetadata } from '../../queries/use-bed-metadata';
+import { EXAMPLE_BED_ID } from '../../lib/const';
 
 function formatBytes(bytes: number): string {
   if (bytes >= 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
@@ -32,6 +34,7 @@ export function AnalysisEmpty() {
   const { bedFile, setBedFile } = useFile();
   const { openTab } = useTab();
   const { data: stats } = useStats();
+  const { data: exampleBed } = useBedMetadata(EXAMPLE_BED_ID);
   const { data: sampleBeds } = useSampleBeds(3);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -161,7 +164,27 @@ export function AnalysisEmpty() {
           {/* Sample files */}
           <h3 className="text-sm font-semibold text-base-content mb-4 mt-10 text-center">Try a sample file:</h3>
           <div className="grid grid-cols-3 gap-2">
-            {sampleBeds ? sampleBeds.map((bed) => (
+            {exampleBed ? (
+              <button
+                onClick={() => openTab('analysis', 'bed/' + EXAMPLE_BED_ID)}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-base-300 hover:border-base-content/20 hover:bg-base-200/30 transition-colors cursor-pointer text-left"
+              >
+                <FileText size={14} className="text-base-content/30 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-base-content truncate">{exampleBed.name || 'Unnamed'}</p>
+                  <p className="text-[11px] text-base-content/40">{[exampleBed.genome_alias, exampleBed.annotation?.assay].filter(Boolean).join(' · ') || EXAMPLE_BED_ID.slice(0, 8)}</p>
+                </div>
+              </button>
+            ) : (
+              <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-base-300 animate-pulse">
+                <div className="w-3.5 h-3.5 bg-base-300 rounded shrink-0" />
+                <div className="flex-1">
+                  <div className="h-3 w-24 bg-base-300 rounded mb-1" />
+                  <div className="h-2.5 w-16 bg-base-300 rounded" />
+                </div>
+              </div>
+            )}
+            {sampleBeds ? sampleBeds.filter((bed) => bed.id !== EXAMPLE_BED_ID).slice(0, 2).map((bed) => (
               <button
                 key={bed.id}
                 onClick={() => openTab('analysis', 'bed/' + bed.id)}
@@ -174,7 +197,7 @@ export function AnalysisEmpty() {
                 </div>
               </button>
             )) : (
-              [0, 1, 2].map((i) => (
+              [0, 1].map((i) => (
                 <div key={i} className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-base-300 animate-pulse">
                   <div className="w-3.5 h-3.5 bg-base-300 rounded shrink-0" />
                   <div className="flex-1">

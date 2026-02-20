@@ -8,9 +8,13 @@ type Props = {
   className?: string;
 };
 
+const TABLE_ROW_LIMIT = 200;
+
 export function EmbeddingTable({ selectedPoints, centerOnBedId, className }: Props) {
   const { openTab } = useTab();
   const filtered = selectedPoints.filter((p) => p != null && p.identifier !== 'custom_point');
+  const visible = filtered.length > TABLE_ROW_LIMIT ? filtered.slice(0, TABLE_ROW_LIMIT) : filtered;
+  const truncated = filtered.length > TABLE_ROW_LIMIT;
 
   return (
     <div className={`border border-base-300 rounded-lg overflow-auto overscroll-contain bg-white ${className || ''}`}>
@@ -33,13 +37,13 @@ export function EmbeddingTable({ selectedPoints, centerOnBedId, className }: Pro
             </tr>
           </thead>
           <tbody>
-            {filtered.map((point, index) => (
+            {visible.map((point, index) => (
               <tr
                 key={`${point.identifier}_${index}`}
                 className="cursor-pointer hover:bg-base-200 transition-colors"
-                onClick={() => centerOnBedId?.(point.identifier, 0.5)}
+                onClick={() => centerOnBedId?.(point.identifier, 0.2)}
               >
-                <td className="whitespace-nowrap max-w-40 truncate text-base-content/70">{point.text}</td>
+                <td className="whitespace-nowrap max-w-40 truncate text-base-content/70">{point.text || point.identifier}</td>
                 <td className="whitespace-nowrap text-base-content/50">{point.fields?.Assay}</td>
                 <td className="whitespace-nowrap text-base-content/50">{point.fields?.['Cell Line']}</td>
                 <td className="max-w-xs truncate text-base-content/50">{point.fields?.Description}</td>
@@ -57,6 +61,13 @@ export function EmbeddingTable({ selectedPoints, centerOnBedId, className }: Pro
                 </td>
               </tr>
             ))}
+            {truncated && (
+              <tr>
+                <td colSpan={5} className="text-center text-base-content/40 py-1.5">
+                  Showing {TABLE_ROW_LIMIT} of {filtered.length.toLocaleString()} selected
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       )}

@@ -1,4 +1,5 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useFile } from '../../contexts/file-context';
@@ -25,10 +26,28 @@ export function AppLayout() {
   const splitId = activeTabs[1]?.id;
   const isSplit = activeTabs.length > 1;
 
-  // Keep-mounted UMAP: once opened, never unmount (DuckDB WASM init is slow)
+  // Portal-based UMAP: once opened, never unmount (DuckDB WASM init is slow)
+  // A single UmapView is rendered into a stable container via createPortal.
+  // The container is moved between layout slots (full-screen / split panels)
+  // so the component is never remounted when switching layouts.
   const umapEverOpened = useRef(false);
-  const isUmapActive = primaryId === 'umap';
-  if (isUmapActive) umapEverOpened.current = true;
+  const isUmapPrimary = primaryId === 'umap';
+  const isUmapSplit = splitId === 'umap';
+  const isUmapVisible = isUmapPrimary || isUmapSplit;
+  if (isUmapVisible) umapEverOpened.current = true;
+
+  const umapContainerRef = useRef<HTMLDivElement | null>(null);
+  if (umapEverOpened.current && !umapContainerRef.current) {
+    umapContainerRef.current = document.createElement('div');
+    umapContainerRef.current.style.display = 'contents';
+  }
+
+  const umapSlotRef = useCallback((node: HTMLDivElement | null) => {
+    const container = umapContainerRef.current;
+    if (node && container) {
+      node.appendChild(container);
+    }
+  }, []);
 
   function handleDragStart(e: React.DragEvent, tabId: string) {
     e.dataTransfer.setData('text/plain', tabId);
@@ -165,9 +184,6 @@ export function AppLayout() {
       return <Hub />;
     }
 
-    // UMAP tab is rendered by the keep-mounted section below
-    if (isUmapActive && !isSplit) return null;
-
     if (!isSplit) {
       return (
         <main className="flex-1 flex flex-col relative">
@@ -192,9 +208,13 @@ export function AppLayout() {
             </div>
           )}
           <div className={`absolute top-0 inset-x-0 h-6 bg-gradient-to-b ${tabColorClasses[tabMeta[primaryId].color].glowFrom} to-transparent pointer-events-none z-0`} />
-          <div className="@container flex-1 relative z-[1] flex flex-col">
-            <TabContent tab={activeTabs[0]} />
-          </div>
+          {isUmapPrimary ? (
+            <div ref={umapSlotRef} className="@container flex-1 relative z-[1] flex flex-col" />
+          ) : (
+            <div className="@container flex-1 relative z-[1] flex flex-col">
+              <TabContent tab={activeTabs[0]} />
+            </div>
+          )}
         </main>
       );
     }
@@ -211,9 +231,13 @@ export function AppLayout() {
             <div className="absolute inset-0 z-20 bg-primary/10 border-2 border-dashed border-primary/30" />
           )}
           <div className={`absolute top-0 inset-x-0 h-6 bg-gradient-to-b ${tabColorClasses[tabMeta[primaryId].color].glowFrom} to-transparent pointer-events-none z-10`} />
-          <div className="flex-1 overflow-y-auto min-h-0 flex flex-col">
-            <TabContent tab={activeTabs[0]} />
-          </div>
+          {isUmapPrimary ? (
+            <div ref={umapSlotRef} className="flex-1 overflow-y-auto min-h-0 flex flex-col" />
+          ) : (
+            <div className="flex-1 overflow-y-auto min-h-0 flex flex-col">
+              <TabContent tab={activeTabs[0]} />
+            </div>
+          )}
         </div>
         <div
           className={`@container relative border-l border-base-300 flex flex-col overflow-hidden min-h-0`}
@@ -225,9 +249,13 @@ export function AppLayout() {
             <div className="absolute inset-0 z-20 bg-primary/10 border-2 border-dashed border-primary/30" />
           )}
           <div className={`absolute top-0 inset-x-0 h-6 bg-gradient-to-b ${tabColorClasses[tabMeta[splitId!].color].glowFrom} to-transparent pointer-events-none z-10`} />
-          <div className="flex-1 overflow-y-auto min-h-0 flex flex-col">
-            <TabContent tab={activeTabs[1]} />
-          </div>
+          {isUmapSplit ? (
+            <div ref={umapSlotRef} className="flex-1 overflow-y-auto min-h-0 flex flex-col" />
+          ) : (
+            <div className="flex-1 overflow-y-auto min-h-0 flex flex-col">
+              <TabContent tab={activeTabs[1]} />
+            </div>
+          )}
         </div>
       </main>
     );
@@ -250,38 +278,12 @@ export function AppLayout() {
         </div>
       </header>
       {renderContent()}
-      {/* Keep-mounted UMAP: rendered once opened, hidden when not active */}
-      {umapEverOpened.current && (
-        <div
-          style={{ display: isUmapActive && !isSplit ? 'contents' : 'none' }}
-        >
-          <main className="flex-1 flex flex-col relative">
-            {isDragging && (
-              <div className="absolute inset-0 z-10 grid grid-cols-2">
-                <div
-                  onDragOver={(e) => handleDragOver(e, 'left')}
-                  onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, 'left')}
-                  className={`transition-colors ${
-                    dragOverSide === 'left' ? 'bg-primary/10 border-2 border-dashed border-primary/30' : ''
-                  }`}
-                />
-                <div
-                  onDragOver={(e) => handleDragOver(e, 'right')}
-                  onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, 'right')}
-                  className={`transition-colors ${
-                    dragOverSide === 'right' ? 'bg-primary/10 border-2 border-dashed border-primary/30' : ''
-                  }`}
-                />
-              </div>
-            )}
-            <div className={`absolute top-0 inset-x-0 h-6 bg-gradient-to-b ${tabColorClasses[tabMeta['umap'].color].glowFrom} to-transparent pointer-events-none z-0`} />
-            <div className="@container flex-1 relative z-[1] flex flex-col">
-              <UmapView />
-            </div>
-          </main>
-        </div>
+      {/* Portal-based UMAP: single instance, moved between layout slots */}
+      {umapEverOpened.current && umapContainerRef.current && (
+        <>
+          {!isUmapVisible && <div style={{ display: 'none' }} ref={umapSlotRef} />}
+          {createPortal(<UmapView />, umapContainerRef.current)}
+        </>
       )}
       <Footer />
     </div>

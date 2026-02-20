@@ -1,43 +1,32 @@
-import { useState } from 'react';
 import { useTab } from '../../contexts/tab-context';
-import { EmbeddingPlot } from './embedding-plot';
 import { useMosaicCoordinator } from '../../contexts/mosaic-coordinator-context';
+import { EmbeddingPlot } from './embedding-plot';
 
-type Props = {
-  bedIds?: string[];
-  height?: number;
-  className?: string;
-};
-
-export function EmbeddingPreview({ bedIds, height = 200, className }: Props) {
+export function EmbeddingPreview() {
   const { openTab } = useTab();
   const { webglStatus } = useMosaicCoordinator();
-  const [hasError, setHasError] = useState(false);
 
-  if (webglStatus.error || hasError) return null;
+  if (webglStatus.error) return null;
 
   return (
-    <div
-      className={`border border-base-300 rounded-lg overflow-hidden cursor-pointer hover:shadow-md transition-shadow ${className || ''}`}
-      onClick={() => openTab('umap', '')}
-    >
-      <div className="pointer-events-none" onError={() => setHasError(true)}>
-        <EmbeddingPlot
-          bedIds={bedIds}
-          preselectedIds={bedIds}
-          height={height}
-          simpleTooltip
-          showStatus={false}
-          persistentPoints={[]}
-          interactivePoints={[]}
-          pendingPoints={null}
-          onPreselectedChange={() => {}}
-          onBucketChange={() => {}}
-          onInteractiveChange={() => {}}
-          onSetPending={() => {}}
-          onApplyPending={() => {}}
-        />
-      </div>
+    <div className="relative w-full h-full cursor-pointer" onClick={() => openTab('umap')}>
+      {/* Transparent overlay blocks all plot interaction — click navigates to UMAP tab */}
+      <div className="absolute inset-0 z-10" />
+      <EmbeddingPlot
+        height={192}
+        simpleTooltip
+        showStatus={false}
+        persistentPoints={[]}
+        interactivePoints={[]}
+        pendingPoints={null}
+        onPreselectedChange={() => {}}
+        onBucketChange={() => {}}
+        onInteractiveChange={() => {}}
+        onSetPending={() => {}}
+        onApplyPending={() => {}}
+        pinnedCategories={[]}
+        onPinnedCategoriesChange={() => {}}
+      />
     </div>
   );
 }

@@ -21,6 +21,8 @@ type FileContextValue = {
   analysis: BedAnalysis | null;
   analyzing: boolean;
   analysisProgress: number;
+  umapCoordinates: number[] | null;
+  setUmapCoordinates: (coords: number[] | null) => void;
 };
 
 const FileContext = createContext<FileContextValue | null>(null);
@@ -35,6 +37,7 @@ export function FileProvider({ children }: { children: ReactNode }) {
   const [analysis, setAnalysis] = useState<BedAnalysis | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0);
+  const [umapCoordinates, setUmapCoordinates] = useState<number[] | null>(null);
   const rsRef = useRef<RegionSet | null>(null);
 
   useEffect(() => {
@@ -55,6 +58,7 @@ export function FileProvider({ children }: { children: ReactNode }) {
       setAnalysis(null);
       setAnalyzing(false);
       setAnalysisProgress(0);
+      setUmapCoordinates(null);
       return;
     }
 
@@ -130,7 +134,7 @@ export function FileProvider({ children }: { children: ReactNode }) {
 
   return (
     <FileContext.Provider
-      value={{ bedFile, setBedFile, regionSet, parsing, parseProgress, parseError, parseTime, analysis, analyzing, analysisProgress }}
+      value={{ bedFile, setBedFile, regionSet, parsing, parseProgress, parseError, parseTime, analysis, analyzing, analysisProgress, umapCoordinates, setUmapCoordinates }}
     >
       {children}
     </FileContext.Provider>

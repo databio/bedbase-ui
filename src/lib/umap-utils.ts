@@ -5,14 +5,14 @@ export const UMAP_URL = 'https://huggingface.co/databio/bedbase-umap/resolve/mai
 
 export type UmapPoint = {
   identifier: string;
-  text: string;
-  x: number;
-  y: number;
   category: number;
-  fields: {
-    Description: string;
-    Assay: string;
-    'Cell Line': string;
+  text?: string;
+  x?: number;
+  y?: number;
+  fields?: {
+    Description?: string;
+    Assay?: string;
+    'Cell Line'?: string;
   };
 };
 

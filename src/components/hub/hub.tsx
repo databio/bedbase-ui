@@ -7,7 +7,7 @@ import { useStats } from '../../queries/use-stats';
 import { FileSearchGraphic } from '../graphics/file-search-graphic';
 import { BedAnalyzerGraphic } from '../graphics/bed-analyzer-graphic';
 import { CodeSnippetGraphic } from '../graphics/code-snippet-graphic';
-import { UmapPreviewGraphic } from '../graphics/umap-preview-graphic';
+import { EmbeddingPreview } from '../umap/embedding-preview';
 
 function formatBytes(bytes: number): string {
   if (bytes >= 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
@@ -147,7 +147,7 @@ const aboutFeatures: { title: string; description: string; graphic?: ReactNode }
     title: 'Visualize BED file similarity',
     description:
       'Explore BED file similarity using an interactive UMAP of hg38-based embeddings. Compare existing BEDbase data and upload your own BED file to see how it relates to other genomic region sets.',
-    graphic: <UmapPreviewGraphic />,
+    graphic: <EmbeddingPreview />,
   },
 ];
 

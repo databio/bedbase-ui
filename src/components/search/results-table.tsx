@@ -1,4 +1,4 @@
-import { Plus, Check } from 'lucide-react';
+import { Plus, Check, CheckCheck } from 'lucide-react';
 import type { components } from '../../bedbase-types';
 import { useTab } from '../../contexts/tab-context';
 import { useCart } from '../../contexts/cart-context';
@@ -9,7 +9,7 @@ function roundScore(score: number): string {
   return (score * 100).toFixed(1);
 }
 
-export function ResultsTable({ results }: { results: QdrantSearchResult[] }) {
+export function ResultsTable({ results, searchQuery }: { results: QdrantSearchResult[]; searchQuery?: string }) {
   const { openTab } = useTab();
   const { addToCart, removeFromCart, isInCart } = useCart();
 
@@ -40,7 +40,16 @@ export function ResultsTable({ results }: { results: QdrantSearchResult[] }) {
                 onClick={() => meta?.id && openTab('analysis', 'bed/' + meta.id)}
                 className="hover:bg-primary/5 cursor-pointer transition-colors"
               >
-                <td className="font-medium max-w-48 truncate">{meta?.name || 'Unnamed'}</td>
+                <td className="font-medium max-w-48">
+                  <span className="flex items-center gap-1">
+                    <span className="truncate">{meta?.name || 'Unnamed'}</span>
+                    {searchQuery && r.id === searchQuery && (
+                      <span className="tooltip tooltip-bottom tooltip-info z-10 shrink-0" data-tip="Exact match">
+                        <CheckCheck size={14} className="text-primary" />
+                      </span>
+                    )}
+                  </span>
+                </td>
                 <td>
                   {meta?.genome_alias ? (
                     <span className="badge badge-xs badge-primary font-semibold">{meta.genome_alias}</span>

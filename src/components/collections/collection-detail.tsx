@@ -72,7 +72,7 @@ function CopyableId({ id }: { id: string }) {
 export function CollectionDetail({ bedsetId }: { bedsetId: string }) {
   const { openTab } = useTab();
   const { addToCart, removeFromCart, isInCart } = useCart();
-  const { createBucket } = useBucket();
+  const { createBucket, focusBucket } = useBucket();
   const [showCode, setShowCode] = useState(false);
   const { data: meta, isLoading: metaLoading, error: metaError, refetch } = useBedsetMetadata(bedsetId);
   const { data: bedfiles } = useBedsetBedfiles(bedsetId);
@@ -186,8 +186,9 @@ export function CollectionDetail({ bedsetId }: { bedsetId: string }) {
                 {bedfileList.length > 0 && (
                   <button
                     onClick={() => {
-                      createBucket(`BEDset: ${meta.name}`, bedfileList.map((b) => b.id));
-                      openTab('umap');
+                      const id = createBucket(`BEDset: ${meta.name}`, bedfileList.map((b) => b.id), `bedset:${bedsetId}`);
+                      focusBucket(id);
+                      openTab('umap', '');
                     }}
                     className={linkClass}
                   >

@@ -7,10 +7,10 @@ type Props = {
   selectedPoints: UmapPoint[];
   colorGrouping: string;
   legendItems: LegendItem[];
-  filterSelection: LegendItem | null;
+  pinnedCategories: number[];
 };
 
-export function EmbeddingStats({ selectedPoints, colorGrouping, legendItems, filterSelection }: Props) {
+export function EmbeddingStats({ selectedPoints, colorGrouping, legendItems, pinnedCategories }: Props) {
   const { coordinator } = useMosaicCoordinator();
   const [totalCounts, setTotalCounts] = useState<Map<number, number>>(new Map());
 
@@ -44,14 +44,14 @@ export function EmbeddingStats({ selectedPoints, colorGrouping, legendItems, fil
         count: counts.get(item.category) || 0,
       }));
     }
-    if (filterSelection) {
+    if (pinnedCategories.length > 0) {
+      const pinnedSet = new Set(pinnedCategories);
       return legendItems.map((item) => ({
         name: item.name,
         category: item.category,
-        count:
-          item.category === filterSelection.category
-            ? (totalCounts.get(item.category) ?? 0)
-            : 0,
+        count: pinnedSet.has(item.category)
+          ? (totalCounts.get(item.category) ?? 0)
+          : 0,
       }));
     }
     return legendItems.map((item) => ({
@@ -59,9 +59,9 @@ export function EmbeddingStats({ selectedPoints, colorGrouping, legendItems, fil
       category: item.category,
       count: totalCounts.get(item.category) ?? 0,
     }));
-  }, [selectedPoints, colorGrouping, legendItems, hasSelection, totalCounts, filterSelection]);
+  }, [selectedPoints, colorGrouping, legendItems, hasSelection, totalCounts, pinnedCategories]);
 
-  const showBackground = hasSelection || !!filterSelection;
+  const showBackground = hasSelection || pinnedCategories.length > 0;
   const maxTotal = useMemo(
     () => Math.max(1, ...legendItems.map((item) => totalCounts.get(item.category) ?? 0)),
     [legendItems, totalCounts],
@@ -110,7 +110,7 @@ export function EmbeddingStats({ selectedPoints, colorGrouping, legendItems, fil
                     />
                   )}
                 </div>
-                <span className="shrink-0 text-right whitespace-nowrap text-base-content/40" style={{ fontSize: 8 }}>
+                <span className={`shrink-0 text-right whitespace-nowrap ${row.count > 0 ? 'text-base-content/40' : 'text-base-content/15'}`} style={{ fontSize: 8 }}>
                   {row.count}/{total}
                 </span>
               </div>

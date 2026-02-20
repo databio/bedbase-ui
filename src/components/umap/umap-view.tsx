@@ -49,8 +49,8 @@ function dedup(...arrays: UmapPoint[][]): UmapPoint[] {
 }
 
 export function UmapView() {
-  const { bedFile, setBedFile } = useFile();
-  const { enabledBedIds, createBucket } = useBucket();
+  const { bedFile, setBedFile, umapCoordinates, setUmapCoordinates } = useFile();
+  const { enabledBedIds, resetBucketsOnMount } = useBucket();
   const [searchParams, setSearchParams] = useSearchParams();
   const getBedUmap = useBedUmap();
 
@@ -60,8 +60,10 @@ export function UmapView() {
   // State managed here, not in context
   const [colorGrouping, setColorGrouping] = useState('cell_line_category');
   const [legendItems, setLegendItems] = useState<LegendItem[]>([]);
-  const [filterSelection, setFilterSelection] = useState<LegendItem | null>(null);
-  const [customCoordinates, setCustomCoordinates] = useState<number[] | null>(null);
+  const [pinnedCategories, setPinnedCategories] = useState<number[]>([]);
+  // umapCoordinates is persisted in FileContext so it survives UmapView remounts (e.g., split view)
+  const customCoordinates = umapCoordinates;
+  const setCustomCoordinates = setUmapCoordinates;
   const [preselectedMatch, setPreselectedMatch] = useState<{ matched: number; total: number }>({ matched: 0, total: 0 });
 
   // Consolidated selection state
@@ -93,6 +95,9 @@ export function UmapView() {
     return [];
   }, [searchParams]);
 
+  // Disable stale buckets on mount unless navigated via "View on UMAP"
+  useEffect(() => { resetBucketsOnMount(); }, []);
+
   // All highlighted IDs: preselected + buckets (deduplicated)
   const bedIds = useMemo(() => {
     const ids = new Set([...preselectedIds, ...enabledBedIds]);
@@ -116,6 +121,8 @@ export function UmapView() {
       }
       return;
     }
+    // Skip re-projection if coordinates are already cached (e.g., remount from split view)
+    if (customCoordinates) return;
     if (preselectedIds.length > 0) clearPreselection();
     getBedUmap.mutate(bedFile, {
       onSuccess: (coords) => setCustomCoordinates(coords),
@@ -138,24 +145,23 @@ export function UmapView() {
     plotRef.current?.handleFileRemove();
   };
 
-  const handleLegendClick = useCallback(
-    (item: LegendItem) => plotRef.current?.handleLegendClick(item),
+  const handleTogglePin = useCallback(
+    (category: number) => plotRef.current?.handleTogglePin(category),
     [],
   );
 
-  const handleSaveCategory = useCallback(
-    async (item: LegendItem) => {
-      const points = await plotRef.current?.queryByCategory(String(item.category));
-      if (points && points.length > 0) {
-        const ids = points.map((p) => p.identifier).filter((id) => id !== 'custom_point');
-        createBucket(`Category: ${item.name}`, ids);
-      }
-    },
-    [createBucket],
+  const handlePinAll = useCallback(
+    () => plotRef.current?.handlePinAll(legendItems.map((item) => item.category)),
+    [legendItems],
+  );
+
+  const handleUnpinAll = useCallback(
+    () => plotRef.current?.handleUnpinAll(),
+    [],
   );
 
   const handleLocateCustomPoint = () => {
-    plotRef.current?.centerOnBedId('custom_point', 0.3, true);
+    plotRef.current?.centerOnBedId('custom_point', 0.2, true);
   };
 
   return (
@@ -172,7 +178,7 @@ export function UmapView() {
                     <div className="inline-flex items-center gap-1.5 bg-primary/10 px-2.5 py-1.5">
                     <button
                       onClick={() => {
-                        if (preselectedIds.length > 0) plotRef.current?.centerOnBedId(preselectedIds[0], 0.1);
+                        if (preselectedIds.length > 0) plotRef.current?.centerOnBedId(preselectedIds[0], 0.2);
                       }}
                       className="text-primary hover:text-primary/80 cursor-pointer transition-colors shrink-0"
                       title="Locate on plot"
@@ -255,8 +261,8 @@ export function UmapView() {
               preselectedIds={preselectedIds.length > 0 ? preselectedIds : undefined}
               height={undefined}
               colorGrouping={colorGrouping}
-              filterSelection={filterSelection}
-              onFilterSelectionChange={setFilterSelection}
+              pinnedCategories={pinnedCategories}
+              onPinnedCategoriesChange={setPinnedCategories}
               persistentPoints={persistentPoints}
               interactivePoints={selection.interactive}
               pendingPoints={selection.pending}
@@ -284,18 +290,19 @@ export function UmapView() {
         <div className="@container flex-[22.5] flex flex-col gap-2 overflow-hidden min-h-0">
           <EmbeddingLegend
             legendItems={legendItems}
-            filterSelection={filterSelection}
-            handleLegendClick={handleLegendClick}
+            pinnedCategories={pinnedCategories}
+            onTogglePin={handleTogglePin}
+            onPinAll={handlePinAll}
+            onUnpinAll={handleUnpinAll}
             colorGrouping={colorGrouping}
             setColorGrouping={setColorGrouping}
-            onSaveCategory={handleSaveCategory}
           />
           <EmbeddingSelections currentSelection={allVisiblePoints} />
           <EmbeddingStats
             selectedPoints={allVisiblePoints}
             colorGrouping={colorGrouping}
             legendItems={legendItems}
-            filterSelection={filterSelection}
+            pinnedCategories={pinnedCategories}
           />
         </div>
       </div>

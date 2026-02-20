@@ -2,14 +2,13 @@ import { useState, useRef } from 'react';
 import { Search, Upload, FileText, ArrowRight } from 'lucide-react';
 import { useTab } from '../../contexts/tab-context';
 import { useFile } from '../../contexts/file-context';
+import { EXAMPLE_QUERIES } from '../../lib/const';
 
 function formatBytes(bytes: number): string {
   if (bytes >= 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
   if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   return `${(bytes / 1024).toFixed(1)} KB`;
 }
-
-const exampleQueries = ['K562 CTCF', 'ENCODE DNase-seq', 'H3K27ac ChIP-seq', 'promoter regions'];
 
 export function SearchEmpty() {
   const [query, setQuery] = useState('');
@@ -112,7 +111,7 @@ export function SearchEmpty() {
         {/* Example queries */}
         <div className="flex items-center gap-2 mt-4 flex-wrap justify-center">
           <span className="text-base-content/30 text-xs">Try:</span>
-          {exampleQueries.map((term) => (
+          {EXAMPLE_QUERIES.map((term) => (
             <button
               key={term}
               onClick={() => openTab('search', term)}

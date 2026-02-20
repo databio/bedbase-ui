@@ -32,18 +32,6 @@ export function ActionBar({ analysis }: { analysis: BedAnalysis }) {
 
   return (
     <div className="flex items-center gap-1 flex-wrap">
-      {downloadUrls?.bed && (
-        <a href={downloadUrls.bed} target="_blank" rel="noopener noreferrer" className={linkClass}>
-          <Download size={13} />
-          BED
-        </a>
-      )}
-      {downloadUrls?.bigBed && (
-        <a href={downloadUrls.bigBed} target="_blank" rel="noopener noreferrer" className={linkClass}>
-          <Download size={13} />
-          BigBED
-        </a>
-      )}
       {analysis.id && (
         <>
           {isInUmap && (
@@ -54,6 +42,18 @@ export function ActionBar({ analysis }: { analysis: BedAnalysis }) {
               <ScatterChart size={13} />
               View on UMAP
             </button>
+          )}
+          {downloadUrls?.bed && (
+            <a href={downloadUrls.bed} target="_blank" rel="noopener noreferrer" className={linkClass}>
+              <Download size={13} />
+              BED
+            </a>
+          )}
+          {downloadUrls?.bigBed && (
+            <a href={downloadUrls.bigBed} target="_blank" rel="noopener noreferrer" className={linkClass}>
+              <Download size={13} />
+              BigBED
+            </a>
           )}
           <button
             onClick={handleCart}

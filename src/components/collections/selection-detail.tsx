@@ -5,7 +5,7 @@ import { useBucket } from '../../contexts/bucket-context';
 
 export function SelectionDetail({ selectionId }: { selectionId: string }) {
   const { openTab } = useTab();
-  const { buckets, renameBucket, deleteBucket, removeBedFromBucket, toggleBucket } = useBucket();
+  const { buckets, renameBucket, deleteBucket, removeBedFromBucket, focusBucket } = useBucket();
   const bucket = buckets.find((b) => b.id === selectionId);
 
   const [editing, setEditing] = useState(false);
@@ -128,8 +128,8 @@ export function SelectionDetail({ selectionId }: { selectionId: string }) {
             <div className="shrink-0 flex items-center gap-1">
               <button
                 onClick={() => {
-                  if (!bucket.enabled) toggleBucket(bucket.id);
-                  openTab('umap');
+                  focusBucket(bucket.id);
+                  openTab('umap', '');
                 }}
                 className="inline-flex items-center gap-1.5 text-xs font-medium text-base-content/60 hover:text-base-content/80 bg-base-200 hover:bg-base-300 px-2.5 py-1.5 rounded-md transition-colors cursor-pointer"
               >

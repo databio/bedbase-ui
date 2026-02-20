@@ -171,6 +171,7 @@ function SearchResults({
   limit,
   onOffsetChange,
   bucketLabel,
+  searchQuery,
 }: {
   header: React.ReactNode;
   filters?: React.ReactNode;
@@ -182,16 +183,18 @@ function SearchResults({
   limit: number;
   onOffsetChange: (offset: number) => void;
   bucketLabel?: string;
+  searchQuery?: string;
 }) {
   const { openTab } = useTab();
-  const { createBucket } = useBucket();
+  const { createBucket, focusBucket } = useBucket();
 
   const handleViewOnUmap = () => {
     if (!data?.results) return;
     const ids = data.results.map((r) => r.metadata?.id).filter(Boolean) as string[];
     if (ids.length === 0) return;
-    createBucket(bucketLabel || 'Search results', ids);
-    openTab('umap');
+    const id = createBucket(bucketLabel || 'Search results', ids);
+    focusBucket(id);
+    openTab('umap', '');
   };
 
   return (
@@ -227,7 +230,7 @@ function SearchResults({
           </div>
         ) : data?.results && data.results.length > 0 ? (
           <>
-            <ResultsTable results={data.results} />
+            <ResultsTable results={data.results} searchQuery={searchQuery} />
             {data.count > limit && (
               <Pagination
                 count={data.count}
@@ -322,6 +325,7 @@ function TextSearchResults({ query }: { query: string }) {
       limit={limit}
       onOffsetChange={setOffset}
       bucketLabel={`Search: ${query}`}
+      searchQuery={query}
     />
   );
 }

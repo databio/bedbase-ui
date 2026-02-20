@@ -180,13 +180,13 @@ export function FilePage() {
             ))}
           </div>
           <button
-            onClick={() => navigate('/file/report')}
-            className="flex items-start gap-3 p-4 mt-3 rounded-lg border border-base-300 hover:border-base-content/20 hover:bg-base-200/30 transition-colors cursor-pointer text-left max-w-3xl mx-auto w-full"
+            disabled
+            className="flex items-start gap-3 p-4 mt-3 rounded-lg border border-base-300 text-left max-w-3xl mx-auto w-full opacity-50 cursor-not-allowed"
           >
             <FileBarChart size={18} className="text-primary mt-0.5 shrink-0" />
             <div>
               <h3 className="text-sm font-semibold text-base-content">Generate analysis report</h3>
-              <p className="text-base-content/50 text-xs mt-0.5">Run a comprehensive analysis pipeline on your file and generate a downloadable report with region statistics, chromosome distributions, genomic feature annotations, and similarity rankings.</p>
+              <p className="text-base-content/50 text-xs mt-0.5">Coming soon. Run a comprehensive analysis pipeline on your file and generate a downloadable report.</p>
             </div>
           </button>
         </div>

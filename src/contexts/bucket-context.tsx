@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useMemo, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useMemo, useEffect, useRef, type ReactNode } from 'react';
 
 export type SelectionBucket = {
   id: string;
@@ -7,17 +7,20 @@ export type SelectionBucket = {
   enabled: boolean;
   createdAt: number;
   order: number;
+  key?: string;
 };
 
 type BucketContextValue = {
   buckets: SelectionBucket[];
-  createBucket: (name: string, bedIds: string[]) => string;
+  createBucket: (name: string, bedIds: string[], key?: string) => string;
   deleteBucket: (id: string) => void;
   toggleBucket: (id: string) => void;
   renameBucket: (id: string, name: string) => void;
   removeBedFromBucket: (bucketId: string, bedId: string) => void;
   reorderBuckets: (orderedIds: string[]) => void;
   clearBuckets: () => void;
+  focusBucket: (id: string) => void;
+  resetBucketsOnMount: () => void;
   enabledBedIds: string[];
   bucketCount: number;
 };
@@ -30,7 +33,9 @@ function loadBuckets(): SelectionBucket[] {
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return parsed.sort((a: SelectionBucket, b: SelectionBucket) => a.order - b.order);
+    return parsed
+      .map((b: SelectionBucket) => ({ ...b, enabled: false }))
+      .sort((a: SelectionBucket, b: SelectionBucket) => a.order - b.order);
   } catch {
     return [];
   }
@@ -54,7 +59,16 @@ export function BucketProvider({ children }: { children: ReactNode }) {
     [buckets],
   );
 
-  const createBucket = (name: string, bedIds: string[]) => {
+  const createBucket = (name: string, bedIds: string[], key?: string) => {
+    if (key) {
+      const existing = buckets.find((b) => b.key === key);
+      if (existing) {
+        setBuckets((prev) =>
+          prev.map((b) => b.id === existing.id ? { ...b, name, bedIds, enabled: true } : b),
+        );
+        return existing.id;
+      }
+    }
     const id = crypto.randomUUID();
     const maxOrder = buckets.length > 0 ? Math.max(...buckets.map((b) => b.order)) : -1;
     const bucket: SelectionBucket = {
@@ -64,6 +78,7 @@ export function BucketProvider({ children }: { children: ReactNode }) {
       enabled: true,
       createdAt: Date.now(),
       order: maxOrder + 1,
+      key,
     };
     setBuckets((prev) => [...prev, bucket]);
     return id;
@@ -104,6 +119,21 @@ export function BucketProvider({ children }: { children: ReactNode }) {
 
   const clearBuckets = () => setBuckets([]);
 
+  const skipNextReset = useRef(false);
+
+  const focusBucket = (id: string) => {
+    skipNextReset.current = true;
+    setBuckets((prev) => prev.map((b) => ({ ...b, enabled: b.id === id })));
+  };
+
+  const resetBucketsOnMount = () => {
+    if (skipNextReset.current) {
+      skipNextReset.current = false;
+      return;
+    }
+    setBuckets((prev) => prev.map((b) => ({ ...b, enabled: false })));
+  };
+
   const enabledBedIds = useMemo(() => {
     const ids = new Set<string>();
     for (const b of buckets) {
@@ -123,6 +153,8 @@ export function BucketProvider({ children }: { children: ReactNode }) {
     removeBedFromBucket,
     reorderBuckets,
     clearBuckets,
+    focusBucket,
+    resetBucketsOnMount,
     enabledBedIds,
     bucketCount: sorted.length,
   };

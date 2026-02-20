@@ -19,8 +19,8 @@ type Props = {
   simpleTooltip?: boolean;
   colorGrouping?: string;
   onLegendItemsChange?: (items: any[]) => void;
-  filterSelection?: any;
-  onFilterSelectionChange?: (selection: any) => void;
+  pinnedCategories: number[];
+  onPinnedCategoriesChange: (categories: number[]) => void;
   // Selection state from parent reducer
   persistentPoints: UmapPoint[];
   interactivePoints: UmapPoint[];
@@ -33,6 +33,7 @@ type Props = {
   onApplyPending: () => void;
   onPreselectedMatchChange?: (matched: number, total: number) => void;
   highlightPoints?: UmapPoint[];
+  highlightRangeSelection?: boolean;
   className?: string;
 };
 
@@ -40,7 +41,9 @@ export type EmbeddingPlotRef = {
   centerOnBedId: (bedId: string, scale?: number, reselect?: boolean) => Promise<void>;
   handleFileUpload: () => Promise<void>;
   handleFileRemove: () => Promise<void>;
-  handleLegendClick: (item: any) => void;
+  handleTogglePin: (category: number) => void;
+  handlePinAll: (categories: number[]) => void;
+  handleUnpinAll: () => void;
   queryByCategory: (category: string) => Promise<UmapPoint[]>;
   clearRangeSelection: () => void;
 };
@@ -56,8 +59,8 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
     simpleTooltip,
     colorGrouping = 'cell_line_category',
     onLegendItemsChange,
-    filterSelection,
-    onFilterSelectionChange,
+    pinnedCategories,
+    onPinnedCategoriesChange,
     persistentPoints,
     interactivePoints,
     pendingPoints,
@@ -68,6 +71,7 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
     onApplyPending,
     onPreselectedMatchChange,
     highlightPoints,
+    highlightRangeSelection = true,
     className,
   } = props;
 
@@ -84,27 +88,34 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
   const [viewportState, setViewportState] = useState<any>(null);
   const [dataVersion, setDataVersion] = useState(0);
   const [rangeSelectionValue, setRangeSelectionValue] = useState<any>(undefined);
+  // Track whether interactive points came from a range/lasso (large) vs point click (small).
+  // Range-selected points are excluded from the selection prop to avoid embedding-atlas
+  // rebuilding a massive SQL predicate and rendering 1000+ SVG circles.
+  const [isRangeInteraction, setIsRangeInteraction] = useState(false);
 
   const filter = useMemo(() => vg.Selection.intersect(), []);
   const legendFilterSource = useMemo(() => ({}), []);
 
-  // visualSelection: merge persistent + interactive + highlight (single dedup pass)
+  // visualSelection: merge persistent + (non-range) interactive + highlight
+  // Range-selected points are excluded — they still flow to table/stats via onInteractiveChange
   const visualSelection = useMemo(() => {
     const seen = new Set<string>();
     const merged: UmapPoint[] = [];
     for (const p of persistentPoints) {
       if (!seen.has(p.identifier)) { seen.add(p.identifier); merged.push(p); }
     }
-    for (const p of interactivePoints) {
-      if (!seen.has(p.identifier)) { seen.add(p.identifier); merged.push(p); }
+    if (!isRangeInteraction || highlightRangeSelection) {
+      for (const p of interactivePoints) {
+        if (!seen.has(p.identifier)) { seen.add(p.identifier); merged.push(p); }
+      }
     }
     for (const p of (highlightPoints || [])) {
       if (!seen.has(p.identifier)) { seen.add(p.identifier); merged.push(p); }
     }
     return merged;
-  }, [persistentPoints, interactivePoints, highlightPoints]);
+  }, [persistentPoints, interactivePoints, highlightPoints, isRangeInteraction, highlightRangeSelection]);
 
-  const centerOnPoint = (point: any, scale = 1, tooltip = true) => {
+  const centerOnPoint = (point: any, scale = 0.2, tooltip = true) => {
     if (tooltip) {
       setTooltipPoint(null);
       setTimeout(() => setTooltipPoint(point), 300);
@@ -121,7 +132,7 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
     return result || [];
   };
 
-  const centerOnBedId = async (bedId: string, scale = 1, reselect = false) => {
+  const centerOnBedId = async (bedId: string, scale = 0.2, reselect = false) => {
     if (!isReady) return;
     const points = await queryPoints([bedId]);
     if (points.length > 0) {
@@ -144,7 +155,7 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
         postRemountRef.current = async () => {
           const points = await queryPoints(['custom_point']);
           if (points.length > 0) {
-            centerOnPoint(points[0], 0.3, true);
+            centerOnPoint(points[0], 0.2, true);
             onInteractiveChange([points[0]]);
           }
         };
@@ -196,24 +207,51 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
     return result || [];
   };
 
-  const handleLegendClick = (item: any) => {
+  const handleTogglePin = (category: number) => {
     setRangeSelectionValue(null);
-    // Clear interactive selection — persistent points stay via visualSelection
     onInteractiveChange([]);
-    if (filterSelection?.category === item.category) {
-      onFilterSelectionChange?.(null);
+    const isPinned = pinnedCategories.includes(category);
+    const next = isPinned
+      ? pinnedCategories.filter((c) => c !== category)
+      : [...pinnedCategories, category];
+    onPinnedCategoriesChange(next);
+    if (next.length === 0) {
       filter.update({ source: legendFilterSource, value: null, predicate: null });
-    } else {
-      onFilterSelectionChange?.(item);
+    } else if (next.length === 1) {
       filter.update({
         source: legendFilterSource,
-        value: item.category,
-        predicate: vg.eq(colorGrouping, item.category),
+        value: next[0],
+        predicate: vg.eq(colorGrouping, next[0]),
+      });
+    } else {
+      filter.update({
+        source: legendFilterSource,
+        value: next,
+        predicate: isIn(vg.column(colorGrouping), next.map((c) => vg.literal(c))),
       });
     }
   };
 
+  const handlePinAll = (categories: number[]) => {
+    setRangeSelectionValue(null);
+    onInteractiveChange([]);
+    onPinnedCategoriesChange(categories);
+    filter.update({
+      source: legendFilterSource,
+      value: categories,
+      predicate: isIn(vg.column(colorGrouping), categories.map((c) => vg.literal(c))),
+    });
+  };
+
+  const handleUnpinAll = () => {
+    setRangeSelectionValue(null);
+    onInteractiveChange([]);
+    onPinnedCategoriesChange([]);
+    filter.update({ source: legendFilterSource, value: null, predicate: null });
+  };
+
   const handlePointSelection = (dataPoints: any[] | null) => {
+    setIsRangeInteraction(false);
     if (!dataPoints || dataPoints.length === 0) {
       onInteractiveChange([]);
       return;
@@ -224,33 +262,40 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
   const handleRangeSelection = async (coord: any, value: any) => {
     if (!value) return;
 
-    let result: any[] | undefined;
-    const filterPredicates = filterSelection
-      ? [vg.eq(vg.column(colorGrouping), vg.literal(filterSelection.category))]
+    let predicate: any;
+    const filterPredicates = pinnedCategories.length > 0
+      ? [pinnedCategories.length === 1
+          ? vg.eq(vg.column(colorGrouping), vg.literal(pinnedCategories[0]))
+          : isIn(vg.column(colorGrouping), pinnedCategories.map((c) => vg.literal(c)))]
       : [];
 
     if (typeof value === 'object' && 'xMin' in value) {
       // Rectangle selection
-      const predicate = vg.and(
+      predicate = vg.and(
         vg.isBetween(vg.column('x'), [value.xMin, value.xMax]),
         vg.isBetween(vg.column('y'), [value.yMin, value.yMax]),
         ...filterPredicates,
       );
-      const q = vg.Query.from('data').select(umapSelectParams(colorGrouping)).where(predicate);
-      result = (await coord.query(q, { type: 'json' })) as any[];
     } else if (Array.isArray(value) && value.length >= 3) {
-      // Polygon/lasso selection — single SQL query with point-in-polygon predicate
+      // Polygon/lasso selection
       const bounds = boundingRect(value);
-      const predicate = vg.and(
+      predicate = vg.and(
         vg.isBetween(vg.column('x'), [bounds.xMin, bounds.xMax]),
         vg.isBetween(vg.column('y'), [bounds.yMin, bounds.yMax]),
         pointInPolygonPredicate(vg.column('x'), vg.column('y'), value),
         ...filterPredicates,
       );
-      const q = vg.Query.from('data').select(umapSelectParams(colorGrouping)).where(predicate);
-      result = (await coord.query(q, { type: 'json' })) as any[];
     }
 
+    if (!predicate) return;
+
+    const selectParams = highlightRangeSelection
+      ? umapSelectParams(colorGrouping)
+      : { identifier: vg.column('id'), category: vg.column(colorGrouping) };
+    const q = vg.Query.from('data').select(selectParams).where(predicate);
+    const result = (await coord.query(q, { type: 'json' })) as any[];
+
+    setIsRangeInteraction(true);
     onInteractiveChange(result || []);
   };
 
@@ -267,14 +312,18 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
     }
   }, [dataVersion]);
 
+  // Track initial customCoordinates to distinguish "new upload" from "remount with existing"
+  const initialCoordinatesRef = useRef(customCoordinates);
   useEffect(() => {
+    // Skip if coordinates were already present on mount (init effect handled it)
+    if (initialCoordinatesRef.current && customCoordinates === initialCoordinatesRef.current) return;
     if (isReady && customCoordinates && pendingPoints === null) {
       handleFileUpload();
     }
   }, [customCoordinates, isReady]);
 
   useEffect(() => {
-    onFilterSelectionChange?.(null);
+    onPinnedCategoriesChange([]);
     filter.update({ source: legendFilterSource, value: null, predicate: null });
   }, [colorGrouping]);
 
@@ -312,7 +361,7 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
       }
       onPreselectedChange(points);
       if (points.length === 1) {
-        centerOnPoint(points[0], 0.1, true);
+        centerOnPoint(points[0], 0.2, true);
       }
     };
     run();
@@ -360,11 +409,13 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
       centerOnBedId,
       handleFileUpload,
       handleFileRemove,
-      handleLegendClick,
+      handleTogglePin,
+      handlePinAll,
+      handleUnpinAll,
       queryByCategory,
       clearRangeSelection: () => setRangeSelectionValue(null),
     }),
-    [filterSelection, colorGrouping, interactivePoints],
+    [pinnedCategories, colorGrouping, interactivePoints],
   );
 
   if (webglStatus.error) {

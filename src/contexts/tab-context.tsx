@@ -82,9 +82,10 @@ function buildUrl(primary: ActiveTab, split?: ActiveTab | null): string {
     params.set('q', primary.param);
   }
 
-  // UMAP bed ID goes in ?bed=
-  if (primary.id === 'umap' && primary.param) {
-    params.set('bed', primary.param);
+  // UMAP bed ID goes in ?bed= regardless of which panel it's in
+  const umapTab = primary.id === 'umap' ? primary : split?.id === 'umap' ? split : null;
+  if (umapTab?.param) {
+    params.set('bed', umapTab.param);
   }
 
   if (split) {
