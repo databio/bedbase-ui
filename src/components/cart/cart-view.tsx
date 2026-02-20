@@ -240,7 +240,7 @@ export function CartView() {
             className={`btn btn-sm gap-1.5 ${countdown > 0 ? 'btn-error' : 'btn-ghost'}`}
           >
             <Trash2 size={14} />
-            {countdown > 0 ? `Confirm? (${countdown})` : 'Clear all'}
+            {countdown > 0 ? `Confirm? (${countdown})` : 'Clear All'}
           </button>
         </div>
       </div>

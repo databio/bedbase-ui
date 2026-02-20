@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, FlaskConical, ScatterChart, FolderOpen, X, FileText, FileBarChart } from 'lucide-react';
 import { useTab, type TabId } from '../../contexts/tab-context';
 import { useFile } from '../../contexts/file-context';
 import { tabMeta, tabColorClasses } from '../../lib/tab-meta';
+import { RelatedBedsetsModal } from './related-bedsets-modal';
 
 function formatNumber(n: number): string {
   return n.toLocaleString();
@@ -46,12 +47,16 @@ const actions: { id: TabId; param?: string; label: string; description: string; 
   },
 ];
 
-function ActionCard({ action }: { action: (typeof actions)[number] }) {
+function ActionCard({ action, onClickOverride }: { action: (typeof actions)[number]; onClickOverride?: () => void }) {
   const { openTab, openSplit, activeTabs } = useTab();
   const colors = tabColorClasses[tabMeta[action.id].color];
   const Icon = action.icon;
 
   function handleClick() {
+    if (onClickOverride) {
+      onClickOverride();
+      return;
+    }
     const isSplit = activeTabs.length > 1;
     if (isSplit) {
       const fileIsRight = activeTabs[1]?.id === 'file';
@@ -153,6 +158,7 @@ export function FilePage() {
   const { bedFile, setBedFile } = useFile();
   const { closeTab } = useTab();
   const navigate = useNavigate();
+  const [showRelatedSets, setShowRelatedSets] = useState(false);
 
   useEffect(() => {
     if (!bedFile) navigate('/search', { replace: true });
@@ -176,7 +182,11 @@ export function FilePage() {
           <p className="text-center text-sm text-base-content/50 mb-6">What do you want to do with this file?</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-3xl mx-auto">
             {actions.map((action) => (
-              <ActionCard key={action.id} action={action} />
+              <ActionCard
+                key={action.id}
+                action={action}
+                onClickOverride={action.id === 'collections' ? () => setShowRelatedSets(true) : undefined}
+              />
             ))}
           </div>
           <button
@@ -192,6 +202,12 @@ export function FilePage() {
         </div>
       </div>
 
+      {showRelatedSets && (
+        <RelatedBedsetsModal
+          file={bedFile ?? undefined}
+          onClose={() => setShowRelatedSets(false)}
+        />
+      )}
     </div>
   );
 }
