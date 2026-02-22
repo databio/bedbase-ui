@@ -50,7 +50,7 @@ function PlotFull({ render }: { render: (width: number) => Element }) {
     };
   }, [render, width]);
 
-  return <div ref={ref} className="w-full p-4 [&>svg]:block" />;
+  return <div ref={ref} className="w-full p-4 [&>svg]:block [&>svg]:overflow-visible [&>div>svg]:overflow-visible overflow-visible" />;
 }
 
 function useDownload(containerRef: React.RefObject<HTMLDivElement | null>, title: string) {
@@ -157,7 +157,7 @@ function PlotModal({
             </button>
           </div>
         </div>
-        <div ref={plotContainerRef} className="p-4">
+        <div ref={plotContainerRef} className="p-4 overflow-visible">
           {plot.type === 'observable' ? (
             <PlotFull render={activeRender!} />
           ) : (

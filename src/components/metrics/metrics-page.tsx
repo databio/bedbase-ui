@@ -122,11 +122,15 @@ function ChartGroup({ label, charts }: { label: string; charts: ChartInfo[] }) {
 
 function SkeletonGrid() {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2">
+    <div className="grid grid-cols-2 @3xl:grid-cols-4 gap-2">
       {[0, 1, 2, 3, 4, 5].map((i) => (
-        <div key={i} className="border border-base-300 rounded-lg p-4">
-          <div className="h-3 w-32 bg-base-300 rounded animate-pulse mb-4" />
-          <div className="h-48 bg-base-300 rounded animate-pulse" />
+        <div key={i} className="border border-base-300 rounded-lg overflow-hidden">
+          <div className="aspect-square p-4">
+            <div className="w-full h-full bg-base-300/30 rounded animate-pulse" />
+          </div>
+          <div className="px-3 py-2 border-t border-base-300 bg-base-200/50 flex justify-center">
+            <div className="h-3 w-24 bg-base-300 rounded animate-pulse" />
+          </div>
         </div>
       ))}
     </div>

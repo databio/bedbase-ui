@@ -24,7 +24,8 @@ type SelectionAction =
   | { type: 'SET_INTERACTIVE'; points: UmapPoint[] }
   | { type: 'SET_PENDING'; points: UmapPoint[] | null }
   | { type: 'APPLY_PENDING' }
-  | { type: 'CLEAR_INTERACTIVE' };
+  | { type: 'CLEAR_INTERACTIVE' }
+  | { type: 'REMOVE_INTERACTIVE_POINT'; identifier: string };
 
 function selectionReducer(state: SelectionState, action: SelectionAction): SelectionState {
   switch (action.type) {
@@ -34,6 +35,7 @@ function selectionReducer(state: SelectionState, action: SelectionAction): Selec
     case 'SET_PENDING': return { ...state, pending: action.points };
     case 'APPLY_PENDING': return { ...state, interactive: state.pending || [], pending: null };
     case 'CLEAR_INTERACTIVE': return { ...state, interactive: [] };
+    case 'REMOVE_INTERACTIVE_POINT': return { ...state, interactive: state.interactive.filter(p => p.identifier !== action.identifier) };
   }
 }
 
@@ -50,7 +52,7 @@ function dedup(...arrays: UmapPoint[][]): UmapPoint[] {
 
 export function UmapView() {
   const { bedFile, setBedFile, umapCoordinates, setUmapCoordinates } = useFile();
-  const { enabledBedIds, resetBucketsOnMount } = useBucket();
+  const { enabledBedIds, removeBedFromEnabled, resetBucketsOnMount } = useBucket();
   const [searchParams, setSearchParams] = useSearchParams();
   const getBedUmap = useBedUmap();
 
@@ -172,6 +174,11 @@ export function UmapView() {
     plotRef.current?.centerOnBedId('custom_point', 0.2, true);
   };
 
+  const handleRemovePoint = useCallback((identifier: string) => {
+    dispatch({ type: 'REMOVE_INTERACTIVE_POINT', identifier });
+    removeBedFromEnabled(identifier);
+  }, [removeBedFromEnabled]);
+
   return (
     <div className="flex flex-col overflow-hidden p-4 @md:p-6 gap-2" style={{ height: 'calc(100vh - 52px)' }}>
       {/* Main: plot + sidebar */}
@@ -291,7 +298,10 @@ export function UmapView() {
           </div>
           <EmbeddingTable
             selectedPoints={allVisiblePoints}
+            preselectedIds={new Set(preselectedIds)}
+            bucketIds={new Set(enabledBedIds)}
             centerOnBedId={(id, scale) => plotRef.current?.centerOnBedId(id, scale)}
+            onRemovePoint={handleRemovePoint}
             className="h-48 shrink-0"
           />
         </div>

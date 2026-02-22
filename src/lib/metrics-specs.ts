@@ -1,7 +1,22 @@
 import * as Plot from '@observablehq/plot';
+import { tableau20 } from './tableau20';
 import type { components } from '../bedbase-types';
 
 type BinValues = components['schemas']['BinValues'];
+
+function wafflePlotWithLegendBelow(plotOptions: any): Element {
+  const plot = Plot.plot({ ...plotOptions, color: { ...plotOptions.color, legend: false } });
+  const legend = plot.legend('color', { columns: 3 });
+  if (!legend) return plot;
+  const wrapper = document.createElement('div');
+  wrapper.style.position = 'relative';
+  plot.style.position = 'relative';
+  plot.style.zIndex = '1';
+  wrapper.appendChild(plot);
+  legend.style.marginTop = '8px';
+  wrapper.appendChild(legend);
+  return wrapper;
+}
 
 type PlotSpec = {
   thumbnail: (width: number, height: number) => Element;
@@ -26,7 +41,7 @@ function barWaffleVariants(
           x: { label: 'Count', labelArrow: 'none' },
           y: { label: null },
           marks: [
-            Plot.barX(entries, { x: 'value', y: 'key', sort: { y: '-x' }, fill: 'teal', rx2: 2 }),
+            Plot.barX(entries, { x: 'value', y: 'key', sort: { y: '-x' }, fill: 'teal', rx2: 2, tip: true }),
             Plot.ruleX([0]),
           ],
         }),
@@ -34,14 +49,14 @@ function barWaffleVariants(
     {
       label: 'Waffle',
       render: (width: number) =>
-        Plot.plot({
+        wafflePlotWithLegendBelow({
           width,
           margin: 0,
-          color: { legend: true },
+          color: { range: tableau20 },
           x: { label: null, axis: null, domain: [0, roundedTotal] },
           y: { axis: null },
           marks: [
-            Plot.waffleX(entries, Plot.stackX({ x: 'value', fill: 'key', order: 'value', reverse: true, unit, round: true })),
+            Plot.waffleX(entries, Plot.stackX({ x: 'value', fill: 'key', order: 'value', reverse: true, unit, round: true, tip: true })),
           ],
         }),
     },
@@ -79,7 +94,7 @@ export function barSpec(data: Record<string, number>): PlotSpec {
         x: { label: 'Count', labelArrow: 'none' },
         y: { label: null },
         marks: [
-          Plot.barX(entries, { x: 'value', y: 'key', sort: { y: '-x' }, fill: 'teal', rx2: 2 }),
+          Plot.barX(entries, { x: 'value', y: 'key', sort: { y: '-x' }, fill: 'teal', rx2: 2, tip: true }),
           Plot.ruleX([0]),
         ],
       }),
@@ -101,7 +116,7 @@ export function waffleSpec(data: Record<string, number>): PlotSpec {
         width,
         height,
         margin: 0,
-        color: { legend: false },
+        color: { legend: false, range: tableau20 },
         x: { label: null, axis: null, domain: [0, roundedTotal] },
         y: { axis: null },
         marks: [
@@ -121,14 +136,14 @@ export function waffleSpec(data: Record<string, number>): PlotSpec {
       return svg;
     },
     full: (width) =>
-      Plot.plot({
+      wafflePlotWithLegendBelow({
         width,
         margin: 0,
-        color: { legend: true },
+        color: { range: tableau20 },
         x: { label: null, axis: null, domain: [0, roundedTotal] },
         y: { axis: null },
         marks: [
-          Plot.waffleX(entries, Plot.stackX({ x: 'value', fill: 'key', order: 'value', reverse: true, unit, round: true })),
+          Plot.waffleX(entries, Plot.stackX({ x: 'value', fill: 'key', order: 'value', reverse: true, unit, round: true, tip: true })),
         ],
       }),
     variants: barWaffleVariants(entries, roundedTotal, unit),
@@ -181,7 +196,7 @@ export function histogramSpec(data: BinValues): PlotSpec {
           x: { label: 'Value', labelArrow: 'none' },
           y: { label: 'Count' },
           marks: [
-            Plot.rectY(rects, { x1: 'x1', x2: 'x2', y: 'count', fill: 'teal', ry1: 2 }),
+            Plot.rectY(rects, { x1: 'x1', x2: 'x2', y: 'count', fill: 'teal', ry1: 2, tip: true }),
             ...meanRule,
             Plot.ruleY([0]),
           ],
@@ -212,7 +227,7 @@ export function histogramSpec(data: BinValues): PlotSpec {
         x: { label: 'Bin', labelArrow: 'none', tickRotate: -45 },
         y: { label: 'Count', labelArrow: 'none' },
         marks: [
-          Plot.barY(values, { x: 'bin', y: 'count', fill: 'teal', ry1: 2 }),
+          Plot.barY(values, { x: 'bin', y: 'count', fill: 'teal', ry1: 2, tip: true }),
           Plot.ruleY([0]),
         ],
       }),
@@ -245,7 +260,7 @@ export function timeBarSpec(data: Record<string, number>): PlotSpec {
         x: { label: 'Year', labelArrow: 'none', interval: 1 },
         y: { label: 'Count' },
         marks: [
-          Plot.barY(entries, { x: 'key', y: 'value', fill: 'teal', ry1: 2 }),
+          Plot.barY(entries, { x: 'key', y: 'value', fill: 'teal', ry1: 2, tip: true }),
           Plot.ruleY([0]),
         ],
       }),
