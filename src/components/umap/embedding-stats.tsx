@@ -69,53 +69,68 @@ export function EmbeddingStats({ selectedPoints, colorGrouping, legendItems, pin
   const maxRows = useMemo(() => Math.max(1, ...rows.map((r) => r.count)), [rows]);
   const maxCount = showBackground ? maxTotal : maxRows;
 
+  // Header ~33px + inner padding 16px + rows (14px each) + gaps (2px between rows)
+  const maxHeight = rows.length > 0
+    ? 33 + 16 + rows.length * 14 + Math.max(0, rows.length - 1) * 2
+    : undefined;
+
   return (
-    <div className="border border-base-300 rounded-lg bg-base-100 flex flex-col min-h-0 flex-1">
+    <div className="border border-base-300 rounded-lg bg-base-100 flex flex-col min-h-0 flex-1" style={{ maxHeight }}>
       <div className="px-3 py-2 border-b border-base-300 bg-base-200 text-xs font-bold">
         Selection Count
       </div>
       <div className="p-2 overflow-y-auto overscroll-contain flex-1 min-h-0">
         <div className="flex flex-col gap-0.5">
-          {rows.map((row) => {
-            const total = totalCounts.get(row.category) ?? 0;
-            return (
-              <div key={row.category} className="flex items-center gap-1" style={{ height: 14 }}>
-                <span
-                  className="shrink-0 text-right overflow-hidden text-ellipsis whitespace-nowrap"
-                  style={{ width: 70, fontSize: 9 }}
-                  title={row.name}
-                >
-                  {row.name}
-                </span>
-                <div className="flex-1 h-2.5 relative">
-                  {showBackground && total > 0 && (
-                    <div
-                      className="absolute inset-y-0 left-0"
-                      style={{
-                        width: `${(total / maxTotal) * 100}%`,
-                        backgroundColor: 'steelblue',
-                        opacity: 0.15,
-                        borderRadius: 2,
-                      }}
-                    />
-                  )}
-                  {row.count > 0 && (
-                    <div
-                      className="absolute inset-y-0 left-0"
-                      style={{
-                        width: `${(row.count / maxCount) * 100}%`,
-                        backgroundColor: 'steelblue',
-                        borderRadius: 2,
-                      }}
-                    />
-                  )}
+          {rows.length === 0
+            ? [55, 80, 48, 70, 62, 90, 45, 75, 58, 85].map((w, i) => (
+                <div key={i} className="flex items-center gap-1 opacity-75" style={{ height: 14 }}>
+                  <span className="skeleton skeleton-subtle shrink-0 h-2 rounded" style={{ width: 70 }} />
+                  <div className="flex-1 h-2 relative">
+                    <div className="skeleton skeleton-subtle absolute inset-y-0 left-0 rounded" style={{ width: `${w}%` }} />
+                  </div>
+                  <span className="skeleton skeleton-subtle shrink-0 h-2 rounded w-6" />
                 </div>
-                <span className={`shrink-0 text-right whitespace-nowrap ${row.count > 0 ? 'text-base-content/40' : 'text-base-content/15'}`} style={{ fontSize: 8 }}>
-                  {row.count}/{total}
-                </span>
-              </div>
-            );
-          })}
+              ))
+            : rows.map((row) => {
+                const total = totalCounts.get(row.category) ?? 0;
+                return (
+                  <div key={row.category} className="flex items-center gap-1" style={{ height: 14 }}>
+                    <span
+                      className="shrink-0 text-right overflow-hidden text-ellipsis whitespace-nowrap"
+                      style={{ width: 70, fontSize: 9 }}
+                      title={row.name}
+                    >
+                      {row.name}
+                    </span>
+                    <div className="flex-1 h-2.5 relative">
+                      {showBackground && total > 0 && (
+                        <div
+                          className="absolute inset-y-0 left-0"
+                          style={{
+                            width: `${(total / maxTotal) * 100}%`,
+                            backgroundColor: 'steelblue',
+                            opacity: 0.15,
+                            borderRadius: 2,
+                          }}
+                        />
+                      )}
+                      {row.count > 0 && (
+                        <div
+                          className="absolute inset-y-0 left-0"
+                          style={{
+                            width: `${(row.count / maxCount) * 100}%`,
+                            backgroundColor: 'steelblue',
+                            borderRadius: 2,
+                          }}
+                        />
+                      )}
+                    </div>
+                    <span className={`shrink-0 text-right whitespace-nowrap ${row.count > 0 ? 'text-base-content/40' : 'text-base-content/15'}`} style={{ fontSize: 8 }}>
+                      {row.count}/{total}
+                    </span>
+                  </div>
+                );
+              })}
         </div>
       </div>
     </div>

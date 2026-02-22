@@ -73,25 +73,28 @@ export function AnalysisEmpty() {
                   <li>Full analysis pipeline with genomic annotations</li>
                 </ul>
               </div>
-              <div className={`border-t border-base-300 flex items-center gap-3 px-4 transition-colors ${searchQuery.trim() ? 'bg-primary/5' : ''}`} style={{ paddingTop: 11, paddingBottom: 11 }}>
-                <Search size={16} className="text-base-content/30 shrink-0" />
-                <input
-                  type="text"
-                  placeholder="Search BEDbase for a file..."
-                  className="flex-1 bg-transparent outline-none text-sm text-base-content placeholder:text-base-content/50 p-0 m-0 border-0 min-h-0"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && searchQuery.trim()) openTab('search', searchQuery.trim());
-                  }}
-                />
-                <button
-                  onClick={() => { if (searchQuery.trim()) openTab('search', searchQuery.trim()); }}
-                  disabled={!searchQuery.trim()}
-                  className={`p-1 rounded transition-colors ${searchQuery.trim() ? 'cursor-pointer' : 'opacity-30 cursor-default'}`}
-                >
-                  <Search size={14} className={searchQuery.trim() ? 'text-primary' : 'text-base-content/50'} />
-                </button>
+              <div className="border-t border-base-300">
+                <div className="flex items-center gap-3 px-4 h-11 bg-primary/5">
+                  <Search size={16} className="text-base-content/30 shrink-0" />
+                  <input
+                    type="text"
+                    placeholder="Search BEDbase for a file..."
+                    className="flex-1 bg-transparent outline-none text-sm text-base-content placeholder:text-base-content/50 p-0 m-0 border-0 min-h-0"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && searchQuery.trim()) openTab('search', searchQuery.trim());
+                    }}
+                  />
+                  {searchQuery.trim() && (
+                    <button
+                      onClick={() => openTab('search', searchQuery.trim())}
+                      className="p-1 rounded cursor-pointer transition-colors"
+                    >
+                      <ArrowRight size={14} className="text-primary" />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -126,18 +129,18 @@ export function AnalysisEmpty() {
                     onClick={() => inputRef.current?.click()}
                     onDragOver={(e) => {
                       e.preventDefault();
-                      e.currentTarget.classList.add('bg-primary/10');
+                      e.currentTarget.classList.add('bg-success/10');
                     }}
                     onDragLeave={(e) => {
-                      e.currentTarget.classList.remove('bg-primary/10');
+                      e.currentTarget.classList.remove('bg-success/10');
                     }}
                     onDrop={(e) => {
                       e.preventDefault();
-                      e.currentTarget.classList.remove('bg-primary/10');
+                      e.currentTarget.classList.remove('bg-success/10');
                       const f = e.dataTransfer.files[0];
                       if (f) handleFile(f);
                     }}
-                    className="flex items-center gap-3 px-4 h-11 hover:bg-base-200/50 transition-colors cursor-pointer text-left w-full"
+                    className="flex items-center gap-3 px-4 h-11 bg-success/5 hover:bg-success/10 transition-colors cursor-pointer text-left w-full"
                   >
                     <Upload size={16} className="text-base-content/30 shrink-0" />
                     <span className="text-sm text-base-content/50">Drop a file here or click to browse</span>

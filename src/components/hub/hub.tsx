@@ -205,11 +205,11 @@ export function Hub() {
         <div className="flex items-center gap-4 mt-20 text-sm text-base-content/50">
           {statsLoading ? (
             <>
-              <span className="h-4 w-24 bg-base-300 rounded animate-pulse" />
+              <span className="h-4 w-24 skeleton" />
               <span className="text-base-content/20">•</span>
-              <span className="h-4 w-20 bg-base-300 rounded animate-pulse" />
+              <span className="h-4 w-20 skeleton" />
               <span className="text-base-content/20">•</span>
-              <span className="h-4 w-16 bg-base-300 rounded animate-pulse" />
+              <span className="h-4 w-16 skeleton" />
             </>
           ) : stats ? (
             <>

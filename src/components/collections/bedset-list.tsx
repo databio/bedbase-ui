@@ -3,26 +3,16 @@ import { Search, AlertCircle, RefreshCw, ChevronLeft } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { useTab } from '../../contexts/tab-context';
 import { useBedsetList } from '../../queries/use-bedset-list';
+import { SkeletonTable } from '../skeleton-table';
 
 const LIMIT_OPTIONS = [10, 20, 50] as const;
 
-function SkeletonTable() {
-  return (
-    <div className="border border-base-300 rounded-lg overflow-hidden">
-      <div className="animate-pulse">
-        <div className="h-9 bg-base-200 border-b border-base-300" />
-        {[0, 1, 2, 3, 4].map((i) => (
-          <div key={i} className="flex items-center gap-4 px-4 py-3 border-b border-base-300 last:border-b-0">
-            <div className="h-3 w-40 bg-base-300/80 rounded" />
-            <div className="h-3 flex-1 bg-base-300/80 rounded" />
-            <div className="h-3 w-12 bg-base-300/80 rounded" />
-            <div className="h-3 w-24 bg-base-300/80 rounded" />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+const BEDSET_SKELETON_COLUMNS = [
+  'h-3 w-40 rounded',
+  'h-3 flex-1 rounded',
+  'h-3 w-12 rounded',
+  'h-3 w-24 rounded',
+];
 
 function Pagination({
   count,
@@ -136,7 +126,7 @@ export function BedsetList() {
         </div>
         <div>
           {isLoading ? (
-            <SkeletonTable />
+            <SkeletonTable columns={BEDSET_SKELETON_COLUMNS} />
           ) : error ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
               <AlertCircle size={24} className="text-error" />

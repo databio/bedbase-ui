@@ -99,6 +99,17 @@
   --noise: 0;
 }
 
+@utility skeleton-subtle {
+  background-image: linear-gradient(
+    105deg,
+    transparent 0%,
+    transparent 40%,
+    var(--color-base-200) 50%,
+    transparent 60%,
+    transparent 100%
+  );
+}
+
 @keyframes slide-down {
   from {
     opacity: 0;

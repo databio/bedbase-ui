@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, Check, X, Trash2, ScatterChart, Pencil } from 'lucide-react';
+
+const PAGE_SIZE_OPTIONS = [10, 20] as const;
 import { useTab } from '../../contexts/tab-context';
 import { useBucket } from '../../contexts/bucket-context';
+import { SelectionStats } from './selection-stats';
 
 export function SelectionDetail({ selectionId }: { selectionId: string }) {
   const { openTab } = useTab();
@@ -10,6 +13,8 @@ export function SelectionDetail({ selectionId }: { selectionId: string }) {
 
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState('');
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
   const prevBucketRef = useRef(bucket);
 
   // Auto-redirect when bucket is deleted (e.g. last bed removed → auto-delete)
@@ -147,45 +152,93 @@ export function SelectionDetail({ selectionId }: { selectionId: string }) {
           </div>
         </div>
 
+        {/* Aggregated stats — scoped to current page */}
+        <SelectionStats
+          bedIds={bucket.bedIds.slice(page * pageSize, (page + 1) * pageSize)}
+          totalCount={bucket.bedIds.length}
+        />
+
         {/* BED files table */}
         <div className="space-y-2">
           <h3 className="text-sm font-semibold text-base-content/50 uppercase tracking-wide">
             BED files ({bucket.bedIds.length})
           </h3>
           {bucket.bedIds.length > 0 ? (
-            <div className="overflow-x-auto border border-base-300 rounded-lg bg-base-100">
-              <table className="table table-sm text-xs w-full">
-                <thead className="text-base-content">
-                  <tr>
-                    <th>BED ID</th>
-                    <th className="w-8" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {bucket.bedIds.map((bedId) => (
-                    <tr
-                      key={bedId}
-                      onClick={() => openTab('analysis', 'bed/' + bedId)}
-                      className="hover:bg-primary/5 cursor-pointer transition-colors group"
-                    >
-                      <td className="font-mono text-primary">{bedId}</td>
-                      <td className="w-8">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeBedFromBucket(bucket.id, bedId);
-                          }}
-                          className="text-error/0 group-hover:text-error/40 hover:!text-error cursor-pointer p-0.5 transition-colors"
-                          title="Remove"
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </td>
+            <>
+              <div className="overflow-x-auto border border-base-300 rounded-lg bg-base-100">
+                <table className="table table-sm text-xs w-full">
+                  <thead className="text-base-content">
+                    <tr>
+                      <th>BED ID</th>
+                      <th className="w-8" />
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {bucket.bedIds.slice(page * pageSize, (page + 1) * pageSize).map((bedId) => (
+                      <tr
+                        key={bedId}
+                        onClick={() => openTab('analysis', 'bed/' + bedId)}
+                        className="hover:bg-primary/5 cursor-pointer transition-colors group"
+                      >
+                        <td className="font-mono text-primary">{bedId}</td>
+                        <td className="w-8">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeBedFromBucket(bucket.id, bedId);
+                            }}
+                            className="text-error/0 group-hover:text-error/40 hover:!text-error cursor-pointer p-0.5 transition-colors"
+                            title="Remove"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="flex items-center justify-between text-sm text-base-content/50">
+                <span>
+                  {bucket.bedIds.length > pageSize
+                    ? `Showing ${page * pageSize + 1}–${Math.min((page + 1) * pageSize, bucket.bedIds.length)} of ${bucket.bedIds.length}`
+                    : `${bucket.bedIds.length} BED file${bucket.bedIds.length !== 1 ? 's' : ''}`
+                  }
+                </span>
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-1.5 text-xs text-base-content/60">
+                    Rows
+                    <select
+                      className="select select-xs border border-base-300"
+                      value={pageSize}
+                      onChange={(e) => { setPageSize(Number(e.target.value)); setPage(0); }}
+                    >
+                      {PAGE_SIZE_OPTIONS.map((n) => (
+                        <option key={n} value={n}>{n}</option>
+                      ))}
+                    </select>
+                  </label>
+                  {bucket.bedIds.length > pageSize && (
+                    <>
+                      <button
+                        className="btn btn-sm btn-ghost"
+                        disabled={page === 0}
+                        onClick={() => setPage((p) => p - 1)}
+                      >
+                        Previous
+                      </button>
+                      <button
+                        className="btn btn-sm btn-ghost"
+                        disabled={(page + 1) * pageSize >= bucket.bedIds.length}
+                        onClick={() => setPage((p) => p + 1)}
+                      >
+                        Next
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </>
           ) : (
             <p className="text-sm text-base-content/40 py-4">No BED files in this selection.</p>
           )}

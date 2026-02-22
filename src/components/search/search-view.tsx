@@ -9,6 +9,7 @@ import { useGenomes } from '../../queries/use-genomes';
 import { useAssays } from '../../queries/use-assays';
 import { SearchEmpty } from './search-empty';
 import { ResultsTable } from './results-table';
+import { SkeletonTable } from '../skeleton-table';
 import type { components } from '../../bedbase-types';
 
 type SearchResponse = components['schemas']['BedListSearchResult'];
@@ -31,27 +32,16 @@ function errorMessage(error: unknown): string {
 
 // --- Skeleton loader ---
 
-function SkeletonTable() {
-  return (
-    <div className="border border-base-300 rounded-lg overflow-hidden">
-      <div className="animate-pulse">
-        <div className="h-9 bg-base-200 border-b border-base-300" />
-        {[0, 1, 2, 3, 4].map((i) => (
-          <div key={i} className="flex items-center gap-4 px-4 py-3 border-b border-base-300 last:border-b-0">
-            <div className="h-3 w-32 bg-base-300/80 rounded" />
-            <div className="h-4 w-12 bg-base-300/80 rounded-full" />
-            <div className="h-3 w-20 bg-base-300/80 rounded" />
-            <div className="h-3 w-20 bg-base-300/80 rounded" />
-            <div className="h-3 w-20 bg-base-300/80 rounded" />
-            <div className="h-3 w-20 bg-base-300/80 rounded" />
-            <div className="h-3 flex-1 bg-base-300/80 rounded" />
-            <div className="h-3 w-12 bg-base-300/80 rounded" />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+const SEARCH_SKELETON_COLUMNS = [
+  'h-3 w-32 rounded',
+  'h-4 w-12 rounded-full',
+  'h-3 w-20 rounded',
+  'h-3 w-20 rounded',
+  'h-3 w-20 rounded',
+  'h-3 w-20 rounded',
+  'h-3 flex-1 rounded',
+  'h-3 w-12 rounded',
+];
 
 // --- Pagination ---
 
@@ -208,18 +198,19 @@ function SearchResults({
             <ChevronLeft size={14} />
             Search
           </button>
-          {data?.results && data.results.length > 0 && (
-            <button onClick={handleViewOnUmap} className="btn btn-xs btn-ghost gap-1">
-              <ScatterChart size={12} /> View on UMAP
-            </button>
-          )}
+          <button
+            onClick={handleViewOnUmap}
+            className={`btn btn-xs btn-ghost gap-1 ${!(data?.results && data.results.length > 0) ? 'invisible' : ''}`}
+          >
+            <ScatterChart size={12} /> View on UMAP
+          </button>
         </div>
         {header}
         {filters}
       </div>
       <div className="flex-1">
         {isLoading ? (
-          <SkeletonTable />
+          <SkeletonTable columns={SEARCH_SKELETON_COLUMNS} />
         ) : error ? (
           <div className="flex flex-col items-center justify-center py-12 gap-3">
             <AlertCircle size={24} className="text-error" />

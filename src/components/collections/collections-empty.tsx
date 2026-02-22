@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Globe, Layers, Search, ChevronRight, FolderOpen } from 'lucide-react';
+import { Globe, Layers, Search, ChevronRight, FolderOpen, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTab } from '../../contexts/tab-context';
 import { useBucket } from '../../contexts/bucket-context';
@@ -20,7 +20,7 @@ export function CollectionsEmpty() {
         <div className="max-w-3xl mx-auto">
           <h2 className="text-2xl font-bold text-base-content mb-1 text-center">Collections</h2>
           <p className="text-base-content/50 text-sm max-w-md mx-auto text-center mb-8">
-            Browse curated BEDsets or manage your saved selections from the UMAP embeddings.
+            Explore collections of BED files with BEDsets and manage your saved selections from the UMAP embeddings.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -34,15 +34,13 @@ export function CollectionsEmpty() {
                   <p className="text-sm font-medium text-base-content">BEDsets</p>
                 </div>
                 <ul className="space-y-1 text-xs text-base-content/50 list-disc list-inside">
-                  <li>Curated collections of BED files grouped by experiment, cell type, or other criteria</li>
+                  <li>Curated collections of BED files</li>
                   <li>{stats ? `${stats.bedsets_number.toLocaleString()} BEDsets` : 'Browse BEDsets'} with aggregate statistics</li>
                   <li>Rich metadata — author, source, submission date</li>
                 </ul>
               </div>
-              <div
-                className={`border-t border-base-300 flex items-center gap-3 px-4 transition-colors ${searchQuery.trim() ? 'bg-primary/5' : ''}`}
-                style={{ paddingTop: 11, paddingBottom: 11 }}
-              >
+              <div className="border-t border-base-300">
+              <div className="flex items-center gap-3 px-4 h-11 bg-primary/5">
                 <Search size={16} className="text-base-content/30 shrink-0" />
                 <input
                   type="text"
@@ -56,12 +54,15 @@ export function CollectionsEmpty() {
                     }
                   }}
                 />
-                <button
-                  onClick={() => navigate('/collections/bedset' + (searchQuery.trim() ? '?q=' + encodeURIComponent(searchQuery.trim()) : ''))}
-                  className={`p-1 rounded transition-colors ${searchQuery.trim() ? 'cursor-pointer' : 'cursor-default'}`}
-                >
-                  <Search size={14} className={searchQuery.trim() ? 'text-primary' : 'text-base-content/50'} />
-                </button>
+                {searchQuery.trim() && (
+                  <button
+                    onClick={() => navigate('/collections/bedset?q=' + encodeURIComponent(searchQuery.trim()))}
+                    className="p-1 rounded cursor-pointer transition-colors"
+                  >
+                    <ArrowRight size={14} className="text-primary" />
+                  </button>
+                )}
+              </div>
               </div>
             </div>
 
@@ -77,13 +78,13 @@ export function CollectionsEmpty() {
                 <ul className="space-y-1 text-xs text-base-content/50 list-disc list-inside">
                   <li>Saved from UMAP embedding explorations</li>
                   <li>Stored locally in your browser</li>
-                  <li>Aggregate plots coming soon — region distributions, GC content, widths, and more across all files in a selection</li>
+                  <li>Aggregate analyses coming soon</li>
                 </ul>
               </div>
               <div className="border-t border-base-300">
                 <button
                   onClick={() => openTab('collections', 'selection')}
-                  className="flex items-center gap-3 px-4 h-11 hover:bg-base-200/50 transition-colors cursor-pointer text-left w-full"
+                  className="flex items-center gap-3 px-4 h-11 bg-secondary/5 hover:bg-secondary/10 transition-colors cursor-pointer text-left w-full"
                 >
                   <Layers size={16} className="text-base-content/30 shrink-0" />
                   <span className="text-sm text-base-content/50 flex-1">

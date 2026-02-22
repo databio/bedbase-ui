@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { Trash2, Check, X, Save, ShoppingCart } from 'lucide-react';
+import { Trash2, Save, ShoppingCart, Pin, ArrowRight } from 'lucide-react';
 import { useBucket } from '../../contexts/bucket-context';
 import { useCart } from '../../contexts/cart-context';
+import { useTab } from '../../contexts/tab-context';
 import type { UmapPoint } from '../../lib/umap-utils';
 
 type Props = {
@@ -9,11 +9,9 @@ type Props = {
 };
 
 export function EmbeddingSelections({ currentSelection }: Props) {
-  const { buckets, createBucket, deleteBucket, toggleBucket, renameBucket } = useBucket();
+  const { buckets, createBucket, deleteBucket, toggleBucket } = useBucket();
   const { addToCart } = useCart();
-
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState('');
+  const { openTab } = useTab();
 
   const validPoints = currentSelection.filter((p) => p.identifier !== 'custom_point');
 
@@ -27,20 +25,6 @@ export function EmbeddingSelections({ currentSelection }: Props) {
       addToCart({ id: p.identifier, name: p.text || p.identifier, genome: '' });
     }
   };
-
-  const handleStartEdit = (id: string, name: string) => {
-    setEditingId(id);
-    setEditValue(name);
-  };
-
-  const handleConfirmEdit = () => {
-    if (editingId && editValue.trim()) {
-      renameBucket(editingId, editValue.trim());
-    }
-    setEditingId(null);
-  };
-
-  const handleCancelEdit = () => setEditingId(null);
 
   return (
     <div className="border border-base-300 rounded-lg overflow-clip bg-base-100 shrink-0 max-h-[33%] overflow-y-auto">
@@ -88,66 +72,36 @@ export function EmbeddingSelections({ currentSelection }: Props) {
           <table className="table table-sm text-xs w-full">
             <tbody>
               {buckets.map((bucket) => (
-                <tr key={bucket.id} className={bucket.enabled ? 'bg-primary/10' : ''}>
+                <tr
+                  key={bucket.id}
+                  onClick={() => toggleBucket(bucket.id)}
+                  className={`group cursor-pointer transition-colors ${bucket.enabled ? 'bg-primary/10' : 'hover:bg-base-200'}`}
+                >
                   <td className="flex items-center justify-between" style={{ height: 30 }}>
                     <span className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        className="checkbox checkbox-xs"
-                        checked={bucket.enabled}
-                        onChange={() => toggleBucket(bucket.id)}
+                      <Pin
+                        size={12}
+                        className={`shrink-0 transition-colors ${bucket.enabled ? 'text-primary' : 'text-base-content/20'}`}
+                        fill={bucket.enabled ? 'currentColor' : 'none'}
                       />
-                      {editingId === bucket.id ? (
-                        <span className="flex items-center gap-1">
-                          <input
-                            className="input input-xs w-24 text-xs"
-                            value={editValue}
-                            onChange={(e) => setEditValue(e.target.value)}
-                            onBlur={handleCancelEdit}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') handleConfirmEdit();
-                              if (e.key === 'Escape') handleCancelEdit();
-                            }}
-                            autoFocus
-                          />
-                          <button
-                            className="text-success cursor-pointer"
-                            onMouseDown={(e) => {
-                              e.preventDefault();
-                              handleConfirmEdit();
-                            }}
-                          >
-                            <Check size={12} />
-                          </button>
-                          <button
-                            className="text-error cursor-pointer"
-                            onMouseDown={(e) => {
-                              e.preventDefault();
-                              handleCancelEdit();
-                            }}
-                          >
-                            <X size={12} />
-                          </button>
-                        </span>
-                      ) : (
-                        <>
-                          <span
-                            className="cursor-text hover:underline truncate max-w-20 @2xs:max-w-32 @xs:max-w-48 @sm:max-w-64"
-                            onClick={() => handleStartEdit(bucket.id, bucket.name)}
-                            title={bucket.name}
-                          >
-                            {bucket.name}
-                          </span>
-                          <span className="hidden @2xs:inline text-base-content/40 shrink-0">({bucket.bedIds.length})</span>
-                        </>
-                      )}
+                      <span className="truncate max-w-20 @2xs:max-w-32 @xs:max-w-48 @sm:max-w-64" title={bucket.name}>
+                        {bucket.name}
+                      </span>
+                      <span className="hidden @2xs:inline text-base-content/40 shrink-0">({bucket.bedIds.length})</span>
                     </span>
-                    <span className="flex items-center gap-1">
+                    <span className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         className="text-error/60 hover:text-error cursor-pointer p-0.5"
-                        onClick={() => deleteBucket(bucket.id)}
+                        onClick={(e) => { e.stopPropagation(); deleteBucket(bucket.id); }}
                       >
                         <Trash2 size={12} />
+                      </button>
+                      <button
+                        className="text-base-content/40 hover:text-base-content cursor-pointer p-0.5"
+                        onClick={(e) => { e.stopPropagation(); openTab('collections', 'selection/' + bucket.id); }}
+                        title="View details"
+                      >
+                        <ArrowRight size={12} />
                       </button>
                     </span>
                   </td>

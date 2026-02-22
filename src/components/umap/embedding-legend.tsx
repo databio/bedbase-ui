@@ -83,35 +83,47 @@ export function EmbeddingLegend({
       <div className="overflow-y-auto overscroll-contain flex-1 min-h-0">
         <table className="table table-sm text-xs w-full">
           <tbody>
-            {legendItems?.map((item) => {
-              const isPinned = pinnedSet.has(item.category);
-              return (
-                <tr
-                  key={item.category}
-                  onClick={() => onTogglePin(item.category)}
-                  className={`cursor-pointer transition-colors ${
-                    isPinned ? 'bg-primary/10' : 'hover:bg-base-200'
-                  }`}
-                >
-                  <td className="flex items-center justify-between" style={{ height: 30 }}>
-                    <span className="flex items-center gap-2 whitespace-nowrap">
-                      <span
-                        className="inline-block w-3 h-3 rounded-sm shrink-0"
-                        style={{ backgroundColor: getCategoryColor(item.category) }}
-                      />
-                      {item.name}
-                    </span>
-                    <Pin
-                      size={12}
-                      className={`shrink-0 transition-colors ${
-                        isPinned ? 'text-primary' : 'text-base-content/20'
+            {legendItems.length === 0
+              ? [72, 56, 88, 64, 80, 48, 68, 92, 60, 76].map((w, i) => (
+                  <tr key={i} className="opacity-75">
+                    <td className="flex items-center justify-between" style={{ height: 30 }}>
+                      <span className="flex items-center gap-2">
+                        <span className="skeleton skeleton-subtle w-3 h-3 rounded-sm shrink-0" />
+                        <span className="skeleton skeleton-subtle h-2.5 rounded" style={{ width: w }} />
+                      </span>
+                      <span className="skeleton skeleton-subtle w-3 h-3 rounded-sm shrink-0" />
+                    </td>
+                  </tr>
+                ))
+              : legendItems.map((item) => {
+                  const isPinned = pinnedSet.has(item.category);
+                  return (
+                    <tr
+                      key={item.category}
+                      onClick={() => onTogglePin(item.category)}
+                      className={`cursor-pointer transition-colors ${
+                        isPinned ? 'bg-primary/10' : 'hover:bg-base-200'
                       }`}
-                      fill={isPinned ? 'currentColor' : 'none'}
-                    />
-                  </td>
-                </tr>
-              );
-            })}
+                    >
+                      <td className="flex items-center justify-between" style={{ height: 30 }}>
+                        <span className="flex items-center gap-2 whitespace-nowrap">
+                          <span
+                            className="inline-block w-3 h-3 rounded-sm shrink-0"
+                            style={{ backgroundColor: getCategoryColor(item.category) }}
+                          />
+                          {item.name}
+                        </span>
+                        <Pin
+                          size={12}
+                          className={`shrink-0 transition-colors ${
+                            isPinned ? 'text-primary' : 'text-base-content/20'
+                          }`}
+                          fill={isPinned ? 'currentColor' : 'none'}
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
           </tbody>
         </table>
       </div>
