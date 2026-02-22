@@ -6,7 +6,7 @@ type BinValues = components['schemas']['BinValues'];
 
 function wafflePlotWithLegendBelow(plotOptions: any): Element {
   const plot = Plot.plot({ ...plotOptions, color: { ...plotOptions.color, legend: false } });
-  const legend = plot.legend('color', { columns: 3 });
+  const legend = plot.legend('color', { columns: '3' });
   if (!legend) return plot;
   const wrapper = document.createElement('div');
   wrapper.style.position = 'relative';
@@ -128,7 +128,7 @@ export function waffleSpec(data: Record<string, number>): PlotSpec {
       // the actual rendered bounding box and setting viewBox to match, so the
       // browser scales the content to fit rather than clipping.
       document.body.appendChild(svg);
-      const bbox = svg.getBBox();
+      const bbox = (svg as SVGSVGElement).getBBox();
       document.body.removeChild(svg);
       if (bbox.width > 0 && bbox.height > 0) {
         svg.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
