@@ -1,11 +1,13 @@
-import { useState, useEffect, useRef } from 'react';
-import { AlertCircle, RefreshCw, X, ExternalLink, Code } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { AlertCircle, RefreshCw, ExternalLink, Code } from 'lucide-react';
 import { API_BASE } from '../../lib/file-model-utils';
 import { useStats } from '../../queries/use-stats';
 import { useDetailedStats } from '../../queries/use-detailed-stats';
 import { useDetailedUsage } from '../../queries/use-detailed-usage';
-import { barSpec, histogramSpec, pieSpec, timeBarSpec } from '../../lib/metrics-specs';
-import { VegaChart } from './vega-chart';
+import { barSpec, histogramSpec, waffleSpec, timeBarSpec } from '../../lib/metrics-specs';
+import { PlotGallery } from '../analysis/plot-gallery';
+import type { PlotSlot } from '../../lib/plot-specs';
 import type { components } from '../../bedbase-types';
 
 type BinValues = components['schemas']['BinValues'];
@@ -85,96 +87,46 @@ function EndpointsDropdown({ section }: { section: Section }) {
   );
 }
 
-function buildSpec(kind: ChartKind, data: Record<string, number> | BinValues, title: string): Record<string, unknown> {
-  switch (kind) {
-    case 'bar': return barSpec(data as Record<string, number>, { title });
-    case 'pie': return pieSpec(data as Record<string, number>, { title });
-    case 'histogram': return histogramSpec(data as BinValues, { title });
-    case 'timebar': return timeBarSpec(data as Record<string, number>, { title });
-  }
-}
-
-const canToggle = (kind: ChartKind): boolean => kind === 'bar' || kind === 'pie';
-
-function ChartCard({ chart, onClick }: { chart: ChartInfo; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className="border border-base-300 rounded-lg p-4 text-left hover:border-base-content/20 transition-colors cursor-pointer"
-    >
-      <h4 className="text-xs font-semibold text-base-content/50 uppercase tracking-wide mb-2">{chart.title}</h4>
-      <VegaChart spec={buildSpec(chart.kind, chart.data, chart.title)} />
-    </button>
-  );
-}
-
-function ChartModal({ chart, onClose }: { chart: ChartInfo; onClose: () => void }) {
-  const toggle = canToggle(chart.kind);
-  const [kind, setKind] = useState(chart.kind);
-
-  useEffect(() => {
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
+function chartToSlot(chart: ChartInfo): PlotSlot {
+  const spec = (() => {
+    switch (chart.kind) {
+      case 'bar': return barSpec(chart.data as Record<string, number>);
+      case 'pie': return waffleSpec(chart.data as Record<string, number>);
+      case 'histogram': return histogramSpec(chart.data as BinValues);
+      case 'timebar': return timeBarSpec(chart.data as Record<string, number>);
     }
-    document.addEventListener('keydown', handleKey);
-    return () => document.removeEventListener('keydown', handleKey);
-  }, [onClose]);
+  })();
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative bg-base-100 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-auto">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-base-300">
-          <h3 className="text-sm font-semibold text-base-content">{chart.title}</h3>
-          <div className="flex items-center gap-2">
-            {toggle && (
-              <select
-                className="select select-xs border border-base-300"
-                value={kind}
-                onChange={(e) => setKind(e.target.value as ChartKind)}
-              >
-                <option value="bar">Bar chart</option>
-                <option value="pie">Pie chart</option>
-              </select>
-            )}
-            <button onClick={onClose} className="p-1 rounded hover:bg-base-200 transition-colors cursor-pointer">
-              <X size={16} className="text-base-content/50" />
-            </button>
-          </div>
-        </div>
-        <div className="p-4">
-          <VegaChart spec={buildSpec(kind, chart.data, chart.title)} />
-        </div>
-      </div>
-    </div>
-  );
+  return {
+    id: chart.title,
+    title: chart.title,
+    type: 'observable',
+    renderThumbnail: spec.thumbnail,
+    render: spec.full,
+    ...(spec.variants ? { variants: spec.variants } : {}),
+    ...(spec.defaultVariant != null ? { defaultVariant: spec.defaultVariant } : {}),
+  };
 }
 
 function ChartGroup({ label, charts }: { label: string; charts: ChartInfo[] }) {
-  const [expanded, setExpanded] = useState<ChartInfo | null>(null);
-
   if (charts.length === 0) return null;
+  const slots = charts.map(chartToSlot);
 
   return (
     <div className="space-y-3">
       <h3 className="text-xs font-semibold text-base-content/40 uppercase tracking-wide">{label}</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {charts.map((chart) => (
-          <ChartCard key={chart.title} chart={chart} onClick={() => setExpanded(chart)} />
-        ))}
-      </div>
-      {expanded && <ChartModal chart={expanded} onClose={() => setExpanded(null)} />}
+      <PlotGallery plots={slots} />
     </div>
   );
 }
 
 function SkeletonGrid() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2">
       {[0, 1, 2, 3, 4, 5].map((i) => (
-        <div key={i} className="border border-base-300 rounded-lg p-4 animate-pulse">
-          <div className="h-3 w-32 bg-base-300/80 rounded mb-4" />
-          <div className="h-48 bg-base-200 rounded" />
+        <div key={i} className="border border-base-300 rounded-lg p-4">
+          <div className="h-3 w-32 bg-base-300 rounded animate-pulse mb-4" />
+          <div className="h-48 bg-base-300 rounded animate-pulse" />
         </div>
       ))}
     </div>
@@ -187,8 +139,19 @@ function hasData(obj: Record<string, number>): boolean {
 
 // --- Page ---
 
+const SECTION_IDS = new Set<string>(sections.map((s) => s.id));
+
+function parseSection(value: string | null): Section {
+  return value && SECTION_IDS.has(value) ? (value as Section) : 'files';
+}
+
 export function MetricsPage() {
-  const [activeSection, setActiveSection] = useState<Section>('files');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeSection = parseSection(searchParams.get('section'));
+  const setActiveSection = useCallback(
+    (section: Section) => setSearchParams(section === 'files' ? {} : { section }, { replace: true }),
+    [setSearchParams],
+  );
   const { data: summary } = useStats();
   const { data: fileStats, isLoading: fileLoading, error: fileError, refetch: fileRefetch } = useDetailedStats();
   const { data: usage, isLoading: usageLoading, error: usageError, refetch: usageRefetch } = useDetailedUsage();
@@ -199,7 +162,7 @@ export function MetricsPage() {
   const activeMeta = sections.find((s) => s.id === activeSection)!;
 
   return (
-    <div className="flex-1 overflow-auto flex flex-col">
+    <div className="@container flex-1 overflow-auto flex flex-col">
       <div className="p-4 @md:p-6 space-y-6">
         {/* Header */}
         <div className="flex items-baseline gap-3">

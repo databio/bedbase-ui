@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@databio/gtars": "^0.6.1",
+    "@observablehq/plot": "^0.6.17",
     "@tanstack/react-query": "^5.90.21",
     "@uwdata/mosaic-sql": "^0.21.1",
     "@uwdata/vgplot": "^0.21.1",
@@ -26,7 +27,6 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.13.0",
-    "vega-embed": "^7.1.0",
     "vite-plugin-top-level-await": "^1.6.0",
     "vite-plugin-wasm": "^3.5.0"
   },

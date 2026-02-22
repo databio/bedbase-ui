@@ -1,3 +1,4 @@
+import * as Plot from '@observablehq/plot';
 import type { DistributionPoint } from '../../../lib/bed-analysis';
 import type { PlotSlot } from '../../../lib/plot-specs';
 
@@ -22,82 +23,87 @@ function getChromosomeSort(data: DistributionPoint[]): string[] {
   return [...known, ...unknown];
 }
 
-export function regionDistributionSpec(
-  data: DistributionPoint[],
-  width: number,
-  opts?: { compact?: boolean },
-): Record<string, unknown> {
-  const compact = opts?.compact ?? false;
-  const transformed = data.map((d) => ({
-    chr: d.chr,
-    withinGroupID: d.rid,
-    N: d.n,
-    start: d.start,
-    end: d.end,
-  }));
-
-  return {
-    $schema: 'https://vega-github.io/schema/vega-lite/v6.json',
-    config: {
-      axis: { grid: false },
-      facet: { spacing: -1 },
-      view: { strokeWidth: 0, cursor: 'inherit' },
-    },
-    data: { values: transformed },
-    width,
-    height: compact ? 12 : 25,
-    encoding: {
-      row: {
-        title: compact ? null : 'Chromosome',
-        field: 'chr',
-        header: compact
-          ? { labels: false }
-          : {
-              labelAlign: 'left' as const,
-              labelAngle: 0,
-              labelOrient: 'left' as const,
-              labelPadding: 5,
-              labelBaseline: 'top' as const,
-              labelFontSize: 9,
-            },
-        sort: getChromosomeSort(data),
-        type: 'ordinal' as const,
-      },
-      x: {
-        axis: compact
-          ? null
-          : {
-              labelExpr: "datum.value == 0 ? 'start' : datum.value == 300 ? 'end' : ''",
-              values: [0, 300],
-            },
-        field: 'withinGroupID',
-        scale: { domain: [0, 300] },
-        title: compact ? null : 'Genome',
-        type: 'quantitative' as const,
-      },
-      y: {
-        axis: { labels: false, ticks: false },
-        field: 'N',
-        title: '',
-        type: 'quantitative' as const,
-      },
-    },
-    mark: {
-      type: 'bar' as const,
-      cornerRadiusEnd: 0.5,
-      width: compact ? 1.5 : 2.5,
-      color: 'rgba(0, 128, 128, 1)',
-    },
-  };
-}
-
 export function regionDistributionSlot(data: DistributionPoint[]): PlotSlot | null {
   if (data.length === 0) return null;
+  const chrOrder = getChromosomeSort(data);
+
+  function renderThumbnail(width: number, height: number): Element {
+    return Plot.plot({
+      width,
+      height,
+      marginLeft: 0,
+      marginBottom: 0,
+      x: { domain: [0, 300], axis: null },
+      y: { axis: null },
+      fy: { domain: chrOrder, axis: null, padding: 0 },
+      marks: [
+        Plot.ruleX(data, { x: 'rid', y1: 0, y2: 'n', fy: 'chr', stroke: 'teal', strokeWidth: 1.5 }),
+      ],
+    });
+  }
+
+  function render(width: number): Element {
+    const marginLeft = 180;
+    const marginTop = 10;
+    const marginBottom = 30;
+    const height = chrOrder.length * 25 + 40;
+
+    const svg = Plot.plot({
+      width,
+      height,
+      marginLeft,
+      marginTop,
+      marginBottom,
+      x: {
+        domain: [0, 300],
+        label: 'Genomic Position',
+        labelArrow: 'none',
+        labelAnchor: 'center',
+        ticks: [0, 300],
+        tickFormat: (d) => (d === 0 ? 'start' : 'end'),
+      },
+      y: { axis: null },
+      fy: { domain: chrOrder, label: 'Chromosome', padding: 0 },
+      marks: [
+        Plot.rect(data, {
+          x1: (d: DistributionPoint) => d.rid - 0.5,
+          x2: (d: DistributionPoint) => d.rid + 0.5,
+          y1: 0,
+          y2: 'n',
+          fy: 'chr',
+          fill: 'teal',
+          ry2: 0.5,
+        }),
+      ],
+    });
+
+    const ns = 'http://www.w3.org/2000/svg';
+    const xLine = document.createElementNS(ns, 'line');
+    xLine.setAttribute('x1', String(marginLeft));
+    xLine.setAttribute('y1', String(height - marginBottom));
+    xLine.setAttribute('x2', String(width));
+    xLine.setAttribute('y2', String(height - marginBottom));
+    xLine.setAttribute('stroke', 'black');
+    xLine.setAttribute('stroke-width', '1');
+    svg.appendChild(xLine);
+
+    const yLine = document.createElementNS(ns, 'line');
+    yLine.setAttribute('x1', String(marginLeft));
+    yLine.setAttribute('y1', String(marginTop));
+    yLine.setAttribute('x2', String(marginLeft));
+    yLine.setAttribute('y2', String(height - marginBottom));
+    yLine.setAttribute('stroke', 'black');
+    yLine.setAttribute('stroke-width', '1');
+    svg.appendChild(yLine);
+
+    return svg;
+  }
+
   return {
     id: 'regionDistribution',
     title: 'Region distribution',
-    type: 'vega',
-    spec: regionDistributionSpec(data, 200, { compact: true }),
-    buildFullSpec: (width: number) => regionDistributionSpec(data, width),
+    type: 'observable',
+    renderThumbnail,
+    render,
   };
 }
