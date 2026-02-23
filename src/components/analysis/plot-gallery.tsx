@@ -125,17 +125,6 @@ function PlotModal({
         <div className="flex items-center justify-between px-4 py-3 border-b border-base-300">
           <h3 className="text-sm font-semibold text-base-content">{plot.title}</h3>
           <div className="flex items-center gap-2">
-            {plot.type === 'observable' && (
-              <div className="dropdown">
-                <div tabIndex={0} role="button" className="cursor-pointer">
-                  <Download size={16} />
-                </div>
-                <ul tabIndex={0} className="dropdown-content menu bg-base-100 rounded-box z-10 w-32 p-1 shadow-sm border border-base-300 right-0">
-                  <li><button onClick={downloadSvg}>SVG</button></li>
-                  <li><button onClick={downloadPng}>PNG</button></li>
-                </ul>
-              </div>
-            )}
             {variants && variants.length > 1 && (
               <div className="flex items-center border border-base-300 rounded-md overflow-hidden">
                 {variants.map((v, i) => (
@@ -151,6 +140,17 @@ function PlotModal({
                     {v.label}
                   </button>
                 ))}
+              </div>
+            )}
+            {plot.type === 'observable' && (
+              <div className="dropdown">
+                <div tabIndex={0} role="button" className="p-1 rounded hover:bg-base-200 transition-colors cursor-pointer text-base-content/50 hover:text-base-content [&:focus]:text-base-content [&:focus]:bg-base-200">
+                  <Download size={16} />
+                </div>
+                <ul tabIndex={0} className="dropdown-content menu bg-base-100 rounded-box z-10 w-32 p-1 shadow-sm border border-base-300 right-0">
+                  <li><button onClick={downloadSvg}>SVG</button></li>
+                  <li><button onClick={downloadPng}>PNG</button></li>
+                </ul>
               </div>
             )}
             <button onClick={onClose} className="p-1 rounded hover:bg-base-200 transition-colors cursor-pointer">

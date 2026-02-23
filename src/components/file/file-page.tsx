@@ -161,7 +161,7 @@ export function FilePage() {
   const [showRelatedSets, setShowRelatedSets] = useState(false);
 
   useEffect(() => {
-    if (!bedFile) navigate('/search', { replace: true });
+    if (!bedFile) navigate('/', { replace: true });
   }, [bedFile, navigate]);
 
   if (!bedFile) return null;

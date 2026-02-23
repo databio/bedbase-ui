@@ -74,10 +74,20 @@ export function regionDistributionSlot(data: DistributionPoint[]): PlotSlot | nu
           fill: 'teal',
           ry2: 0.5,
         }),
+        Plot.tip(data, Plot.pointer({
+          x: 'rid',
+          y: 'n',
+          fy: 'chr',
+          channels: { Regions: 'n', Chromosome: 'chr' },
+          format: { x: false, y: false, fy: false },
+        })),
       ],
     });
 
+    // Insert axis lines before the tip layer so they don't obscure tooltips
     const ns = 'http://www.w3.org/2000/svg';
+    const tipEl = svg.querySelector('[aria-label="tip"]');
+
     const xLine = document.createElementNS(ns, 'line');
     xLine.setAttribute('x1', String(marginLeft));
     xLine.setAttribute('y1', String(height - marginBottom));
@@ -85,7 +95,6 @@ export function regionDistributionSlot(data: DistributionPoint[]): PlotSlot | nu
     xLine.setAttribute('y2', String(height - marginBottom));
     xLine.setAttribute('stroke', 'black');
     xLine.setAttribute('stroke-width', '1');
-    svg.appendChild(xLine);
 
     const yLine = document.createElementNS(ns, 'line');
     yLine.setAttribute('x1', String(marginLeft));
@@ -94,7 +103,14 @@ export function regionDistributionSlot(data: DistributionPoint[]): PlotSlot | nu
     yLine.setAttribute('y2', String(height - marginBottom));
     yLine.setAttribute('stroke', 'black');
     yLine.setAttribute('stroke-width', '1');
-    svg.appendChild(yLine);
+
+    if (tipEl) {
+      svg.insertBefore(xLine, tipEl);
+      svg.insertBefore(yLine, tipEl);
+    } else {
+      svg.appendChild(xLine);
+      svg.appendChild(yLine);
+    }
 
     return svg;
   }
