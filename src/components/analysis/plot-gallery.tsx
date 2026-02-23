@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Download } from 'lucide-react';
 import type { PlotSlot } from '../../lib/plot-specs';
 
@@ -199,7 +200,10 @@ export function PlotGallery({ plots }: { plots: PlotSlot[] }) {
         ))}
       </div>
 
-      {expanded && <PlotModal plot={expanded} onClose={() => setExpanded(null)} />}
+      {expanded && createPortal(
+        <PlotModal plot={expanded} onClose={() => setExpanded(null)} />,
+        document.body,
+      )}
     </>
   );
 }

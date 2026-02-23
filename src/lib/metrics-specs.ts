@@ -52,7 +52,7 @@ function barWaffleVariants(
         wafflePlotWithLegendBelow({
           width,
           margin: 0,
-          color: { range: tableau20 },
+          color: { domain: entries.map((e) => e.key), range: tableau20 },
           x: { label: null, axis: null, domain: [0, roundedTotal] },
           y: { axis: null },
           marks: [
@@ -116,7 +116,7 @@ export function waffleSpec(data: Record<string, number>): PlotSpec {
         width,
         height,
         margin: 0,
-        color: { legend: false, range: tableau20 },
+        color: { legend: false, domain: entries.map((e) => e.key), range: tableau20 },
         x: { label: null, axis: null, domain: [0, roundedTotal] },
         y: { axis: null },
         marks: [
@@ -139,7 +139,7 @@ export function waffleSpec(data: Record<string, number>): PlotSpec {
       wafflePlotWithLegendBelow({
         width,
         margin: 0,
-        color: { range: tableau20 },
+        color: { domain: entries.map((e) => e.key), range: tableau20 },
         x: { label: null, axis: null, domain: [0, roundedTotal] },
         y: { axis: null },
         marks: [
@@ -171,8 +171,22 @@ export function histogramSpec(data: BinValues): PlotSpec {
     const maxCount = Math.max(...rects.map((r) => r.count));
     const maxCountLen = maxCount.toLocaleString().length;
 
-    const meanRule = data.mean != null
-      ? [Plot.ruleX([data.mean], { stroke: 'red', strokeWidth: 2, strokeDasharray: '4 4' })]
+    const medianRule = data.median != null
+      ? [Plot.ruleX([data.median], { stroke: 'red', strokeWidth: 2, strokeDasharray: '4 4' })]
+      : [];
+    const medianLabel = data.median != null
+      ? [
+          Plot.text([data.median], {
+            x: (d: number) => d,
+            text: (d: number) => `Median (${parseFloat(d.toPrecision(4))})`,
+            frameAnchor: 'top',
+            dy: 12,
+            dx: 4,
+            textAnchor: 'start',
+            fill: 'black',
+            fontWeight: 'bold',
+          }),
+        ]
       : [];
 
     return {
@@ -185,7 +199,7 @@ export function histogramSpec(data: BinValues): PlotSpec {
           y: { label: null, tickSize: 0 },
           marks: [
             Plot.rectY(rects, { x1: 'x1', x2: 'x2', y: 'count', fill: 'teal', ry1: 2 }),
-            ...meanRule,
+            ...medianRule,
             Plot.ruleY([0]),
           ],
         }),
@@ -197,7 +211,8 @@ export function histogramSpec(data: BinValues): PlotSpec {
           y: { label: 'Count' },
           marks: [
             Plot.rectY(rects, { x1: 'x1', x2: 'x2', y: 'count', fill: 'teal', ry1: 2, tip: true }),
-            ...meanRule,
+            ...medianRule,
+            ...medianLabel,
             Plot.ruleY([0]),
           ],
         }),
@@ -247,7 +262,7 @@ export function timeBarSpec(data: Record<string, number>): PlotSpec {
         width,
         height,
         style: { fontSize: '8px' },
-        x: { label: null, tickSize: 0, interval: 1 },
+        x: { label: null, tickSize: 0, interval: 1, tickFormat: 'd' },
         y: { axis: null },
         marks: [
           Plot.barY(entries, { x: 'key', y: 'value', fill: 'teal', ry1: 2 }),
@@ -257,7 +272,7 @@ export function timeBarSpec(data: Record<string, number>): PlotSpec {
       Plot.plot({
         width,
         marginLeft: Math.min(maxCountLen * 7 + 16, width * 0.15),
-        x: { label: 'Year', labelArrow: 'none', interval: 1 },
+        x: { label: 'Year', labelArrow: 'none', interval: 1, tickFormat: 'd' },
         y: { label: 'Count' },
         marks: [
           Plot.barY(entries, { x: 'key', y: 'value', fill: 'teal', ry1: 2, tip: true }),
