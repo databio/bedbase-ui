@@ -26,6 +26,31 @@ export type DistributionPoint = {
   rid: number;
 };
 
+export type GenomicDistResult = {
+  widths: number[];
+  neighborDistances: number[] | null;
+  nearestNeighbors: unknown[] | null;
+  reducedCount: number;
+  promotersCount: number;
+};
+
+export type PartitionRow = { name: string; count: number };
+export type ExpectedPartitionRow = {
+  partition: string;
+  observed: number;
+  expected: number;
+  log10Oe: number;
+  pvalue: number;
+};
+
+export type RefGenomicDistResult = {
+  genome: string;
+  tssDistances: (number | null)[];
+  featureDistances: (number | null)[];
+  partitions: { partitions: PartitionRow[]; total: number } | null;
+  expectedPartitions: ExpectedPartitionRow[] | null;
+};
+
 export type BedAnalysis = {
   source: 'local' | 'database';
 
@@ -82,6 +107,9 @@ export type BedAnalysis = {
   plots: {
     regionDistribution?: DistributionPoint[];
   };
+
+  // New genomicdist results (local only)
+  genomicdist?: GenomicDistResult;
 
   // Database only — image-based plots from server
   serverPlots?: PlotSlot[];
@@ -257,6 +285,46 @@ export async function fromRegionSet(
 
   // Step 3: region distribution (~heavy)
   const regionDistribution = (rs.regionDistribution(300) as DistributionPoint[]) ?? [];
+  onProgress?.(0.85);
+  await yieldToMain();
+
+  // Step 4: genomicdist functions (local WASM only — types not in npm package yet)
+  let genomicdist: GenomicDistResult | undefined;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rsAny = rs as any;
+  try {
+    const widths: number[] = Array.from(rsAny.calcWidths());
+
+    let neighborDistances: number[] | null = null;
+    try {
+      neighborDistances = rsAny.calcNeighborDistances() as number[];
+    } catch {
+      /* may fail for single-region chromosomes */
+    }
+
+    let nearestNeighbors: unknown[] | null = null;
+    try {
+      nearestNeighbors = rsAny.calcNearestNeighbors() as unknown[];
+    } catch {
+      /* may fail for single-region chromosomes */
+    }
+
+    const reduced = rsAny.reduce() as RegionSet;
+    const reducedCount = reduced.numberOfRegions;
+    try {
+      (reduced as unknown as { free?: () => void }).free?.();
+    } catch { /* ignore */ }
+
+    const proms = rsAny.promoters(2000, 200) as RegionSet;
+    const promotersCount = proms.numberOfRegions;
+    try {
+      (proms as unknown as { free?: () => void }).free?.();
+    } catch { /* ignore */ }
+
+    genomicdist = { widths, neighborDistances, nearestNeighbors, reducedCount, promotersCount };
+  } catch {
+    /* genomicdist not available — likely using npm build without these functions */
+  }
   onProgress?.(1);
 
   return {
@@ -269,10 +337,103 @@ export async function fromRegionSet(
     plots: {
       regionDistribution: regionDistribution.length > 0 ? regionDistribution : undefined,
     },
+    genomicdist,
   };
 }
 
 /** Yield to the main thread so the browser can repaint */
 function yieldToMain(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+// --- Reference-data-dependent genomicdist computation ---
+
+import {
+  loadRefBase,
+  loadRefGeneModel,
+  columnsToTuples,
+  columnsToStrandedTuples,
+} from './reference-data';
+
+/**
+ * Compute genomicdist results that require reference annotation data
+ * (TSS distances, partitions, expected partitions).
+ *
+ * Called after genome detection identifies the assembly.
+ */
+export async function computeRefGenomicdist(
+  rs: RegionSet,
+  genome: string,
+): Promise<RefGenomicDistResult> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rsAny = rs as any;
+
+  // --- TSS distances (base file only, ~160 KB) ---
+  const refBase = await loadRefBase(genome);
+
+  const tssTuples = columnsToTuples(refBase.tss);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { RegionSet: RS, TssIndex } = await import('@databio/gtars') as any;
+  const tssRs = new RS(tssTuples);
+  const tssIndex = new TssIndex(tssRs);
+
+  const tssDistances = tssIndex.calcTssDistances(rs) as (number | null)[];
+  const featureDistances = tssIndex.calcFeatureDistances(rs) as (number | null)[];
+
+  try { tssIndex.free?.(); } catch { /* */ }
+  try { tssRs.free?.(); } catch { /* */ }
+
+  await yieldToMain();
+
+  // --- Partitions (gene model file, ~2.9 MB) ---
+  let partitions: RefGenomicDistResult['partitions'] = null;
+  let expectedPartitions: RefGenomicDistResult['expectedPartitions'] = null;
+
+  try {
+    const refGM = await loadRefGeneModel(genome);
+
+    const genesTuples = columnsToStrandedTuples(refGM.genes);
+    const exonsTuples = columnsToTuples(refGM.exons);
+    const threeUtrTuples = columnsToTuples(refGM.threeUtr);
+    const fiveUtrTuples = columnsToTuples(refGM.fiveUtr);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const gtars = await import('@databio/gtars') as any;
+    const geneModel = new gtars.GeneModel(
+      genesTuples, exonsTuples, threeUtrTuples, fiveUtrTuples,
+    );
+    const partitionList = gtars.PartitionList.fromGeneModel(
+      geneModel, 200, 2000, refBase.chromSizes,
+    );
+
+    await yieldToMain();
+
+    partitions = rsAny.constructor?.calcPartitions
+      ? gtars.calcPartitions(rs, partitionList, false)
+      : null;
+
+    // If calcPartitions isn't a free function, try direct call
+    if (!partitions) {
+      partitions = gtars.calcPartitions(rs, partitionList, false);
+    }
+
+    await yieldToMain();
+
+    expectedPartitions = gtars.calcExpectedPartitions(
+      rs, partitionList, refBase.chromSizes, false,
+    ) as ExpectedPartitionRow[] | null;
+
+    try { partitionList.free?.(); } catch { /* */ }
+    try { geneModel.free?.(); } catch { /* */ }
+  } catch {
+    /* gene model fetch or partition computation failed */
+  }
+
+  return {
+    genome,
+    tssDistances,
+    featureDistances,
+    partitions,
+    expectedPartitions,
+  };
 }

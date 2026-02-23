@@ -5,6 +5,7 @@ import { useTab } from '../../contexts/tab-context';
 import { fromApiResponse, type BedAnalysis } from '../../lib/bed-analysis';
 import type { PlotSlot } from '../../lib/plot-specs';
 import { regionDistributionSlot } from './plots/region-distribution';
+import { widthsHistogramSlot, neighborDistanceSlot } from './plots/genomicdist-plots';
 import { useBedMetadata } from '../../queries/use-bed-metadata';
 import { useGenomeStats } from '../../queries/use-genome-stats';
 import { useAnalyzeGenome } from '../../queries/use-analyze-genome';
@@ -13,6 +14,7 @@ import { ChromosomeStats } from './chromosome-stats';
 import { PlotGallery } from './plot-gallery';
 import { SimilarFiles } from './similar-files';
 import { BedsetMemberships } from './bedset-memberships';
+import { useRefGenomicDistPlots } from './genomicdist-debug';
 import { ActionBar } from './action-bar';
 import { GenomeCompatModal } from './genome-compat-modal';
 import { KvTable, type KvRow } from '../shared/kv-table';
@@ -362,6 +364,17 @@ function buildPlotSlots(analysis: BedAnalysis): PlotSlot[] {
     if (slot) slots.push(slot);
   }
 
+  // Genomicdist plots (no ref data needed)
+  if (analysis.genomicdist) {
+    const wSlot = widthsHistogramSlot(analysis.genomicdist.widths);
+    if (wSlot) slots.push(wSlot);
+
+    if (analysis.genomicdist.neighborDistances) {
+      const nSlot = neighborDistanceSlot(analysis.genomicdist.neighborDistances);
+      if (nSlot) slots.push(nSlot);
+    }
+  }
+
   // Server image plots
   if (analysis.serverPlots) {
     slots.push(...analysis.serverPlots);
@@ -468,8 +481,18 @@ function DatabaseAnalysis({ bedId }: { bedId: string }) {
 
 function AnalysisPanels({ analysis }: { analysis: BedAnalysis }) {
   const { openTab } = useTab();
-  const plotSlots = useMemo(() => buildPlotSlots(analysis), [analysis]);
+  const basePlots = useMemo(() => buildPlotSlots(analysis), [analysis]);
+  const isLocal = analysis.source === 'local';
   const isDatabase = analysis.source === 'database';
+
+  // Ref-dependent plots (local only — hook is safe to call unconditionally)
+  const { plots: refPlots, loading: refPlotsLoading } = useRefGenomicDistPlots(analysis);
+
+  // Merge all plots into one gallery
+  const allPlots = useMemo(() => {
+    if (!isLocal) return basePlots;
+    return [...basePlots, ...refPlots];
+  }, [basePlots, refPlots, isLocal]);
 
   return (
     <div className="flex flex-col h-full overflow-auto p-4 @md:p-6">
@@ -483,12 +506,18 @@ function AnalysisPanels({ analysis }: { analysis: BedAnalysis }) {
       <div className="space-y-6">
       <AnalysisHeader analysis={analysis} />
 
-      {plotSlots.length > 0 && (
+      {(allPlots.length > 0 || (isLocal && refPlotsLoading)) && (
         <div className="space-y-2">
           <h3 className="text-sm font-semibold text-base-content/50 uppercase tracking-wide">
             Plots
           </h3>
-          <PlotGallery plots={plotSlots} />
+          {allPlots.length > 0 && <PlotGallery plots={allPlots} />}
+          {isLocal && refPlotsLoading && (
+            <p className="text-xs text-base-content/40 flex items-center gap-1.5 px-1">
+              <Loader2 size={12} className="animate-spin" />
+              Loading reference plots...
+            </p>
+          )}
         </div>
       )}
 
