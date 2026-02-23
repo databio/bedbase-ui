@@ -2,6 +2,7 @@ export type PlotSlot =
   | {
       id: string;
       title: string;
+      description?: string;
       type: 'image';
       thumbnail: string;
       full: string;
@@ -9,6 +10,7 @@ export type PlotSlot =
   | {
       id: string;
       title: string;
+      description?: string;
       type: 'observable';
       renderThumbnail: (width: number, height: number) => Element;
       render: (width: number) => Element;

@@ -86,6 +86,7 @@ export function widthDistributionSlot(
   return {
     id: 'widthDistribution',
     title: 'Region width distribution',
+    description: 'Region width distributions compared across files on a log₁₀ scale (1 bp to 10 Mbp). Each file is shown as a separate line. Narrow peaks cluster on the left; broad domains appear on the right.',
     type: 'observable',
     renderThumbnail,
     render,

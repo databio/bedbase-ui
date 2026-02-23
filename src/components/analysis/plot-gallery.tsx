@@ -165,6 +165,12 @@ function PlotModal({
             <img src={plot.full} alt={plot.title} className="w-full h-auto" />
           )}
         </div>
+        {plot.description && (
+          <div className="px-5 py-4 bg-base-200 border-t border-base-300">
+            <h4 className="text-xs font-semibold text-base-content/40 uppercase tracking-wide mb-1">Method</h4>
+            <p className="text-sm text-base-content/60">{plot.description}</p>
+          </div>
+        )}
       </div>
     </div>
   );

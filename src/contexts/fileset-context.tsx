@@ -1,9 +1,14 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
-import type { MultiFileResult } from '../lib/multi-file-analysis';
+import type { MultiFileResult, PerFileGenomeResult } from '../lib/multi-file-analysis';
 
 type CachedComparison = {
   fileNames: string[];
   result: MultiFileResult;
+  chromSizes?: Record<string, number>;
+  genomeResults?: PerFileGenomeResult[];
+  majorityGenome?: string;
+  genomeDefaulted?: boolean;
+  parsedFiles?: Map<string, File>;
 };
 
 type FileSetContextValue = {

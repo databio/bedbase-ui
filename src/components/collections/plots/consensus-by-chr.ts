@@ -25,6 +25,11 @@ type ChrSupportDatum = {
   count: number;
 };
 
+function estimateMargin(labels: string[]): number {
+  const longest = Math.max(...labels.map((l) => l.length));
+  return Math.max(40, longest * 7 + 16);
+}
+
 export function consensusByChrSlot(
   consensus: ConsensusRegion[],
   nFiles: number,
@@ -41,6 +46,7 @@ export function consensusByChrSlot(
 
   const chrOrder = sortChromosomes([...grouped.keys()]);
   const supportLabels = Array.from({ length: nFiles }, (_, i) => `${i + 1}/${nFiles}`);
+  const marginLeft = estimateMargin(chrOrder);
 
   const data: ChrSupportDatum[] = [];
   for (const chr of chrOrder) {
@@ -59,23 +65,24 @@ export function consensusByChrSlot(
       height,
       marginLeft: 0,
       marginBottom: 0,
-      x: { domain: chrOrder, axis: null },
-      y: { axis: null },
+      y: { domain: chrOrder, axis: null },
+      x: { axis: null },
       color: { domain: supportLabels, scheme: 'blues' },
       marks: [
-        Plot.barY(data, Plot.stackY({ x: 'chr', y: 'count', fill: 'support', order: 'support' })),
+        Plot.barX(data, Plot.stackX({ y: 'chr', x: 'count', fill: 'support', order: 'support' })),
       ],
     });
   }
 
   function render(width: number): Element {
+    const height = chrOrder.length * 22 + 80;
     return Plot.plot({
       width,
-      height: 350,
-      marginLeft: 60,
-      marginBottom: 80,
-      x: { domain: chrOrder, label: null, tickRotate: -45 },
-      y: { label: 'Consensus regions', grid: true },
+      height,
+      marginLeft,
+      marginBottom: 40,
+      y: { domain: chrOrder, label: 'Chromosome' },
+      x: { label: 'Consensus regions', grid: true },
       color: {
         domain: supportLabels,
         scheme: 'blues',
@@ -83,14 +90,14 @@ export function consensusByChrSlot(
         label: 'Found in N files',
       },
       marks: [
-        Plot.barY(data, Plot.stackY({
-          x: 'chr',
-          y: 'count',
+        Plot.barX(data, Plot.stackX({
+          y: 'chr',
+          x: 'count',
           fill: 'support',
           order: 'support',
           tip: true,
         })),
-        Plot.ruleY([0]),
+        Plot.ruleX([0]),
       ],
     });
   }
@@ -98,6 +105,7 @@ export function consensusByChrSlot(
   return {
     id: 'consensusByChr',
     title: 'Consensus by chromosome',
+    description: 'Consensus region counts broken down by chromosome and support level. Stacked bars show how many consensus regions on each chromosome are supported by 1, 2, ... N files. Chromosomes with longer bars have more consensus activity.',
     type: 'observable',
     renderThumbnail,
     render,

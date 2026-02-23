@@ -6,6 +6,7 @@ import { fromApiResponse, type BedAnalysis } from '../../lib/bed-analysis';
 import type { PlotSlot } from '../../lib/plot-specs';
 import { regionDistributionSlot } from './plots/region-distribution';
 import { widthsHistogramSlot, neighborDistanceSlot } from './plots/genomicdist-plots';
+import { chromosomeBarSlot } from './plots/chromosome-bar';
 import { useBedMetadata } from '../../queries/use-bed-metadata';
 import { useGenomeStats } from '../../queries/use-genome-stats';
 import { useAnalyzeGenome } from '../../queries/use-analyze-genome';
@@ -362,6 +363,12 @@ function buildPlotSlots(analysis: BedAnalysis): PlotSlot[] {
   if (analysis.plots.regionDistribution) {
     const slot = regionDistributionSlot(analysis.plots.regionDistribution);
     if (slot) slots.push(slot);
+  }
+
+  // Chromosome region counts
+  if (analysis.chromosomeStats.length > 0) {
+    const chrSlot = chromosomeBarSlot(analysis.chromosomeStats);
+    if (chrSlot) slots.push(chrSlot);
   }
 
   // Genomicdist plots (no ref data needed)

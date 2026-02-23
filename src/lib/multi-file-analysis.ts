@@ -37,6 +37,77 @@ export type WidthHistPoint = {
   fraction: number;    // count / total regions in this file (0–1)
 };
 
+export type PositionalBin = {
+  fileName: string;
+  chr: string;
+  bin: number;     // 0 to N_POS_BINS-1
+  count: number;
+};
+
+export const N_POS_BINS = 100;
+
+/**
+ * Compute the bin width (in bp) used for positional binning.
+ * The longest chromosome gets exactly N_POS_BINS bins; shorter chromosomes
+ * get proportionally fewer, preserving relative chromosome extent.
+ */
+export function posBinWidth(chromSizes: Record<string, number>): number {
+  const maxSize = Math.max(...Object.values(chromSizes));
+  return maxSize > 0 ? maxSize / N_POS_BINS : 1;
+}
+
+/**
+ * Return the number of bins each chromosome should have, based on a universal
+ * bin width derived from the longest chromosome.
+ */
+export function chrBinCounts(chromSizes: Record<string, number>): Record<string, number> {
+  const bw = posBinWidth(chromSizes);
+  const result: Record<string, number> = {};
+  for (const [chr, size] of Object.entries(chromSizes)) {
+    result[chr] = Math.max(1, Math.ceil(size / bw));
+  }
+  return result;
+}
+
+/**
+ * Bin BED entries by absolute genomic position using reference chromosome sizes.
+ * Uses a universal bin width so that the longest chromosome spans N_POS_BINS bins
+ * and shorter chromosomes get proportionally fewer bins, preserving their relative
+ * extent while keeping bins aligned across files.
+ */
+export function binByAbsolutePosition(
+  entries: [string, number, number, string][],
+  fileName: string,
+  chromSizes: Record<string, number>,
+): PositionalBin[] {
+  const bw = posBinWidth(chromSizes);
+  const maxBins = chrBinCounts(chromSizes);
+
+  const counts = new Map<string, number>();
+  for (const [chr, start, end] of entries) {
+    const chrSize = chromSizes[chr];
+    if (!chrSize || chrSize <= 0) continue;
+    const mid = (start + end) / 2;
+    const chrMax = (maxBins[chr] ?? 1) - 1;
+    const bin = Math.min(Math.floor(mid / bw), chrMax);
+    const key = `${chr}\0${bin}`;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  const bins: PositionalBin[] = [];
+  for (const [key, count] of counts) {
+    const sep = key.indexOf('\0');
+    bins.push({ fileName, chr: key.slice(0, sep), bin: parseInt(key.slice(sep + 1)), count });
+  }
+  return bins;
+}
+
+export type PerFileGenomeResult = {
+  fileName: string;
+  genome: string | null;       // normalized top match genome name
+  tier: number | null;
+  raw: unknown;                // RefGenValidReturnModel from the API, opaque here
+};
+
 export type MultiFileResult = {
   fileStats: FileStats[];
   jaccardMatrix: number[][];
@@ -44,6 +115,7 @@ export type MultiFileResult = {
   perFile: FileBreakdown[];
   chrCounts: ChrRegionCount[];     // flat array for plotting: file × chromosome region counts
   widthHist: WidthHistPoint[];     // flat array for plotting: file × width bin
+  positionalBins: PositionalBin[]; // flat array for plotting: file × chr × positional bin
   consensus: ConsensusRegion[];
   unionStats: { regions: number; nucleotides: number } | null;
   intersectionStats: { regions: number; nucleotides: number } | null;
@@ -305,5 +377,5 @@ export async function computeMultiFileAnalysis(
   if (unionRs) freeRs(unionRs);
 
   onProgress?.(1);
-  return { fileStats, jaccardMatrix, overlapMatrix, perFile, chrCounts, widthHist, consensus, unionStats, intersectionStats };
+  return { fileStats, jaccardMatrix, overlapMatrix, perFile, chrCounts, widthHist, positionalBins: [], consensus, unionStats, intersectionStats };
 }

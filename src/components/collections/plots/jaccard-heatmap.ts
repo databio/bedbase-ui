@@ -93,6 +93,7 @@ export function similarityHeatmapSlot(
   return {
     id: 'similarityHeatmap',
     title: 'Pairwise similarity',
+    description: 'Pairwise comparison of region overlap between files. Jaccard similarity measures the ratio of shared to total genomic coverage (0 = no overlap, 1 = identical). Overlap % shows the fraction of one file\'s regions that intersect the other.',
     type: 'observable',
     renderThumbnail,
     render: renderJaccard,

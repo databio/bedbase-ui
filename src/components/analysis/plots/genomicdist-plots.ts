@@ -122,6 +122,7 @@ export function widthsHistogramSlot(widths: number[]): PlotSlot | null {
   return {
     id: 'widths',
     title: 'Quantile-trimmed histogram of widths',
+    description: 'Distribution of region widths in base pairs, trimmed at the 99th percentile to remove outliers. Reveals whether the file contains mostly narrow peaks (e.g. transcription factor ChIP-seq) or broad domains (e.g. histone marks).',
     type: 'observable',
     renderThumbnail: (width, height) =>
       Plot.plot({
@@ -165,6 +166,7 @@ export function neighborDistanceSlot(distances: number[]): PlotSlot | null {
   return {
     id: 'neighborDistances',
     title: 'Neighboring regions distance distribution',
+    description: 'Density curve of distances between consecutive regions on a log₁₀ scale, estimated with Gaussian kernel density estimation (KDE). Clustered regions produce a peak at short distances; uniformly spaced regions produce a peak at longer distances.',
     type: 'observable',
     renderThumbnail: (width, height) =>
       Plot.plot({
@@ -226,6 +228,7 @@ export function tssDistanceSlot(featureDistances: (number | null)[]): PlotSlot |
   return {
     id: 'tssDistance',
     title: 'TSS distance',
+    description: 'Distribution of signed distances from each region to the nearest transcription start site (TSS), ranging from -100kb (upstream) to +100kb (downstream). A peak near zero indicates promoter-proximal regions. Requires a reference genome for TSS annotation.',
     type: 'observable',
     renderThumbnail: (width, height) =>
       Plot.plot({
@@ -286,6 +289,7 @@ export function partitionsSlot(partitions: PartitionRow[]): PlotSlot | null {
   return {
     id: 'partitions',
     title: 'Genomic partitions',
+    description: 'Percentage of regions falling into each genomic partition (e.g. exon, intron, intergenic, promoter). Shows where in the genome the regions are concentrated relative to gene structure. Requires a reference genome for partition annotation.',
     type: 'observable',
     renderThumbnail: (width, height) =>
       Plot.plot({
@@ -343,6 +347,7 @@ export function expectedPartitionsSlot(rows: ExpectedPartitionRow[]): PlotSlot |
   return {
     id: 'expectedPartitions',
     title: 'Partition enrichment',
+    description: 'Log₁₀ ratio of observed to expected region counts per genomic partition. Positive values (teal) indicate enrichment; negative values (red) indicate depletion relative to a uniform genomic background. Requires a reference genome.',
     type: 'observable',
     renderThumbnail: (width, height) =>
       Plot.plot({

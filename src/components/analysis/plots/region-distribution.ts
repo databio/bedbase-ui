@@ -23,6 +23,11 @@ function getChromosomeSort(data: DistributionPoint[]): string[] {
   return [...known, ...unknown];
 }
 
+function estimateMargin(labels: string[]): number {
+  const longest = Math.max(...labels.map((l) => l.length));
+  return Math.max(40, longest * 7 + 16);
+}
+
 export function regionDistributionSlot(data: DistributionPoint[]): PlotSlot | null {
   if (data.length === 0) return null;
   const chrOrder = getChromosomeSort(data);
@@ -43,7 +48,7 @@ export function regionDistributionSlot(data: DistributionPoint[]): PlotSlot | nu
   }
 
   function render(width: number): Element {
-    const marginLeft = 180;
+    const marginLeft = estimateMargin(chrOrder);
     const marginTop = 10;
     const marginBottom = 30;
     const height = chrOrder.length * 25 + 40;
@@ -56,7 +61,7 @@ export function regionDistributionSlot(data: DistributionPoint[]): PlotSlot | nu
       marginBottom,
       x: {
         domain: [0, 300],
-        label: 'Genomic Position',
+        label: 'Genomic position',
         labelArrow: 'none',
         labelAnchor: 'center',
         ticks: [0, 300],
@@ -118,6 +123,7 @@ export function regionDistributionSlot(data: DistributionPoint[]): PlotSlot | nu
   return {
     id: 'regionDistribution',
     title: 'Region distribution',
+    description: 'Positional distribution of regions across each chromosome, binned into 300 equal-width segments relative to each chromosome\'s extent. Taller bars indicate genomic hotspots with higher region density.',
     type: 'observable',
     renderThumbnail,
     render,

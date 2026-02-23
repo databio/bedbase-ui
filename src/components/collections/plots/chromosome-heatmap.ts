@@ -113,6 +113,7 @@ export function chromosomeHeatmapSlot(
   return {
     id: 'chromosomeHeatmap',
     title: 'Regions by chromosome',
+    description: 'Heatmap of region counts per chromosome for each file. "Normalized" shows the fraction of each file\'s total regions on each chromosome, enabling comparison across files with different sizes. "Raw counts" shows absolute region counts.',
     type: 'observable',
     renderThumbnail,
     render: renderFraction,

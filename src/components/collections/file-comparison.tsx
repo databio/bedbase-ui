@@ -1,20 +1,68 @@
 import { useReducer, useEffect, useRef, useCallback, useMemo, useState } from 'react';
-import { ChevronLeft, AlertTriangle, Plus, GitCompareArrows } from 'lucide-react';
-import { RegionSet } from '@databio/gtars';
+import { ChevronLeft, AlertTriangle, Plus, GitCompareArrows, ArrowRight } from 'lucide-react';
+import { RegionSet, type ChromosomeStatistics } from '@databio/gtars';
 import { useTab } from '../../contexts/tab-context';
 import { useFileSet } from '../../contexts/fileset-context';
+import { useFile } from '../../contexts/file-context';
+import { useApi } from '../../contexts/api-context';
 import { parseBedFile, type BedEntry } from '../../lib/bed-parser';
 import {
   computeMultiFileAnalysis,
   hasSetOperations,
+  binByAbsolutePosition,
   type MultiFileResult,
+  type PositionalBin,
+  type PerFileGenomeResult,
 } from '../../lib/multi-file-analysis';
+import { loadRefBase } from '../../lib/reference-data';
 import { PlotGallery } from '../analysis/plot-gallery';
+import { GenomeCompatModal } from '../analysis/genome-compat-modal';
 import { similarityHeatmapSlot } from './plots/jaccard-heatmap';
 import { consensusPlotSlot } from './plots/consensus-plot';
-import { chromosomeHeatmapSlot } from './plots/chromosome-heatmap';
 import { consensusByChrSlot } from './plots/consensus-by-chr';
+import { positionalHeatmapSlot } from './plots/positional-heatmap';
 import type { PlotSlot } from '../../lib/plot-specs';
+import type { components } from '../../bedbase-types';
+
+type RefGenValidReturnModel = components['schemas']['RefGenValidReturnModel'];
+
+/**
+ * Normalize genome names from the API to the ref data names we have locally (hg38, hg19).
+ */
+function normalizeGenomeName(name: string): string {
+  const lower = name.toLowerCase();
+  if (lower.includes('hg38') || lower.includes('grch38')) return 'hg38';
+  if (lower.includes('hg19') || lower.includes('grch37')) return 'hg19';
+  return name;
+}
+
+/**
+ * Given per-file genome results, determine the majority genome.
+ * Prefers tier-1 matches, then counts occurrences. Falls back to 'hg38'.
+ */
+function detectMajorityGenome(results: PerFileGenomeResult[]): { genome: string; defaulted: boolean } {
+  const counts = new Map<string, number>();
+  for (const r of results) {
+    if (r.genome && r.tier === 1) {
+      counts.set(r.genome, (counts.get(r.genome) ?? 0) + 1);
+    }
+  }
+  if (counts.size === 0) {
+    // No tier-1 matches — try any match
+    for (const r of results) {
+      if (r.genome) {
+        counts.set(r.genome, (counts.get(r.genome) ?? 0) + 1);
+      }
+    }
+  }
+  if (counts.size === 0) return { genome: 'hg38', defaulted: true };
+  let best = 'hg38';
+  let bestCount = 0;
+  for (const [g, c] of counts) {
+    if (c > bestCount) { best = g; bestCount = c; }
+  }
+  return { genome: best, defaulted: false };
+}
 
 // --- State machine ---
 
@@ -140,11 +188,20 @@ async function collectBedFiles(items: DataTransferItemList): Promise<File[]> {
 export function FileComparison() {
   const { openTab } = useTab();
   const { files: contextFiles, clearFiles, cached, setCached, clearCached } = useFileSet();
+  const { setBedFile } = useFile();
+  const { api } = useApi();
   const [state, dispatch] = useReducer(reducer, initialState);
   const regionSetsRef = useRef<RegionSet[]>([]);
+  const chromSizesRef = useRef<Record<string, number>>({});
+  const parsedFilesRef = useRef<Map<string, File>>(new Map());
   const inputRef = useRef<HTMLInputElement>(null);
   const cancelledRef = useRef(false);
   const [warning, setWarning] = useState<string | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
+  const [genomeResults, setGenomeResults] = useState<PerFileGenomeResult[]>([]);
+  const [majorityGenome, setMajorityGenome] = useState<string>('hg38');
+  const [genomeDefaulted, setGenomeDefaulted] = useState(false);
+  const [genomeModalFile, setGenomeModalFile] = useState<string | null>(null);
 
   // Cleanup RegionSets on unmount
   useEffect(() => {
@@ -158,21 +215,41 @@ export function FileComparison() {
 
   const startPipeline = useCallback(async (files: File[]) => {
     cancelledRef.current = false;
+    setGenomeResults([]);
+    setGenomeDefaulted(false);
+    parsedFilesRef.current = new Map();
     dispatch({ type: 'START_PARSE', files });
 
     try {
-      // Parse files sequentially
+      // Parse files sequentially, extracting bedFileData for genome detection
       const regionSets: RegionSet[] = [];
       const fileNames: string[] = [];
+      const allEntries: BedEntry[][] = [];
+      const bedFileDataList: Record<string, number>[] = [];
 
       for (let i = 0; i < files.length; i++) {
         if (cancelledRef.current) return;
         dispatch({ type: 'PARSE_PROGRESS', done: i, total: files.length, current: files[i].name });
 
         const entries: BedEntry[] = await parseBedFile(files[i]);
+        allEntries.push(entries);
+
         const rs = new RegionSet(entries);
         regionSets.push(rs);
         fileNames.push(files[i].name);
+        parsedFilesRef.current.set(files[i].name, files[i]);
+
+        // Extract chromosome endpoint data for genome detection
+        const chrStats = rs.chromosomeStatistics();
+        const bedFileData: Record<string, number> = {};
+        if (chrStats) {
+          for (const entry of Array.from(chrStats.entries())) {
+            const [chrom, stats] = entry as [unknown, ChromosomeStatistics];
+            bedFileData[String(chrom)] = stats.end_nucleotide_position;
+            try { (stats as unknown as { free?: () => void }).free?.(); } catch { /* */ }
+          }
+        }
+        bedFileDataList.push(bedFileData);
       }
 
       if (cancelledRef.current) {
@@ -180,6 +257,64 @@ export function FileComparison() {
           try { (rs as unknown as { free?: () => void }).free?.(); } catch { /* */ }
         }
         return;
+      }
+
+      // Fire genome detection API calls in parallel
+      const genomeSettled = await Promise.allSettled(
+        bedFileDataList.map((bedFileData) =>
+          api.post<RefGenValidReturnModel>('/bed/analyze-genome', { bed_file: bedFileData })
+            .then(r => r.data)
+        )
+      );
+
+      // Build per-file genome results
+      const perFileGenome: PerFileGenomeResult[] = genomeSettled.map((result, i) => {
+        if (result.status === 'fulfilled' && result.value.compared_genome?.length > 0) {
+          const sorted = [...result.value.compared_genome].sort(
+            (a, b) => a.tier_ranking - b.tier_ranking || b.xs - a.xs
+          );
+          const top = sorted[0];
+          return {
+            fileName: fileNames[i],
+            genome: normalizeGenomeName(top.compared_genome ?? top.provided_genome),
+            tier: top.tier_ranking,
+            raw: result.value,
+          };
+        }
+        return { fileName: fileNames[i], genome: null, tier: null, raw: null };
+      });
+
+      setGenomeResults(perFileGenome);
+
+      // Determine majority genome
+      const { genome: majority, defaulted } = detectMajorityGenome(perFileGenome);
+      setMajorityGenome(majority);
+      setGenomeDefaulted(defaulted);
+
+      // Load reference chromSizes using detected majority genome
+      let chromSizes: Record<string, number> = {};
+      try {
+        const ref = await loadRefBase(majority);
+        chromSizes = ref.chromSizes;
+      } catch {
+        // If detected genome has no local ref data, fall back to hg38
+        if (majority !== 'hg38') {
+          try {
+            const ref = await loadRefBase('hg38');
+            chromSizes = ref.chromSizes;
+            setMajorityGenome('hg38');
+            setGenomeDefaulted(true);
+          } catch { /* proceed without — bins will be empty */ }
+        }
+      }
+      chromSizesRef.current = chromSizes;
+
+      // Bin entries by absolute genomic position
+      const positionalBins: PositionalBin[] = [];
+      if (Object.keys(chromSizes).length > 0) {
+        for (let i = 0; i < allEntries.length; i++) {
+          positionalBins.push(...binByAbsolutePosition(allEntries[i], fileNames[i], chromSizes));
+        }
       }
 
       // Store refs for cleanup
@@ -194,11 +329,12 @@ export function FileComparison() {
       }
 
       // Run analysis
-      const result = await computeMultiFileAnalysis(regionSets, fileNames, (fraction) => {
+      const rawResult = await computeMultiFileAnalysis(regionSets, fileNames, (fraction) => {
         if (!cancelledRef.current) dispatch({ type: 'ANALYSIS_PROGRESS', fraction });
       });
 
       if (!cancelledRef.current) {
+        const result = { ...rawResult, positionalBins };
         dispatch({ type: 'ANALYSIS_DONE', result });
       }
     } catch (err) {
@@ -208,7 +344,7 @@ export function FileComparison() {
         dispatch({ type: 'ERROR', error: message });
       }
     }
-  }, []);
+  }, [api]);
 
   // Restore from cache if available
   useEffect(() => {
@@ -218,6 +354,11 @@ export function FileComparison() {
         fileNames: cached.fileNames,
         result: cached.result,
       });
+      if (cached.chromSizes) chromSizesRef.current = cached.chromSizes;
+      if (cached.genomeResults) setGenomeResults(cached.genomeResults);
+      if (cached.majorityGenome) setMajorityGenome(cached.majorityGenome);
+      if (cached.genomeDefaulted != null) setGenomeDefaulted(cached.genomeDefaulted);
+      if (cached.parsedFiles) parsedFilesRef.current = cached.parsedFiles;
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- only on mount
 
@@ -229,12 +370,21 @@ export function FileComparison() {
     }
   }, [contextFiles, state.phase, startPipeline, clearFiles]);
 
-  // Cache results when analysis completes
+  // Cache results when analysis completes + reset selection to all files
   useEffect(() => {
     if (state.phase === 'done' && state.result) {
-      setCached({ fileNames: state.fileNames, result: state.result });
+      setCached({
+        fileNames: state.fileNames,
+        result: state.result,
+        chromSizes: chromSizesRef.current,
+        genomeResults,
+        majorityGenome,
+        genomeDefaulted,
+        parsedFiles: new Map(parsedFilesRef.current),
+      });
+      setSelectedFiles(new Set(state.result.fileStats.map((f) => f.fileName)));
     }
-  }, [state.phase, state.result, state.fileNames, setCached]);
+  }, [state.phase, state.result, state.fileNames, setCached, genomeResults, majorityGenome, genomeDefaulted]);
 
   function handleFileDrop(files: File[]) {
     if (files.length < 2) {
@@ -252,23 +402,43 @@ export function FileComparison() {
     startPipeline(files);
   }
 
-  // --- Build plots (only when we have a complete result) ---
+  // --- Build plots (recompute when selection changes) ---
   const plots = useMemo<PlotSlot[]>(() => {
     if (state.phase !== 'done' || !state.result) return [];
-    const { jaccardMatrix, overlapMatrix, chrCounts, consensus, fileStats } = state.result;
-    const names = fileStats.map((f) => f.fileName);
+    const { jaccardMatrix, overlapMatrix, positionalBins, consensus, fileStats } = state.result;
+    const allNames = fileStats.map((f) => f.fileName);
+    const sel = allNames.filter((n) => selectedFiles.has(n));
+    const selIndices = sel.map((n) => allNames.indexOf(n));
     const out: PlotSlot[] = [];
-    if (jaccardMatrix.length > 0 && jaccardMatrix[0]?.length > 0) {
-      out.push(similarityHeatmapSlot(jaccardMatrix, overlapMatrix, names));
+
+    // Jaccard/overlap: extract sub-matrix for selected files
+    if (sel.length >= 1) {
+      const filtJaccard = selIndices.map((i) => selIndices.map((j) => jaccardMatrix[i][j]));
+      const filtOverlap = selIndices.map((i) => selIndices.map((j) => overlapMatrix[i][j]));
+      out.push(similarityHeatmapSlot(filtJaccard, filtOverlap, sel));
     }
-    const chrPlot = chromosomeHeatmapSlot(chrCounts, names);
-    if (chrPlot) out.push(chrPlot);
-    const cbcPlot = consensusByChrSlot(consensus, names.length);
+
+    // Positional: filter bins to selected files
+    if (sel.length >= 1) {
+      const filtBins = positionalBins.filter((b) => selectedFiles.has(b.fileName));
+      const posPlot = positionalHeatmapSlot(filtBins, sel, chromSizesRef.current);
+      if (posPlot) out.push(posPlot);
+    }
+
+    // Consensus: always all files (requires WASM recomputation to filter)
+    const cbcPlot = consensusByChrSlot(consensus, allNames.length);
     if (cbcPlot) out.push(cbcPlot);
-    const cp = consensusPlotSlot(consensus, names.length);
+    const cp = consensusPlotSlot(consensus, allNames.length);
     if (cp) out.push(cp);
+
     return out;
-  }, [state.phase, state.result]);
+  }, [state.phase, state.result, selectedFiles]);
+
+  // Genome warning data (derived from genomeResults)
+  const mismatched = useMemo(() => genomeResults.filter((r) => r.genome && r.genome !== majorityGenome), [genomeResults, majorityGenome]);
+  const lowConfidence = useMemo(() => genomeResults.filter((r) => r.tier != null && r.tier > 1), [genomeResults]);
+  const hasGenomeWarnings = mismatched.length > 0 || lowConfidence.length > 0;
+  const genomeModalData = genomeResults.find((r) => r.fileName === genomeModalFile);
 
   return (
     <div className="flex flex-col h-full overflow-auto p-4 @md:p-6">
@@ -406,60 +576,188 @@ export function FileComparison() {
             </button>
           </div>
 
-          {/* Plots gallery */}
-          {plots.length > 0 && (
-            <div>
-              <h3 className="text-sm font-semibold text-base-content/50 uppercase tracking-wide mb-2">Visualizations</h3>
-              <PlotGallery plots={plots} />
-            </div>
-          )}
-
           {/* Per-file breakdown table */}
-          {state.result.perFile.length > 0 && (
+          {state.result.perFile.length > 0 ? (
             <div>
               <h3 className="text-sm font-semibold text-base-content/50 uppercase tracking-wide mb-2">Per-file breakdown</h3>
+
+              {/* Genome warning banners */}
+              {hasGenomeWarnings && (
+                <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-warning/10 border border-warning/30 text-xs mb-2">
+                  <AlertTriangle size={14} className="text-warning shrink-0 mt-0.5" />
+                  <div className="space-y-0.5">
+                    {mismatched.length > 0 && (
+                      <p>
+                        <span className="font-medium">Genome mismatch: </span>
+                        <span className="text-base-content/60">
+                          {mismatched.map((r) => r.fileName).join(', ')} detected as {mismatched[0].genome} while the majority is {majorityGenome}. Results may be unreliable for mismatched files.
+                        </span>
+                      </p>
+                    )}
+                    {lowConfidence.length > 0 && (
+                      <p>
+                        <span className="font-medium">Low confidence: </span>
+                        <span className="text-base-content/60">
+                          {lowConfidence.map((r) => `${r.fileName} (Tier ${r.tier})`).join(', ')}
+                        </span>
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {genomeDefaulted && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-base-200 text-xs mb-2 text-base-content/60">
+                  <AlertTriangle size={13} className="text-base-content/40 shrink-0" />
+                  Genome detection unavailable — defaulted to hg38 for positional binning.
+                </div>
+              )}
+
               <div className="overflow-x-auto border border-base-300 rounded-lg bg-base-100">
                 <table className="table table-sm text-xs w-full">
                   <thead className="text-base-content">
                     <tr>
+                      <th className="w-8">
+                        <input
+                          type="checkbox"
+                          className="checkbox checkbox-xs"
+                          checked={selectedFiles.size === state.result.fileStats.length}
+                          onChange={() => {
+                            const allNames = state.result!.fileStats.map((f) => f.fileName);
+                            setSelectedFiles((prev) => prev.size === allNames.length ? new Set() : new Set(allNames));
+                          }}
+                        />
+                      </th>
                       <th>File</th>
                       <th className="text-right">Regions</th>
                       <th className="text-right">Shared</th>
                       <th className="text-right">Unique</th>
                       <th className="text-right">Overlap %</th>
+                      {genomeResults.length > 0 && <th>Genome</th>}
+                      <th className="w-8" />
                     </tr>
                   </thead>
                   <tbody>
-                    {state.result.perFile.map((f) => (
-                      <tr key={f.fileName}>
+                    {state.result.perFile.map((f) => {
+                      const gr = genomeResults.find((r) => r.fileName === f.fileName);
+                      const isMismatch = gr?.genome != null && gr.genome !== majorityGenome;
+                      const isLowTier = gr?.tier != null && gr.tier > 1;
+                      return (
+                      <tr key={f.fileName} className={selectedFiles.has(f.fileName) ? '' : 'opacity-40'}>
+                        <td>
+                          <input
+                            type="checkbox"
+                            className="checkbox checkbox-xs"
+                            checked={selectedFiles.has(f.fileName)}
+                            onChange={() => {
+                              setSelectedFiles((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(f.fileName)) next.delete(f.fileName);
+                                else next.add(f.fileName);
+                                return next;
+                              });
+                            }}
+                          />
+                        </td>
                         <td className="max-w-[200px] truncate">{f.fileName}</td>
                         <td className="text-right">{formatNumber(f.regions)}</td>
                         <td className="text-right">{formatNumber(f.shared)}</td>
                         <td className="text-right">{formatNumber(f.unique)}</td>
                         <td className="text-right">{f.overlapPct.toFixed(1)}%</td>
+                        {genomeResults.length > 0 && (
+                          <td>
+                            {gr?.genome ? (
+                              <button
+                                onClick={() => gr.raw && setGenomeModalFile(f.fileName)}
+                                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium transition-colors ${
+                                  gr.raw ? 'cursor-pointer hover:opacity-80' : ''
+                                } ${
+                                  gr.tier === 1 && !isMismatch
+                                    ? 'bg-success/15 text-success'
+                                    : gr.tier === 2 || isMismatch
+                                      ? 'bg-warning/15 text-warning'
+                                      : 'bg-error/15 text-error'
+                                }`}
+                              >
+                                {gr.genome}
+                                {gr.tier != null && <span className="opacity-70">T{gr.tier}</span>}
+                                {(isMismatch || isLowTier) && <AlertTriangle size={10} />}
+                              </button>
+                            ) : (
+                              <span className="text-base-content/30">&mdash;</span>
+                            )}
+                          </td>
+                        )}
+                        <td>
+                          {parsedFilesRef.current.has(f.fileName) && (
+                            <button
+                              onClick={() => {
+                                const file = parsedFilesRef.current.get(f.fileName);
+                                if (file) {
+                                  setBedFile(file);
+                                  openTab('analysis', 'file');
+                                }
+                              }}
+                              className="inline-flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 transition-colors cursor-pointer"
+                              title={`Analyze ${f.fileName}`}
+                            >
+                              Analyze
+                              <ArrowRight size={11} />
+                            </button>
+                          )}
+                        </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                     {state.result.unionStats && (
                       <tr className="border-t border-base-300 bg-primary/5 font-semibold">
+                        <td />
                         <td>Union</td>
                         <td className="text-right">{formatNumber(state.result.unionStats.regions)}</td>
                         <td />
                         <td />
                         <td className="text-right">{formatBp(state.result.unionStats.nucleotides)}</td>
+                        {genomeResults.length > 0 && <td />}
+                        <td />
                       </tr>
                     )}
                     {state.result.intersectionStats && (
                       <tr className="border-t border-base-300 bg-secondary/5 font-semibold">
+                        <td />
                         <td>All shared</td>
                         <td className="text-right">{formatNumber(state.result.intersectionStats.regions)}</td>
                         <td />
                         <td />
                         <td className="text-right">{formatBp(state.result.intersectionStats.nucleotides)}</td>
+                        {genomeResults.length > 0 && <td />}
+                        <td />
                       </tr>
                     )}
                   </tbody>
                 </table>
               </div>
+              {selectedFiles.size < state.result!.fileStats.length && selectedFiles.size > 0 ? (
+                <p className="text-xs text-base-content/40 mt-1">
+                  Showing {selectedFiles.size} of {state.result!.fileStats.length} files in plots
+                </p>
+              ) : null}
+
+              {/* Genome compatibility modal */}
+              {genomeModalFile != null && genomeModalData?.raw != null && (
+                <GenomeCompatModal
+                  open
+                  onClose={() => setGenomeModalFile(null)}
+                  genomeStats={genomeModalData.raw as RefGenValidReturnModel}
+                />
+              )}
+            </div>
+          ) : null}
+
+          {/* Plots gallery */}
+          {plots.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold text-base-content/50 uppercase tracking-wide mb-2">Visualizations</h3>
+              <PlotGallery plots={plots} />
             </div>
           )}
 
