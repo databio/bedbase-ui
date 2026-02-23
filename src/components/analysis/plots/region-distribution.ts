@@ -123,7 +123,7 @@ export function regionDistributionSlot(data: DistributionPoint[]): PlotSlot | nu
   return {
     id: 'regionDistribution',
     title: 'Region distribution',
-    description: 'Positional distribution of regions across each chromosome, binned into 300 equal-width segments relative to each chromosome\'s extent. Taller bars indicate genomic hotspots with higher region density.',
+    description: 'Positional distribution of regions across each chromosome. Each chromosome is divided into 300 equal-width bins and regions are counted per bin based on overlap. Taller bars indicate genomic hotspots with higher region density. Useful for spotting positional biases — e.g. regions concentrated near centromeres or telomeres, or chromosomes with unexpectedly sparse or dense coverage.',
     type: 'observable',
     renderThumbnail,
     render,

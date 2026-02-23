@@ -63,7 +63,7 @@ export function consensusPlotSlot(
   return {
     id: 'consensusSupport',
     title: 'Consensus support distribution',
-    description: 'Distribution of consensus regions by support level. Each consensus region is formed by merging overlapping intervals across files; its support count indicates how many files contribute. Higher support means more files agree on that genomic region.',
+    description: 'Distribution of consensus regions by support level. All regions across files are merged into a non-overlapping union, then each merged region is counted by how many input files overlap it. A region with support 3/5 means 3 of 5 files had at least one region there. If most regions have low support (left-skewed), the files share little; if most have high support (right-skewed), the files agree on where regions are. A uniform distribution suggests partially overlapping files with no strong consensus.',
     type: 'observable',
     renderThumbnail,
     render,

@@ -154,7 +154,7 @@ export function positionalHeatmapSlot(
   return {
     id: 'positionalHeatmap',
     title: 'Aggregated region density',
-    description: 'Heatmap of region density across the genome using a universal bin width derived from the reference genome (hg38). Shorter chromosomes have proportionally fewer bins, preserving their relative extent. Each cell aggregates across selected files. "Total regions" shows absolute count; "File support" shows how many files contribute regions to each bin.',
+    description: 'Genome-wide heatmap showing where regions concentrate across chromosomes. A universal bin width is set so the longest chromosome spans 100 bins (~2.5 Mb each for hg38); shorter chromosomes get proportionally fewer bins, preserving their relative extent. Each region is counted once in the bin containing its midpoint. "Total regions" sums counts from all files per bin. "File support" shows how many files have at least one region in each bin. This is a macro-scale view — useful for spotting files that cluster in unusual locations (e.g. centromeres, telomeres) or are missing from expected regions, but too coarse to resolve individual peaks.',
     type: 'observable',
     renderThumbnail,
     render: renderTotal,

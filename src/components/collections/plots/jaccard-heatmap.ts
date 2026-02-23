@@ -93,7 +93,7 @@ export function similarityHeatmapSlot(
   return {
     id: 'similarityHeatmap',
     title: 'Pairwise similarity',
-    description: 'Pairwise comparison of region overlap between files. Jaccard similarity measures the ratio of shared to total genomic coverage (0 = no overlap, 1 = identical). Overlap % shows the fraction of one file\'s regions that intersect the other.',
+    description: 'Pairwise comparison of genomic coverage between files, measured in base pairs. Jaccard similarity is the ratio of shared bases to total bases covered by either file (0 = no shared bases, 1 = identical coverage). It is symmetric — comparing A to B gives the same value as B to A. Overlap % is asymmetric: it shows what fraction of each file\'s bases are covered by the other, so A→B and B→A can differ when files have different total coverage. Use Jaccard to assess overall concordance; use Overlap % to identify when one file is a subset of another.',
     type: 'observable',
     renderThumbnail,
     render: renderJaccard,
