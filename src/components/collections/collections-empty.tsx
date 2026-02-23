@@ -1,8 +1,9 @@
-import { useState } from 'react';
-import { Globe, Layers, Search, ChevronRight, FolderOpen, ArrowRight } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Globe, Layers, Search, ChevronRight, FolderOpen, ArrowRight, GitCompareArrows } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTab } from '../../contexts/tab-context';
 import { useBucket } from '../../contexts/bucket-context';
+import { useFileSet } from '../../contexts/fileset-context';
 import { useStats } from '../../queries/use-stats';
 import { useBedsetList } from '../../queries/use-bedset-list';
 
@@ -11,8 +12,21 @@ export function CollectionsEmpty() {
   const { openTab } = useTab();
   const navigate = useNavigate();
   const { bucketCount } = useBucket();
+  const { setFiles } = useFileSet();
   const { data: stats } = useStats();
   const { data: sampleBedsets } = useBedsetList({ limit: 3 });
+  const compareInputRef = useRef<HTMLInputElement>(null);
+
+  function handleCompareFiles(fileList: FileList | File[]) {
+    const files = Array.from(fileList).filter((f) => {
+      const name = f.name.toLowerCase();
+      return name.endsWith('.bed') || name.endsWith('.bed.gz');
+    });
+    if (files.length > 0) {
+      setFiles(files);
+      openTab('collections', 'files');
+    }
+  }
 
   return (
     <div className="flex-1 overflow-auto">
@@ -129,8 +143,45 @@ export function CollectionsEmpty() {
             )}
           </div>
 
+          {/* Compare Files */}
+          <h3 className="text-sm font-semibold text-base-content mb-4 mt-10 text-center">Compare your own files:</h3>
+          <button
+            onClick={() => compareInputRef.current?.click()}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.currentTarget.classList.add('border-success', 'bg-success/10');
+            }}
+            onDragLeave={(e) => {
+              e.currentTarget.classList.remove('border-success', 'bg-success/10');
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.currentTarget.classList.remove('border-success', 'bg-success/10');
+              if (e.dataTransfer.files.length > 0) handleCompareFiles(e.dataTransfer.files);
+            }}
+            className="flex flex-col items-center justify-center w-full h-32 rounded-lg border-2 border-dashed border-success/30 bg-success/5 hover:bg-success/10 hover:border-success/50 transition-colors cursor-pointer gap-2"
+          >
+            <div className="flex items-center gap-2">
+              <GitCompareArrows size={16} className="text-success" />
+              <span className="text-sm font-medium text-base-content">Drop BED files here to compare</span>
+            </div>
+            <span className="text-xs text-base-content/40">Jaccard similarity, consensus regions, set operations — all local</span>
+          </button>
+
         </div>
       </div>
+
+      <input
+        ref={compareInputRef}
+        type="file"
+        multiple
+        accept=".bed,.gz"
+        className="hidden"
+        onChange={(e) => {
+          if (e.target.files && e.target.files.length > 0) handleCompareFiles(e.target.files);
+          e.target.value = '';
+        }}
+      />
     </div>
   );
 }
