@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Search, Upload, FileText, ArrowRight } from 'lucide-react';
+import { Search, Upload, FileText, X } from 'lucide-react';
 import { useTab } from '../../contexts/tab-context';
 import { useFile } from '../../contexts/file-context';
 import { EXAMPLE_QUERIES } from '../../lib/const';
@@ -73,7 +73,13 @@ export function SearchEmpty() {
             <FileText size={16} className="text-primary shrink-0 mx-2" />
             <span className="text-sm font-medium text-base-content/70 truncate flex-1">{bedFile.name}</span>
             <span className="text-xs text-base-content/40">{formatBytes(bedFile.size)}</span>
-            <ArrowRight size={14} className="text-primary shrink-0" />
+            <button
+              onClick={(e) => { e.stopPropagation(); setBedFile(null); }}
+              className="p-1 rounded hover:bg-base-200 transition-colors cursor-pointer shrink-0"
+              title="Remove file"
+            >
+              <X size={14} className="text-base-content/40" />
+            </button>
           </div>
         ) : (
           <div

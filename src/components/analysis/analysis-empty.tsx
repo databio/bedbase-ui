@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import {
-  Upload, FileText, ArrowRight, Search,
+  Upload, FileText, X, ArrowRight, Search,
   BarChart3, Table2, PieChart, Dna, Ruler, Globe, Lock,
 } from 'lucide-react';
 import { useFile } from '../../contexts/file-context';
@@ -115,15 +115,21 @@ export function AnalysisEmpty() {
               </div>
               <div className="border-t border-base-300">
                 {bedFile ? (
-                  <button
+                  <div
                     onClick={handleAnalyzeFile}
                     className="flex items-center gap-3 px-4 h-11 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer text-left w-full"
                   >
                     <FileText size={16} className="text-primary shrink-0" />
                     <span className="text-sm font-medium text-base-content truncate flex-1 min-w-0">{bedFile.name}</span>
                     <span className="text-xs text-base-content/40 shrink-0">{formatBytes(bedFile.size)}</span>
-                    <ArrowRight size={14} className="text-primary shrink-0" />
-                  </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setBedFile(null); }}
+                      className="p-1 rounded hover:bg-base-200 transition-colors cursor-pointer shrink-0"
+                      title="Remove file"
+                    >
+                      <X size={14} className="text-base-content/40" />
+                    </button>
+                  </div>
                 ) : (
                   <button
                     onClick={() => inputRef.current?.click()}

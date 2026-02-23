@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Globe, Layers, Search, ChevronRight, FolderOpen, ArrowRight, GitCompareArrows } from 'lucide-react';
+import { Globe, Layers, Search, ChevronRight, FolderOpen, ArrowRight, GitCompareArrows, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTab } from '../../contexts/tab-context';
 import { useBucket } from '../../contexts/bucket-context';
@@ -7,12 +7,17 @@ import { useFileSet } from '../../contexts/fileset-context';
 import { useStats } from '../../queries/use-stats';
 import { useBedsetList } from '../../queries/use-bedset-list';
 
+function formatNumber(n: number): string {
+  return n.toLocaleString();
+}
+
 export function CollectionsEmpty() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [compareWarning, setCompareWarning] = useState<string | null>(null);
   const { openTab } = useTab();
   const navigate = useNavigate();
   const { bucketCount } = useBucket();
-  const { setFiles } = useFileSet();
+  const { setFiles, cached, clearCached } = useFileSet();
   const { data: stats } = useStats();
   const { data: sampleBedsets } = useBedsetList({ limit: 3 });
   const compareInputRef = useRef<HTMLInputElement>(null);
@@ -22,9 +27,13 @@ export function CollectionsEmpty() {
       const name = f.name.toLowerCase();
       return name.endsWith('.bed') || name.endsWith('.bed.gz');
     });
-    if (files.length > 0) {
+    if (files.length >= 2) {
+      setCompareWarning(null);
       setFiles(files);
       openTab('collections', 'files');
+    } else {
+      setCompareWarning(files.length === 0 ? 'No BED files found' : 'Drop at least 2 files to compare');
+      setTimeout(() => setCompareWarning(null), 3000);
     }
   }
 
@@ -145,28 +154,60 @@ export function CollectionsEmpty() {
 
           {/* Compare Files */}
           <h3 className="text-sm font-semibold text-base-content mb-4 mt-10 text-center">Compare your own files:</h3>
-          <button
-            onClick={() => compareInputRef.current?.click()}
-            onDragOver={(e) => {
-              e.preventDefault();
-              e.currentTarget.classList.add('border-success', 'bg-success/10');
-            }}
-            onDragLeave={(e) => {
-              e.currentTarget.classList.remove('border-success', 'bg-success/10');
-            }}
-            onDrop={(e) => {
-              e.preventDefault();
-              e.currentTarget.classList.remove('border-success', 'bg-success/10');
-              if (e.dataTransfer.files.length > 0) handleCompareFiles(e.dataTransfer.files);
-            }}
-            className="flex flex-col items-center justify-center w-full h-32 rounded-lg border-2 border-dashed border-success/30 bg-success/5 hover:bg-success/10 hover:border-success/50 transition-colors cursor-pointer gap-2"
-          >
+          {cached ? (
             <div className="flex items-center gap-2">
-              <GitCompareArrows size={16} className="text-success" />
-              <span className="text-sm font-medium text-base-content">Drop BED files here to compare</span>
+              <button
+                onClick={() => openTab('collections', 'files')}
+                className="flex items-center gap-3 flex-1 px-4 py-3 rounded-lg border border-success/30 bg-success/5 hover:bg-success/10 hover:border-success/50 transition-colors cursor-pointer min-w-0"
+              >
+                <div className="p-1.5 rounded-md bg-success/10">
+                  <GitCompareArrows size={14} className="text-success" />
+                </div>
+                <div className="flex-1 text-left min-w-0">
+                  <p className="text-sm font-medium text-base-content">
+                    {cached.fileNames.length} files compared
+                  </p>
+                  <p className="text-xs text-base-content/40">
+                    {formatNumber(cached.result.fileStats.reduce((s, f) => s + f.regions, 0))} total regions
+                  </p>
+                </div>
+                <ChevronRight size={14} className="text-base-content/30 shrink-0" />
+              </button>
+              <button
+                onClick={() => clearCached()}
+                className="p-2 rounded-md text-error/40 hover:text-error hover:bg-error/10 transition-colors cursor-pointer shrink-0"
+                title="Clear comparison"
+              >
+                <Trash2 size={14} />
+              </button>
             </div>
-            <span className="text-xs text-base-content/40">Jaccard similarity, consensus regions, set operations — all local</span>
-          </button>
+          ) : (
+            <button
+              onClick={() => compareInputRef.current?.click()}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.currentTarget.classList.add('border-success', 'bg-success/10');
+              }}
+              onDragLeave={(e) => {
+                e.currentTarget.classList.remove('border-success', 'bg-success/10');
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.currentTarget.classList.remove('border-success', 'bg-success/10');
+                if (e.dataTransfer.files.length > 0) handleCompareFiles(e.dataTransfer.files);
+              }}
+              className="flex flex-col items-center justify-center w-full h-32 rounded-lg border-2 border-dashed border-success/30 bg-success/5 hover:bg-success/10 hover:border-success/50 transition-colors cursor-pointer gap-2"
+            >
+              <div className="flex items-center gap-2">
+                <GitCompareArrows size={16} className="text-success" />
+                <span className="text-sm font-medium text-base-content">Drop BED files here to compare</span>
+              </div>
+              <span className="text-xs text-base-content/40">Jaccard similarity, consensus regions, and set operations</span>
+            </button>
+          )}
+          {compareWarning && (
+            <p className="text-xs text-warning mt-2 text-center">{compareWarning}</p>
+          )}
 
         </div>
       </div>

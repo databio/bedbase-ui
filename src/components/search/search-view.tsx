@@ -189,22 +189,22 @@ function SearchResults({
 
   return (
     <div className="flex flex-col h-full overflow-auto p-4 @md:p-6">
-      <div className="flex flex-col gap-2 pb-4">
-        <div className="flex items-center justify-between">
-          <button
-            onClick={() => openTab('search')}
-            className="inline-flex items-center gap-0.5 text-xs text-base-content/40 hover:text-base-content/60 transition-colors cursor-pointer w-fit"
-          >
-            <ChevronLeft size={14} />
-            Search
-          </button>
-          <button
-            onClick={handleViewOnUmap}
-            className={`btn btn-xs btn-ghost gap-1 ${!(data?.results && data.results.length > 0) ? 'invisible' : ''}`}
-          >
-            <ScatterChart size={12} /> View on UMAP
-          </button>
-        </div>
+      <div className="flex items-center justify-between mb-4">
+        <button
+          onClick={() => openTab('search')}
+          className="inline-flex items-center gap-0.5 text-xs text-base-content/40 hover:text-base-content/60 transition-colors cursor-pointer w-fit"
+        >
+          <ChevronLeft size={14} />
+          Search
+        </button>
+        <button
+          onClick={handleViewOnUmap}
+          className={`inline-flex items-center gap-1 text-xs text-base-content hover:text-base-content/70 transition-colors cursor-pointer ${!(data?.results && data.results.length > 0) ? 'invisible' : ''}`}
+        >
+          <ScatterChart size={12} /> View on UMAP
+        </button>
+      </div>
+      <div className="flex flex-col gap-2 mb-4">
         {header}
         {filters}
       </div>

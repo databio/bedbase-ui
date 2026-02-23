@@ -75,16 +75,14 @@ export function BedsetList() {
   };
 
   return (
-    <div className="flex flex-col h-full overflow-auto px-4 @md:px-6">
-      <div className="pt-4 pb-4">
-        <button
-          onClick={() => openTab('collections', '')}
-          className="inline-flex items-center gap-0.5 text-xs text-base-content/40 hover:text-base-content/60 transition-colors cursor-pointer w-fit"
-        >
-          <ChevronLeft size={14} />
-          Collections
-        </button>
-      </div>
+    <div className="flex flex-col h-full overflow-auto p-4 @md:p-6">
+      <button
+        onClick={() => openTab('collections', '')}
+        className="inline-flex items-center gap-0.5 text-xs text-base-content/40 hover:text-base-content/60 transition-colors cursor-pointer w-fit mb-4"
+      >
+        <ChevronLeft size={14} />
+        Collections
+      </button>
 
       <div className="space-y-2 pb-6">
         <h3 className="text-lg font-semibold text-base-content">BEDsets</h3>

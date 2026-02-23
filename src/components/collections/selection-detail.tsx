@@ -44,16 +44,14 @@ export function SelectionDetail({ selectionId }: { selectionId: string }) {
 
   if (!bucket) {
     return (
-      <div className="flex flex-col h-full overflow-auto px-4 @md:px-6">
-        <div className="pt-4 pb-4">
-          <button
-            onClick={() => openTab('collections', 'selection')}
-            className="inline-flex items-center gap-0.5 text-xs text-base-content/40 hover:text-base-content/60 transition-colors cursor-pointer w-fit"
-          >
-            <ChevronLeft size={14} />
-            Selections
-          </button>
-        </div>
+      <div className="flex flex-col h-full overflow-auto p-4 @md:p-6">
+        <button
+          onClick={() => openTab('collections', 'selection')}
+          className="inline-flex items-center gap-0.5 text-xs text-base-content/40 hover:text-base-content/60 transition-colors cursor-pointer w-fit mb-4"
+        >
+          <ChevronLeft size={14} />
+          Selections
+        </button>
         <div className="flex flex-col items-center justify-center py-16 gap-3">
           <p className="text-sm font-medium text-base-content">Selection not found</p>
           <p className="text-xs text-base-content/50 max-w-md text-center">
@@ -71,16 +69,14 @@ export function SelectionDetail({ selectionId }: { selectionId: string }) {
   }
 
   return (
-    <div className="flex flex-col h-full overflow-auto px-4 @md:px-6">
-      <div className="pt-4 pb-4">
-        <button
-          onClick={() => openTab('collections', 'selection')}
-          className="inline-flex items-center gap-0.5 text-xs text-base-content/40 hover:text-base-content/60 transition-colors cursor-pointer w-fit"
-        >
-          <ChevronLeft size={14} />
-          Selections
-        </button>
-      </div>
+    <div className="flex flex-col h-full overflow-auto p-4 @md:p-6">
+      <button
+        onClick={() => openTab('collections', 'selection')}
+        className="inline-flex items-center gap-0.5 text-xs text-base-content/40 hover:text-base-content/60 transition-colors cursor-pointer w-fit mb-4"
+      >
+        <ChevronLeft size={14} />
+        Selections
+      </button>
 
       <div className="space-y-6 pb-6">
         {/* Header */}

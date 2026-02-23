@@ -33,7 +33,7 @@ function renderHeatmap(
     marginBottom: opts.legend ? 120 : 4,
     x: opts.legend ? { domain: labels, label: null, tickRotate: -45 } : { domain: labels, axis: null },
     y: opts.legend ? { domain: labels, label: null } : { domain: labels, axis: null },
-    color: { domain: [0, opts.maxVal], scheme: opts.scheme, label: opts.legend ? opts.label : undefined, legend: opts.legend },
+    color: { domain: [0, opts.maxVal], scheme: opts.scheme as Plot.ColorScheme, label: opts.legend ? opts.label : undefined, legend: opts.legend },
     marks: [
       Plot.cell(cells, {
         x: (d: Cell) => labels[fileNames.indexOf(d.fileA)],
