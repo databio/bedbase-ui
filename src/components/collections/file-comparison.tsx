@@ -26,6 +26,8 @@ import type { components } from '../../bedbase-types';
 
 type RefGenValidReturnModel = components['schemas']['RefGenValidReturnModel'];
 
+export const MAX_FILES = 15;
+
 /**
  * Normalize genome names from the API to the ref data names we have locally (hg38, hg19).
  */
@@ -136,51 +138,6 @@ function formatBp(bp: number): string {
   if (bp >= 1e6) return `${(bp / 1e6).toFixed(1)}M bp`;
   if (bp >= 1e3) return `${(bp / 1e3).toFixed(1)}K bp`;
   return `${bp} bp`;
-}
-
-async function collectBedFiles(items: DataTransferItemList): Promise<File[]> {
-  const files: File[] = [];
-
-  async function traverseEntry(entry: FileSystemEntry): Promise<void> {
-    if (entry.isFile) {
-      const file = await new Promise<File>((resolve) =>
-        (entry as FileSystemFileEntry).file(resolve),
-      );
-      const name = file.name.toLowerCase();
-      if (name.endsWith('.bed') || name.endsWith('.bed.gz')) {
-        files.push(file);
-      }
-    } else if (entry.isDirectory) {
-      const reader = (entry as FileSystemDirectoryEntry).createReader();
-      const entries = await new Promise<FileSystemEntry[]>((resolve) =>
-        reader.readEntries(resolve),
-      );
-      for (const e of entries) await traverseEntry(e);
-    }
-  }
-
-  const entries: FileSystemEntry[] = [];
-  for (let i = 0; i < items.length; i++) {
-    const entry = items[i].webkitGetAsEntry?.();
-    if (entry) entries.push(entry);
-  }
-
-  if (entries.length > 0) {
-    for (const entry of entries) await traverseEntry(entry);
-  } else {
-    // Fallback: no webkitGetAsEntry support
-    for (let i = 0; i < items.length; i++) {
-      const file = items[i].getAsFile();
-      if (file) {
-        const name = file.name.toLowerCase();
-        if (name.endsWith('.bed') || name.endsWith('.bed.gz')) {
-          files.push(file);
-        }
-      }
-    }
-  }
-
-  return files;
 }
 
 // --- Component ---
@@ -362,9 +319,22 @@ export function FileComparison() {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- only on mount
 
+  // Redirect to collections if idle with nothing to show
+  useEffect(() => {
+    if (state.phase === 'idle' && !cached && contextFiles.length === 0) {
+      openTab('collections', '');
+    }
+  }, [state.phase, cached, contextFiles, openTab]);
+
   // Auto-start when files arrive from context
   useEffect(() => {
     if (contextFiles.length >= 2 && state.phase === 'idle') {
+      if (contextFiles.length > MAX_FILES) {
+        setWarning(`Too many files (${contextFiles.length}). Maximum is ${MAX_FILES}.`);
+        setTimeout(() => setWarning(null), 3000);
+        clearFiles();
+        return;
+      }
       startPipeline(contextFiles);
       clearFiles();
     }
@@ -389,6 +359,11 @@ export function FileComparison() {
   function handleFileDrop(files: File[]) {
     if (files.length < 2) {
       setWarning(files.length === 0 ? 'No BED files found' : 'Drop at least 2 files to compare');
+      setTimeout(() => setWarning(null), 3000);
+      return;
+    }
+    if (files.length > MAX_FILES) {
+      setWarning(`Too many files (${files.length}). Maximum is ${MAX_FILES}.`);
       setTimeout(() => setWarning(null), 3000);
       return;
     }
@@ -451,41 +426,8 @@ export function FileComparison() {
         Collections
       </button>
 
-      {/* Idle: show drop zone */}
-      {state.phase === 'idle' && (
-        <div className="flex flex-col items-center justify-center py-16 gap-4">
-          <h2 className="text-xl font-bold text-base-content">Compare BED files</h2>
-          <p className="text-sm text-base-content/50 max-w-md text-center">
-            Drop multiple BED files or a folder to compute pairwise Jaccard similarity, consensus regions, and set operation statistics. All computation runs locally in your browser.
-          </p>
-          <button
-            onClick={() => inputRef.current?.click()}
-            onDragOver={(e) => {
-              e.preventDefault();
-              e.currentTarget.classList.add('border-success', 'bg-success/10');
-            }}
-            onDragLeave={(e) => {
-              e.currentTarget.classList.remove('border-success', 'bg-success/10');
-            }}
-            onDrop={async (e) => {
-              e.preventDefault();
-              e.currentTarget.classList.remove('border-success', 'bg-success/10');
-              const files = await collectBedFiles(e.dataTransfer.items);
-              handleFileDrop(files);
-            }}
-            className="flex flex-col items-center justify-center w-full max-w-lg h-48 rounded-lg border-2 border-dashed border-success/30 bg-success/5 hover:bg-success/10 hover:border-success/50 transition-colors cursor-pointer gap-2"
-          >
-            <div className="flex items-center gap-2">
-              <GitCompareArrows size={20} className="text-success" />
-              <span className="text-sm font-medium text-base-content">Drop BED files or a folder here</span>
-            </div>
-            <span className="text-xs text-base-content/40">or click to browse</span>
-          </button>
-          {warning && (
-            <p className="text-xs text-warning mt-2">{warning}</p>
-          )}
-        </div>
-      )}
+      {/* Idle: redirecting to collections */}
+      {state.phase === 'idle' && null}
 
       {/* Parsing phase */}
       {state.phase === 'parsing' && (
@@ -569,12 +511,16 @@ export function FileComparison() {
             </div>
             <button
               onClick={() => inputRef.current?.click()}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-base-content/60 hover:text-base-content/80 bg-base-200 hover:bg-base-300 px-2.5 py-1.5 rounded-md transition-colors cursor-pointer shrink-0"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-success/70 hover:text-success bg-success/10 hover:bg-success/15 px-2.5 py-1.5 rounded-md transition-colors cursor-pointer shrink-0"
             >
               <Plus size={13} />
               <span className="hidden @xs:inline">New Comparison</span>
             </button>
           </div>
+
+          {warning && (
+            <p className="text-xs text-warning">{warning}</p>
+          )}
 
           {/* Per-file breakdown table */}
           {state.result.perFile.length > 0 ? (

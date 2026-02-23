@@ -20,7 +20,17 @@ function sortChromosomes(chrs: string[]): string[] {
   return [...known, ...unknown];
 }
 
-type AggCell = { chr: string; bin: number; fileCount: number; totalCount: number };
+type AggCell = { chr: string; bin: number; fileCount: number; totalCount: number; meanCount: number };
+type BinStats = { chr: string; bin: number; mean: number; q25: number; q75: number };
+
+function quantile(sorted: number[], q: number): number {
+  if (sorted.length === 0) return 0;
+  const pos = q * (sorted.length - 1);
+  const lo = Math.floor(pos);
+  const hi = Math.ceil(pos);
+  if (lo === hi) return sorted[lo];
+  return sorted[lo] + (sorted[hi] - sorted[lo]) * (pos - lo);
+}
 
 function estimateMargin(labels: string[]): number {
   const longest = Math.max(...labels.map((l) => l.length));
@@ -39,16 +49,17 @@ export function positionalHeatmapSlot(
   const nFiles = fileNames.length;
   const chrOrder = sortChromosomes([...new Set(bins.map((d) => d.chr))]);
 
-  // Aggregate across files: for each chr×bin, count files with regions and total regions
-  const keyMap = new Map<string, { fileCount: number; totalCount: number }>();
+  // Aggregate across files: for each chr×bin, collect per-file counts
+  const keyMap = new Map<string, { fileCount: number; totalCount: number; counts: number[] }>();
   for (const b of bins) {
     const key = `${b.chr}\0${b.bin}`;
     const entry = keyMap.get(key);
     if (entry) {
       if (b.count > 0) entry.fileCount++;
       entry.totalCount += b.count;
+      entry.counts.push(b.count);
     } else {
-      keyMap.set(key, { fileCount: b.count > 0 ? 1 : 0, totalCount: b.count });
+      keyMap.set(key, { fileCount: b.count > 0 ? 1 : 0, totalCount: b.count, counts: [b.count] });
     }
   }
 
@@ -67,7 +78,8 @@ export function positionalHeatmapSlot(
     for (let bin = 0; bin < chrMax; bin++) {
       const key = `${chr}\0${bin}`;
       const entry = keyMap.get(key);
-      data.push({ chr, bin, fileCount: entry?.fileCount ?? 0, totalCount: entry?.totalCount ?? 0 });
+      const total = entry?.totalCount ?? 0;
+      data.push({ chr, bin, fileCount: entry?.fileCount ?? 0, totalCount: total, meanCount: total / nFiles });
     }
   }
 
@@ -85,35 +97,86 @@ export function positionalHeatmapSlot(
     });
   }
 
-  function renderSupport(width: number): Element {
-    const height = chrOrder.length * 22 + 80;
+  // Build per-bin stats for the mean variant
+  const statsData: BinStats[] = [];
+  for (const chr of chrOrder) {
+    const chrMax = maxBinsPerChr?.[chr] ?? globalMaxBin;
+    for (let bin = 0; bin < chrMax; bin++) {
+      const key = `${chr}\0${bin}`;
+      const entry = keyMap.get(key);
+      // Pad with zeros for files that had no regions in this bin
+      const counts = entry ? [...entry.counts] : [];
+      while (counts.length < nFiles) counts.push(0);
+      counts.sort((a, b) => a - b);
+      const mean = counts.reduce((s, v) => s + v, 0) / nFiles;
+      statsData.push({ chr, bin, mean, q25: quantile(counts, 0.25), q75: quantile(counts, 0.75) });
+    }
+  }
+
+  function renderMean(width: number): Element {
+    const height = chrOrder.length * 25 + 40;
+    const ml = estimateMargin(chrOrder);
     return Plot.plot({
       width,
       height,
-      marginLeft,
-      marginBottom: 40,
+      marginLeft: ml,
+      marginTop: 10,
+      marginBottom: 30,
       x: {
-        domain: binSet,
+        domain: [0, globalMaxBin],
         label: 'Genomic position',
         labelAnchor: 'center',
         labelArrow: 'none',
-        ticks: [binSet[0], binSet[binSet.length - 1]],
-        tickFormat: (d) => (d === binSet[0] ? 'start' : 'end'),
+        ticks: [0, globalMaxBin],
+        tickFormat: (d) => (d === 0 ? 'start' : 'end'),
       },
-      y: { domain: chrOrder, label: 'Chromosome' },
-      color: { domain: [0, nFiles], scheme: 'bupu' as Plot.ColorScheme, type: 'linear', label: `Files (of ${nFiles})`, legend: true },
+      y: { axis: null },
+      fy: { domain: chrOrder, label: 'Chromosome', padding: 0 },
+      color: {
+        domain: ['Mean', 'IQR (25th–75th)'],
+        range: ['teal', 'orange'],
+        legend: true,
+      },
       marks: [
-        Plot.cell(data, {
-          x: 'bin',
-          y: 'chr',
-          fill: 'fileCount',
-          inset: 0,
-          tip: true,
-          channels: {
-            'Files with regions': 'fileCount',
-            'Total regions': 'totalCount',
-          },
+        // Mean bars
+        Plot.rect(statsData, {
+          x1: (d: BinStats) => d.bin - 0.5,
+          x2: (d: BinStats) => d.bin + 0.5,
+          y1: 0,
+          y2: 'mean',
+          fy: 'chr',
+          fill: () => 'Mean',
         }),
+        // IQR lines (25th–75th percentile)
+        Plot.line(statsData, {
+          x: 'bin',
+          y: 'q75',
+          fy: 'chr',
+          stroke: () => 'IQR (25th–75th)',
+          strokeWidth: 1,
+          curve: 'step',
+        }),
+        Plot.line(statsData, {
+          x: 'bin',
+          y: 'q25',
+          fy: 'chr',
+          stroke: () => 'IQR (25th–75th)',
+          strokeWidth: 1,
+          curve: 'step',
+          strokeDasharray: '2,2',
+        }),
+        // Tooltip
+        Plot.tip(statsData, Plot.pointer({
+          x: 'bin',
+          y: 'mean',
+          fy: 'chr',
+          channels: {
+            'Q75': (d: BinStats) => d.q75.toFixed(1),
+            'Mean regions': (d: BinStats) => d.mean.toFixed(1),
+            'Q25': (d: BinStats) => d.q25.toFixed(1),
+          },
+          format: { x: false, y: false, fy: false },
+        })),
       ],
     });
   }
@@ -154,13 +217,13 @@ export function positionalHeatmapSlot(
   return {
     id: 'positionalHeatmap',
     title: 'Aggregated region density',
-    description: 'Genome-wide heatmap showing where regions concentrate across chromosomes. A universal bin width is set so the longest chromosome spans 100 bins (~2.5 Mb each for hg38); shorter chromosomes get proportionally fewer bins, preserving their relative extent. Each region is counted once in the bin containing its midpoint. "Total regions" sums counts from all files per bin. "File support" shows how many files have at least one region in each bin. This is a macro-scale view — useful for spotting files that cluster in unusual locations (e.g. centromeres, telomeres) or are missing from expected regions, but too coarse to resolve individual peaks.',
+    description: 'Genome-wide view showing where regions concentrate across chromosomes. A universal bin width is set so the longest chromosome spans 100 bins (~2.5 Mb each for hg38); shorter chromosomes get proportionally fewer bins, preserving their relative extent. Each region is counted once in the bin containing its midpoint. "Total regions" shows a heatmap summing counts from all files per bin. "Mean per file" shows histogram bars of the mean count with a shaded 25th–75th percentile ribbon.',
     type: 'observable',
     renderThumbnail,
     render: renderTotal,
     variants: [
       { label: 'Total regions', render: renderTotal },
-      { label: 'File support', render: renderSupport },
+      { label: 'Average density', render: renderMean },
     ],
   };
 }

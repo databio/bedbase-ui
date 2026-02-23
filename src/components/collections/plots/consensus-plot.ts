@@ -30,8 +30,9 @@ export function consensusPlotSlot(
       width,
       height,
       marginLeft: 0,
-      marginBottom: 0,
-      x: { domain: bins.map((b) => b.label), axis: null },
+      marginBottom: 16,
+      style: { fontSize: '8px' },
+      x: { domain: bins.map((b) => b.label), label: null, tickSize: 0 },
       y: { axis: null },
       marks: [
         Plot.barY(bins, { x: 'label', y: 'count', fill: 'teal' }),

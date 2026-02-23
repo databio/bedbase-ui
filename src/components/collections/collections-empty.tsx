@@ -6,6 +6,7 @@ import { useBucket } from '../../contexts/bucket-context';
 import { useFileSet } from '../../contexts/fileset-context';
 import { useStats } from '../../queries/use-stats';
 import { useBedsetList } from '../../queries/use-bedset-list';
+import { MAX_FILES } from './file-comparison';
 
 function formatNumber(n: number): string {
   return n.toLocaleString();
@@ -27,13 +28,16 @@ export function CollectionsEmpty() {
       const name = f.name.toLowerCase();
       return name.endsWith('.bed') || name.endsWith('.bed.gz');
     });
-    if (files.length >= 2) {
+    if (files.length < 2) {
+      setCompareWarning(files.length === 0 ? 'No BED files found' : 'Drop at least 2 files to compare');
+      setTimeout(() => setCompareWarning(null), 3000);
+    } else if (files.length > MAX_FILES) {
+      setCompareWarning(`Too many files (${files.length}). Maximum is ${MAX_FILES}.`);
+      setTimeout(() => setCompareWarning(null), 3000);
+    } else {
       setCompareWarning(null);
       setFiles(files);
       openTab('collections', 'files');
-    } else {
-      setCompareWarning(files.length === 0 ? 'No BED files found' : 'Drop at least 2 files to compare');
-      setTimeout(() => setCompareWarning(null), 3000);
     }
   }
 
@@ -202,7 +206,7 @@ export function CollectionsEmpty() {
                 <GitCompareArrows size={16} className="text-success" />
                 <span className="text-sm font-medium text-base-content">Drop BED files here to compare</span>
               </div>
-              <span className="text-xs text-base-content/40">Jaccard similarity, consensus regions, and set operations</span>
+              <span className="text-xs text-base-content/40">Run Jaccard similarity, consensus regions, and set operations on up to {MAX_FILES} of your own files</span>
             </button>
           )}
           {compareWarning && (

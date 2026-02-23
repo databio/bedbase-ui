@@ -54,11 +54,182 @@ function PlotFull({ render }: { render: (width: number) => Element }) {
   return <div ref={ref} className="w-full p-4 [&>svg]:block [&>svg]:overflow-visible [&>div>svg]:overflow-visible overflow-visible" />;
 }
 
+/**
+ * Find the main plot SVG inside a container. Observable Plot wraps plots with
+ * legend: true in a <figure> that contains small legend-swatch SVGs before the
+ * main plot SVG. We pick the largest SVG by area to avoid grabbing a swatch.
+ */
+function findPlotSvg(container: HTMLElement): SVGSVGElement | null {
+  const svgs = container.querySelectorAll('svg');
+  if (svgs.length === 0) return null;
+  if (svgs.length === 1) return svgs[0];
+  let best: SVGSVGElement = svgs[0];
+  let bestArea = 0;
+  for (const svg of svgs) {
+    const area = svg.clientWidth * svg.clientHeight;
+    if (area > bestArea) {
+      bestArea = area;
+      best = svg;
+    }
+  }
+  return best;
+}
+
+/**
+ * Extract categorical legend entries from an Observable Plot figure.
+ * Observable Plot renders swatches in two layouts:
+ * - Wrap mode: <div class="...-swatches-wrap"> > <span class="...-swatch"> > <svg fill="color"> + text node
+ * - Columns mode: <div class="...-swatches-columns"> > <div class="...-swatch"> > <svg fill="color"> + <div class="...-swatch-label">
+ */
+function extractCategoricalLegend(figure: HTMLElement): { label: string; color: string }[] {
+  const items: { label: string; color: string }[] = [];
+  // Find swatch container by partial class match
+  const swatchContainer = figure.querySelector('[class*="-swatches"]');
+  if (!swatchContainer) return items;
+  const swatches = swatchContainer.querySelectorAll('[class*="-swatch"]:not([class*="-swatches"])');
+  for (const swatch of swatches) {
+    const svg = swatch.querySelector('svg');
+    if (!svg) continue;
+    // Color is on the svg's fill attribute or on the rect inside
+    const color = svg.getAttribute('fill') || svg.querySelector('rect')?.getAttribute('fill') || '';
+    // Label: from the label div (columns) or text nodes (wrap)
+    const labelDiv = swatch.querySelector('[class*="-swatch-label"]');
+    let text = '';
+    if (labelDiv) {
+      text = labelDiv.textContent?.trim() || '';
+    } else {
+      for (const node of swatch.childNodes) {
+        if (node.nodeType === Node.TEXT_NODE) text += node.textContent;
+      }
+      text = text.trim();
+    }
+    if (color && text) items.push({ label: text, color });
+  }
+  return items;
+}
+
+/**
+ * Extract a continuous legend SVG (color ramp) from an Observable Plot figure.
+ * Observable Plot renders continuous legends as an SVG with class "...-ramp"
+ * containing a gradient image and tick labels.
+ */
+function extractContinuousLegendSvg(figure: HTMLElement): SVGSVGElement | null {
+  // Ramp legends are direct-child SVGs of the figure with class containing "-ramp"
+  const ramp = figure.querySelector(':scope > svg[class*="-ramp"]') as SVGSVGElement | null;
+  if (ramp) return ramp;
+  // Fallback: any direct-child SVG that's not the main plot (has image or gradient)
+  const svgs = figure.querySelectorAll(':scope > svg');
+  for (const svg of svgs) {
+    if (svg.querySelector('image') || svg.querySelector('linearGradient')) {
+      return svg as SVGSVGElement;
+    }
+  }
+  return null;
+}
+
+/**
+ * Build a self-contained SVG string for download that includes the legend.
+ * Uses nested <svg> elements to compose legend + main plot without breaking
+ * internal references (clip-paths, defs, etc.).
+ */
+function buildDownloadSvg(container: HTMLElement): { data: string; width: number; height: number } | null {
+  const mainSvg = findPlotSvg(container);
+  if (!mainSvg) return null;
+
+  const serializer = new XMLSerializer();
+  const mainWidth = mainSvg.clientWidth || parseFloat(mainSvg.getAttribute('width') || '600');
+  const mainHeight = mainSvg.clientHeight || parseFloat(mainSvg.getAttribute('height') || '400');
+
+  const figure = container.querySelector('figure') as HTMLElement | null;
+  if (!figure) {
+    return { data: serializer.serializeToString(mainSvg), width: mainWidth, height: mainHeight };
+  }
+
+  // Try continuous legend first, then categorical
+  const continuousSvg = extractContinuousLegendSvg(figure);
+  const categoricalItems = continuousSvg ? [] : extractCategoricalLegend(figure);
+
+  if (!continuousSvg && categoricalItems.length === 0) {
+    return { data: serializer.serializeToString(mainSvg), width: mainWidth, height: mainHeight };
+  }
+
+  const ns = 'http://www.w3.org/2000/svg';
+
+  // Build legend SVG (centered horizontally)
+  let legendSvgStr: string;
+  let legendHeight: number;
+
+  if (continuousSvg) {
+    legendHeight = continuousSvg.clientHeight || parseFloat(continuousSvg.getAttribute('height') || '40');
+    const legendWidth = continuousSvg.clientWidth || parseFloat(continuousSvg.getAttribute('width') || '240');
+    const clone = continuousSvg.cloneNode(true) as SVGSVGElement;
+    clone.setAttribute('x', String((mainWidth - legendWidth) / 2));
+    clone.setAttribute('y', '0');
+    legendSvgStr = serializer.serializeToString(clone);
+  } else {
+    legendHeight = 22;
+    // Calculate total legend width first
+    let totalLegendWidth = 0;
+    for (const item of categoricalItems) {
+      totalLegendWidth += 14 + item.label.length * 6.5 + 12;
+    }
+    totalLegendWidth -= 12; // no trailing gap
+    const startX = (mainWidth - totalLegendWidth) / 2;
+
+    const legendSvg = document.createElementNS(ns, 'svg');
+    legendSvg.setAttribute('xmlns', ns);
+    legendSvg.setAttribute('x', '0');
+    legendSvg.setAttribute('y', '0');
+    legendSvg.setAttribute('width', String(mainWidth));
+    legendSvg.setAttribute('height', String(legendHeight));
+    legendSvg.setAttribute('overflow', 'visible');
+
+    let x = startX;
+    for (const item of categoricalItems) {
+      const rect = document.createElementNS(ns, 'rect');
+      rect.setAttribute('x', String(x));
+      rect.setAttribute('y', '5');
+      rect.setAttribute('width', '10');
+      rect.setAttribute('height', '10');
+      rect.setAttribute('fill', item.color);
+      rect.setAttribute('rx', '1');
+      legendSvg.appendChild(rect);
+
+      const text = document.createElementNS(ns, 'text');
+      text.setAttribute('x', String(x + 14));
+      text.setAttribute('y', '14');
+      text.setAttribute('font-size', '10');
+      text.setAttribute('font-family', 'system-ui, -apple-system, sans-serif');
+      text.textContent = item.label;
+      legendSvg.appendChild(text);
+
+      x += 14 + item.label.length * 6.5 + 12;
+    }
+    legendSvgStr = serializer.serializeToString(legendSvg);
+  }
+
+  // Compose: nested SVGs preserve all internal defs/clip-paths
+  const mainClone = mainSvg.cloneNode(true) as SVGSVGElement;
+  mainClone.setAttribute('x', '0');
+  mainClone.setAttribute('y', String(legendHeight));
+
+  const totalHeight = legendHeight + mainHeight;
+  const wrapper = [
+    `<svg xmlns="${ns}" width="${mainWidth}" height="${totalHeight}">`,
+    legendSvgStr,
+    serializer.serializeToString(mainClone),
+    `</svg>`,
+  ].join('\n');
+
+  return { data: wrapper, width: mainWidth, height: totalHeight };
+}
+
 function useDownload(containerRef: React.RefObject<HTMLDivElement | null>, title: string) {
   const downloadSvg = useCallback(() => {
-    const svg = containerRef.current?.querySelector('svg');
-    if (!svg) return;
-    const blob = new Blob([svg.outerHTML], { type: 'image/svg+xml' });
+    if (!containerRef.current) return;
+    const result = buildDownloadSvg(containerRef.current);
+    if (!result) return;
+    const blob = new Blob([result.data], { type: 'image/svg+xml' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -68,13 +239,13 @@ function useDownload(containerRef: React.RefObject<HTMLDivElement | null>, title
   }, [containerRef, title]);
 
   const downloadPng = useCallback(() => {
-    const svg = containerRef.current?.querySelector('svg');
-    if (!svg) return;
-    const svgData = new XMLSerializer().serializeToString(svg);
+    if (!containerRef.current) return;
+    const result = buildDownloadSvg(containerRef.current);
+    if (!result) return;
     const canvas = document.createElement('canvas');
-    const scale = 2;
-    canvas.width = svg.clientWidth * scale;
-    canvas.height = svg.clientHeight * scale;
+    const scale = 4;
+    canvas.width = result.width * scale;
+    canvas.height = result.height * scale;
     const ctx = canvas.getContext('2d')!;
     const img = new Image();
     img.onload = () => {
@@ -84,7 +255,7 @@ function useDownload(containerRef: React.RefObject<HTMLDivElement | null>, title
       a.download = `${title}.png`;
       a.click();
     };
-    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(result.data)));
   }, [containerRef, title]);
 
   return { downloadSvg, downloadPng };

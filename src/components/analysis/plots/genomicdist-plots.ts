@@ -296,6 +296,7 @@ export function partitionsSlot(partitions: PartitionRow[]): PlotSlot | null {
         width,
         height,
         style: { fontSize: '7px' },
+        marginBottom: Math.min(maxLabel * 4 + 8, height * 0.5),
         x: { label: null, tickSize: 0, tickRotate: -45 },
         y: { axis: null },
         marks: [
@@ -354,7 +355,7 @@ export function expectedPartitionsSlot(rows: ExpectedPartitionRow[]): PlotSlot |
         width,
         height,
         style: { fontSize: '7px' },
-        marginLeft: Math.min(maxLabel * 4 + 8, width * 0.4),
+        marginLeft: Math.min(maxLabel * 5 + 8, width * 0.55),
         marginTop: 0,
         marginBottom: 0,
         x: { axis: null },

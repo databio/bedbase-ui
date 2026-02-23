@@ -125,24 +125,18 @@ export function AppLayout() {
           draggable
           onDragStart={(e) => handleDragStart(e, id)}
           onDragEnd={handleDragEnd}
-          className={`flex items-center gap-1.5 ${showLabel ? 'px-4' : 'px-3'} py-3 text-sm font-semibold rounded-lg ${colors.bgFaint} text-base-content cursor-grab active:cursor-grabbing`}
+          onClick={(e) => {
+            if (e.metaKey || e.ctrlKey || e.shiftKey) return;
+            openTab(id as TabId);
+          }}
+          className={`flex items-center gap-1.5 ${showLabel ? 'px-4' : 'px-3'} py-3 text-sm font-semibold rounded-lg ${colors.bgFaint} text-base-content cursor-grab active:cursor-grabbing hover:opacity-70 transition-opacity`}
+          title={`Back to ${meta.label}`}
         >
-          <a
-            href={href}
-            onClick={(e) => {
-              if (e.metaKey || e.ctrlKey || e.shiftKey) return;
-              e.preventDefault();
-              openTab(id as TabId);
-            }}
-            className="flex items-center gap-1.5 cursor-pointer hover:opacity-70 transition-opacity"
-            title={`Back to ${meta.label}`}
-          >
-            <span className="relative flex items-center h-5"><Icon size={14} />{badge}</span>
-            {showLabel && <span>{meta.label}</span>}
-          </a>
+          <span className="relative flex items-center h-5"><Icon size={14} />{badge}</span>
+          {showLabel && <span>{meta.label}</span>}
           <button
-            onClick={() => closeTab(id as TabId)}
-            className="ml-1 p-0.5 rounded hover:bg-base-300 transition-colors cursor-pointer"
+            onClick={(e) => { e.stopPropagation(); closeTab(id as TabId); }}
+            className="ml-1 p-0.5 rounded hover:bg-base-300 transition-colors cursor-pointer hover:opacity-100"
             aria-label={`Close ${meta.label}`}
           >
             <X size={12} />

@@ -198,7 +198,7 @@ export function histogramSpec(data: BinValues): PlotSpec {
           x: { label: null, tickSize: 0 },
           y: { label: null, tickSize: 0 },
           marks: [
-            Plot.rectY(rects, { x1: 'x1', x2: 'x2', y: 'count', fill: 'teal', ry1: 2 }),
+            Plot.rectY(rects, { x1: 'x1', x2: 'x2', y: 'count', fill: 'teal' }),
             ...medianRule,
             Plot.ruleY([0]),
           ],
@@ -210,7 +210,7 @@ export function histogramSpec(data: BinValues): PlotSpec {
           x: { label: 'Value', labelArrow: 'none' },
           y: { label: 'Count' },
           marks: [
-            Plot.rectY(rects, { x1: 'x1', x2: 'x2', y: 'count', fill: 'teal', ry1: 2, tip: true }),
+            Plot.rectY(rects, { x1: 'x1', x2: 'x2', y: 'count', fill: 'teal', tip: true }),
             ...medianRule,
             ...medianLabel,
             Plot.ruleY([0]),
@@ -233,7 +233,7 @@ export function histogramSpec(data: BinValues): PlotSpec {
         x: { label: null, tickSize: 0, tickRotate: -45 },
         y: { axis: null },
         marks: [
-          Plot.barY(values, { x: 'bin', y: 'count', fill: 'teal', ry1: 2 }),
+          Plot.barY(values, { x: 'bin', y: 'count', fill: 'teal' }),
         ],
       }),
     full: (width) =>
@@ -242,7 +242,7 @@ export function histogramSpec(data: BinValues): PlotSpec {
         x: { label: 'Bin', labelArrow: 'none', tickRotate: -45 },
         y: { label: 'Count', labelArrow: 'none' },
         marks: [
-          Plot.barY(values, { x: 'bin', y: 'count', fill: 'teal', ry1: 2, tip: true }),
+          Plot.barY(values, { x: 'bin', y: 'count', fill: 'teal', tip: true }),
           Plot.ruleY([0]),
         ],
       }),
