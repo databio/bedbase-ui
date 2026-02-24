@@ -8,7 +8,6 @@ import { useApi } from '../../contexts/api-context';
 import { parseBedFile, type BedEntry } from '../../lib/bed-parser';
 import {
   computeMultiFileAnalysis,
-  hasSetOperations,
   binByAbsolutePosition,
   type MultiFileResult,
   type PositionalBin,
@@ -277,13 +276,7 @@ export function FileComparison() {
       // Store refs for cleanup
       regionSetsRef.current = regionSets;
 
-      const wasmAvailable = regionSets.length > 0 && hasSetOperations(regionSets[0]);
-      dispatch({ type: 'PARSE_DONE', regionSets, fileNames, wasmAvailable });
-
-      if (!wasmAvailable) {
-        dispatch({ type: 'ERROR', error: 'Set operations (jaccard, union, consensus) are not available in this build. Run with GTARS_LOCAL=1 to enable them.' });
-        return;
-      }
+      dispatch({ type: 'PARSE_DONE', regionSets, fileNames, wasmAvailable: true });
 
       // Run analysis
       const rawResult = await computeMultiFileAnalysis(regionSets, fileNames, (fraction) => {

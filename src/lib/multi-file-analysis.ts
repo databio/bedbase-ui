@@ -156,17 +156,6 @@ function binWidths(widths: number[], fileName: string): WidthHistPoint[] {
 }
 
 /**
- * Check whether the WASM module exposes the set-operation methods
- * (jaccard, union, pintersect, ConsensusBuilder). These are available
- * with GTARS_LOCAL=1 but not yet in the published npm package.
- */
-export function hasSetOperations(rs: RegionSet): boolean {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const a = rs as any;
-  return typeof a.jaccard === 'function';
-}
-
-/**
  * Run the full multi-file comparison pipeline.
  *
  * Progress phases:
