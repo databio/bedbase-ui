@@ -401,7 +401,7 @@ export function FileComparison() {
     }
 
     // Consensus: always all files (requires WASM recomputation to filter)
-    const cbcPlot = consensusByChrSlot(consensus, allNames.length);
+    const cbcPlot = consensusByChrSlot(consensus, allNames.length, chromSizesRef.current);
     if (cbcPlot) out.push(cbcPlot);
     const cp = consensusPlotSlot(consensus, allNames.length);
     if (cp) out.push(cp);

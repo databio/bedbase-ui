@@ -16,7 +16,6 @@ This is a ground-up rewrite of the UI that was previously embedded inside the [b
 | WASM | @databio/gtars | @databio/gtars |
 | Animations | Framer Motion | CSS transitions |
 | Build | Vite | Vite 7 |
-| Deployment | Cloudflare Pages (webhook from bedhost) | Cloudflare Pages (GitHub Actions) |
 
 ## What changed in the rewrite
 
@@ -108,15 +107,6 @@ npm run build
 ```
 
 Production builds use `VITE_API_BASE` from `.env.production` (`https://api.bedbase.org/v1`).
-
-## Deployment
-
-Deployed to Cloudflare Pages via GitHub Actions (`.github/workflows/deploy.yml`).
-
-- **`master` branch** builds with `VITE_API_BASE=https://api.bedbase.org/v1` (production)
-- **`dev` branch** and PRs build with `VITE_API_BASE=https://api-dev.bedbase.org/v1`
-
-Requires `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets in the GitHub repository.
 
 ## Project structure
 

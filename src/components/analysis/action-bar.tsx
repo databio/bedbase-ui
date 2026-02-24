@@ -26,6 +26,11 @@ export function ActionBar({ analysis }: { analysis: BedAnalysis }) {
         id: analysis.id,
         name: analysis.fileName || 'Unnamed',
         genome: analysis.summary.dataFormat || '',
+        tissue: analysis.metadata?.tissue || '',
+        cell_line: analysis.metadata?.cellLine || '',
+        cell_type: analysis.metadata?.cellType || '',
+        description: analysis.metadata?.description || '',
+        assay: analysis.metadata?.assay || '',
       });
     }
   };

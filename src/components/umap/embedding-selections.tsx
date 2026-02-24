@@ -22,7 +22,16 @@ export function EmbeddingSelections({ currentSelection }: Props) {
 
   const handleAddToCart = () => {
     for (const p of validPoints) {
-      addToCart({ id: p.identifier, name: p.text || p.identifier, genome: '' });
+      addToCart({
+        id: p.identifier,
+        name: p.text || p.identifier,
+        genome: '',
+        tissue: '',
+        cell_line: '',
+        cell_type: '',
+        description: '',
+        assay: '',
+      });
     }
   };
 

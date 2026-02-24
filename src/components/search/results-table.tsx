@@ -75,6 +75,11 @@ export function ResultsTable({ results, searchQuery }: { results: QdrantSearchRe
                           id: meta.id,
                           name: meta.name || 'Unnamed',
                           genome: meta.genome_alias || '',
+                          tissue: anno?.tissue || '',
+                          cell_line: anno?.cell_line || '',
+                          cell_type: anno?.cell_type || '',
+                          description: meta.description || '',
+                          assay: anno?.assay || '',
                         });
                       }
                     }}

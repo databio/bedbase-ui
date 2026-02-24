@@ -152,7 +152,16 @@ export function CollectionDetail({ bedsetId }: { bedsetId: string }) {
     } else {
       for (const bed of bedfileList) {
         if (!isInCart(bed.id)) {
-          addToCart({ id: bed.id, name: bed.name || 'Unnamed', genome: bed.genome_alias || '' });
+          addToCart({
+            id: bed.id,
+            name: bed.name || 'Unnamed',
+            genome: bed.genome_alias || '',
+            tissue: bed.annotation?.tissue || '',
+            cell_line: bed.annotation?.cell_line || '',
+            cell_type: bed.annotation?.cell_type || '',
+            description: bed.description || '',
+            assay: bed.annotation?.assay || '',
+          });
         }
       }
     }

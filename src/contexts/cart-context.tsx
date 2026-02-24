@@ -4,6 +4,11 @@ export type CartItem = {
   id: string;
   name: string;
   genome: string;
+  tissue: string;
+  cell_line: string;
+  cell_type: string;
+  description: string;
+  assay: string;
 };
 
 type CartContextValue = {

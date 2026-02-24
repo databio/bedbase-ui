@@ -33,12 +33,17 @@ function estimateMargin(labels: string[]): number {
 export function consensusByChrSlot(
   consensus: ConsensusRegion[],
   nFiles: number,
+  chromSizes?: Record<string, number>,
 ): PlotSlot | null {
   if (consensus.length === 0) return null;
 
+  // Filter to reference chromosomes when chromSizes is available
+  const validChrs = chromSizes ? new Set(Object.keys(chromSizes)) : null;
+  const filtered = validChrs ? consensus.filter((r) => validChrs.has(r.chr)) : consensus;
+
   // Group by chr x support level
   const grouped = new Map<string, Map<number, number>>();
-  for (const r of consensus) {
+  for (const r of filtered) {
     if (!grouped.has(r.chr)) grouped.set(r.chr, new Map());
     const chrMap = grouped.get(r.chr)!;
     chrMap.set(r.count, (chrMap.get(r.count) ?? 0) + 1);

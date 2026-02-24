@@ -4,7 +4,7 @@ import { ChevronLeft, Check, X, Trash2, ScatterChart, Pencil } from 'lucide-reac
 const PAGE_SIZE_OPTIONS = [10, 20] as const;
 import { useTab } from '../../contexts/tab-context';
 import { useBucket } from '../../contexts/bucket-context';
-import { SelectionStats } from './selection-stats';
+// import { SelectionStats } from './selection-stats';
 
 export function SelectionDetail({ selectionId }: { selectionId: string }) {
   const { openTab } = useTab();
@@ -148,11 +148,11 @@ export function SelectionDetail({ selectionId }: { selectionId: string }) {
           </div>
         </div>
 
-        {/* Aggregated stats — scoped to current page */}
-        <SelectionStats
+        {/* Aggregated stats — disabled until server-side collection analysis is ready */}
+        {/* <SelectionStats
           bedIds={bucket.bedIds.slice(page * pageSize, (page + 1) * pageSize)}
           totalCount={bucket.bedIds.length}
-        />
+        /> */}
 
         {/* BED files table */}
         <div className="space-y-2">

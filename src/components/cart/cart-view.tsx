@@ -251,6 +251,11 @@ export function CartView() {
             <tr>
               <th>Name</th>
               <th>Genome</th>
+              <th>Tissue</th>
+              <th>Cell line</th>
+              <th>Cell type</th>
+              <th>Assay</th>
+              <th>Description</th>
               <th className="w-12"></th>
             </tr>
           </thead>
@@ -261,7 +266,7 @@ export function CartView() {
                 onClick={() => openTab('analysis', 'bed/' + item.id)}
                 className="hover:bg-primary/5 cursor-pointer transition-colors"
               >
-                <td className="font-medium max-w-64 truncate">{item.name}</td>
+                <td className="font-medium max-w-48 truncate">{item.name}</td>
                 <td>
                   {item.genome ? (
                     <span className="badge badge-xs badge-primary font-semibold">{item.genome}</span>
@@ -269,6 +274,11 @@ export function CartView() {
                     <span className="text-base-content/30">—</span>
                   )}
                 </td>
+                <td className="max-w-32 truncate">{item.tissue || <span className="text-base-content/30">—</span>}</td>
+                <td className="max-w-32 truncate">{item.cell_line || <span className="text-base-content/30">—</span>}</td>
+                <td className="max-w-32 truncate">{item.cell_type || <span className="text-base-content/30">—</span>}</td>
+                <td className="max-w-32 truncate">{item.assay || <span className="text-base-content/30">—</span>}</td>
+                <td className="max-w-xs truncate text-base-content/50">{item.description || ''}</td>
                 <td>
                   <button
                     onClick={(e) => {

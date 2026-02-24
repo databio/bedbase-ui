@@ -70,14 +70,14 @@ export function EmbeddingTable({
           </span>
         </div>
       ) : (
-        <table className="table w-full text-[11px] [&_th]:py-1 [&_th]:px-2 [&_td]:py-0.5 [&_td]:px-2">
+        <table className="table w-full table-fixed text-[11px] [&_th]:py-1 [&_th]:px-2 [&_td]:py-0.5 [&_td]:px-2">
           <thead className="sticky top-0 bg-base-200 z-10 text-[11px] font-bold text-base-content">
             <tr className="whitespace-nowrap">
-              <th>BED Name</th>
-              <th>Assay</th>
-              <th>Cell Line</th>
+              <th className="w-[30%]">BED Name</th>
+              <th className="w-[15%]">Assay</th>
+              <th className="w-[15%]">Cell Line</th>
               <th>Description</th>
-              <th className="w-10" />
+              <th className="w-12" />
             </tr>
           </thead>
           <tbody>
@@ -97,7 +97,7 @@ export function EmbeddingTable({
                   </td>
                   <td className="whitespace-nowrap text-base-content/50">{isCustom ? null : point.fields?.Assay}</td>
                   <td className="whitespace-nowrap text-base-content/50">{isCustom ? null : point.fields?.['Cell Line']}</td>
-                  <td className="max-w-xs truncate text-base-content/50">{isCustom ? null : point.fields?.Description}</td>
+                  <td className="truncate text-base-content/50">{isCustom ? null : point.fields?.Description}</td>
                   <td>
                     <span className="flex items-center justify-end gap-1">
                       {isRemovable && (

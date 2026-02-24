@@ -49,6 +49,11 @@ export function BedfileTable({ bedfiles }: { bedfiles: BedMetadataBasic[] }) {
                           id: bed.id,
                           name: bed.name || 'Unnamed',
                           genome: bed.genome_alias || '',
+                          tissue: bed.annotation?.tissue || '',
+                          cell_line: bed.annotation?.cell_line || '',
+                          cell_type: bed.annotation?.cell_type || '',
+                          description: bed.description || '',
+                          assay: bed.annotation?.assay || '',
                         });
                       }
                     }}
