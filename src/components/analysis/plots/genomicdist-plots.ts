@@ -238,7 +238,7 @@ export function tssDistanceSlot(featureDistances: (number | null)[]): PlotSlot |
         x: { label: null, tickSize: 0 },
         y: { label: null, tickSize: 0 },
         marks: [
-          Plot.rectY(freqBins, { x1: 'x1', x2: 'x2', y: 'freq', fill: 'teal', ry1: 2 }),
+          Plot.rectY(freqBins, { x1: 'x1', x2: 'x2', y: 'freq', fill: 'teal' }),
           Plot.ruleX([0], { stroke: '#F1C40F', strokeWidth: 1.5, strokeDasharray: '3 3' }),
           Plot.ruleY([0]),
         ],
@@ -257,7 +257,7 @@ export function tssDistanceSlot(featureDistances: (number | null)[]): PlotSlot |
         },
         y: { label: 'Frequency (%)', labelArrow: 'none' },
         marks: [
-          Plot.rectY(freqBins, { x1: 'x1', x2: 'x2', y: 'freq', fill: 'teal', ry1: 2, tip: true }),
+          Plot.rectY(freqBins, { x1: 'x1', x2: 'x2', y: 'freq', fill: 'teal', tip: true }),
           Plot.ruleX([0], { stroke: '#F1C40F', strokeWidth: 2, strokeDasharray: '4 4' }),
           Plot.text([0], {
             x: (d: number) => d,
