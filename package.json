@@ -13,7 +13,7 @@
     "deploy:preview": "npm run build && wrangler dev"
   },
   "dependencies": {
-    "@databio/gtars": "^0.6.1",
+    "@databio/gtars": "^0.7.0",
     "@observablehq/plot": "^0.6.17",
     "@tanstack/react-query": "^5.90.21",
     "@uwdata/mosaic-sql": "^0.21.1",
