@@ -57,13 +57,25 @@ export function columnsToStrandedTuples(
 }
 
 // --- Fetch ---
-// Files are .json.gz but the server sets Content-Encoding: gzip,
-// so the browser decompresses transparently. Just parse as JSON.
+// Files are .json.gz. Decompress with pako since not all hosts set
+// Content-Encoding: gzip (e.g. Cloudflare Workers serves raw bytes).
 
 async function fetchGzJson<T>(url: string): Promise<T> {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed to fetch ${url}: ${res.status}`);
-  return res.json() as Promise<T>;
+
+  const buf = await res.arrayBuffer();
+  // If the server already decompressed (Content-Encoding: gzip), the
+  // bytes are plain JSON. Try JSON.parse first; fall back to pako inflate.
+  const bytes = new Uint8Array(buf);
+  // Gzip magic number: 0x1f 0x8b
+  if (bytes[0] === 0x1f && bytes[1] === 0x8b) {
+    const { inflate } = await import('pako');
+    const text = new TextDecoder().decode(inflate(bytes));
+    return JSON.parse(text) as T;
+  }
+  const text = new TextDecoder().decode(bytes);
+  return JSON.parse(text) as T;
 }
 
 // --- Cache ---
