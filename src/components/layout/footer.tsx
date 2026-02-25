@@ -1,4 +1,4 @@
-import { Github } from 'lucide-react';
+import { Github, Bug } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useServiceInfo } from '../../queries/use-service-info';
 import { API_BASE } from '../../lib/file-model-utils';
@@ -61,6 +61,13 @@ export function Footer() {
         {/* Right: links */}
         <div className="flex items-center gap-5 text-sm text-base-content/50 ml-auto">
           <Link
+            to="/debug"
+            className="hover:text-base-content transition-colors"
+            title="Debug"
+          >
+            <Bug size={18} />
+          </Link>
+          <Link
             to="/metrics"
             className="hover:text-base-content transition-colors"
           >
@@ -87,6 +94,7 @@ export function Footer() {
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-base-content transition-colors"
+            title="GitHub"
           >
             <Github size={18} />
           </a>

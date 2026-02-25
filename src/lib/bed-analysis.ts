@@ -5,6 +5,8 @@ import { fileModelToUrl, fileModelToPlotSlot } from './file-model-utils';
 
 type BedMetadataAll = components['schemas']['BedMetadataAll'];
 
+export const REGION_DIST_BINS = 250;
+
 // --- Normalized data types consumed by all analysis panels ---
 
 export type ChromosomeRow = {
@@ -284,7 +286,7 @@ export async function fromRegionSet(
   await yieldToMain();
 
   // Step 3: region distribution (~heavy)
-  const regionDistribution = (rs.regionDistribution(300) as DistributionPoint[]) ?? [];
+  const regionDistribution = (rs.regionDistribution(REGION_DIST_BINS) as DistributionPoint[]) ?? [];
   onProgress?.(0.85);
   await yieldToMain();
 

@@ -1,5 +1,5 @@
 import * as Plot from '@observablehq/plot';
-import type { DistributionPoint } from '../../../lib/bed-analysis';
+import { REGION_DIST_BINS, type DistributionPoint } from '../../../lib/bed-analysis';
 import type { PlotSlot } from '../../../lib/plot-specs';
 
 const STANDARD_CHR_ORDER = [
@@ -38,7 +38,7 @@ export function regionDistributionSlot(data: DistributionPoint[]): PlotSlot | nu
       height,
       marginLeft: 0,
       marginBottom: 0,
-      x: { domain: [0, 300], axis: null },
+      x: { domain: [0, REGION_DIST_BINS], axis: null },
       y: { axis: null },
       fy: { domain: chrOrder, axis: null, padding: 0 },
       marks: [
@@ -60,11 +60,11 @@ export function regionDistributionSlot(data: DistributionPoint[]): PlotSlot | nu
       marginTop,
       marginBottom,
       x: {
-        domain: [0, 300],
+        domain: [0, REGION_DIST_BINS],
         label: 'Genomic position',
         labelArrow: 'none',
         labelAnchor: 'center',
-        ticks: [0, 300],
+        ticks: [0, REGION_DIST_BINS],
         tickFormat: (d) => (d === 0 ? 'start' : 'end'),
       },
       y: { axis: null },
@@ -77,7 +77,8 @@ export function regionDistributionSlot(data: DistributionPoint[]): PlotSlot | nu
           y2: 'n',
           fy: 'chr',
           fill: 'teal',
-          ry2: 0.5,
+          insetLeft: 0.15,
+          insetRight: 0.15,
         }),
         Plot.tip(data, Plot.pointer({
           x: 'rid',
@@ -89,41 +90,13 @@ export function regionDistributionSlot(data: DistributionPoint[]): PlotSlot | nu
       ],
     });
 
-    // Insert axis lines before the tip layer so they don't obscure tooltips
-    const ns = 'http://www.w3.org/2000/svg';
-    const tipEl = svg.querySelector('[aria-label="tip"]');
-
-    const xLine = document.createElementNS(ns, 'line');
-    xLine.setAttribute('x1', String(marginLeft));
-    xLine.setAttribute('y1', String(height - marginBottom));
-    xLine.setAttribute('x2', String(width));
-    xLine.setAttribute('y2', String(height - marginBottom));
-    xLine.setAttribute('stroke', 'black');
-    xLine.setAttribute('stroke-width', '1');
-
-    const yLine = document.createElementNS(ns, 'line');
-    yLine.setAttribute('x1', String(marginLeft));
-    yLine.setAttribute('y1', String(marginTop));
-    yLine.setAttribute('x2', String(marginLeft));
-    yLine.setAttribute('y2', String(height - marginBottom));
-    yLine.setAttribute('stroke', 'black');
-    yLine.setAttribute('stroke-width', '1');
-
-    if (tipEl) {
-      svg.insertBefore(xLine, tipEl);
-      svg.insertBefore(yLine, tipEl);
-    } else {
-      svg.appendChild(xLine);
-      svg.appendChild(yLine);
-    }
-
     return svg;
   }
 
   return {
     id: 'regionDistribution',
     title: 'Region distribution',
-    description: 'Positional distribution of regions across each chromosome. Each chromosome is divided into 300 equal-width bins and regions are counted per bin based on overlap. Taller bars indicate genomic hotspots with higher region density. Useful for spotting positional biases — e.g. regions concentrated near centromeres or telomeres, or chromosomes with unexpectedly sparse or dense coverage.',
+    description: `Positional distribution of regions across each chromosome. Each chromosome is divided into ${REGION_DIST_BINS} equal-width bins and regions are counted per bin based on overlap. Taller bars indicate genomic hotspots with higher region density. Useful for spotting positional biases — e.g. regions concentrated near centromeres or telomeres, or chromosomes with unexpectedly sparse or dense coverage.`,
     type: 'observable',
     renderThumbnail,
     render,

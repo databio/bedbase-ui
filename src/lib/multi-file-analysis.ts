@@ -1,5 +1,6 @@
 import { RegionSet, type ChromosomeStatistics } from '@databio/gtars';
 import type { ProgressCallback } from './bed-parser';
+import { REGION_DIST_BINS } from './bed-analysis';
 
 export type FileStats = {
   fileName: string;
@@ -44,7 +45,7 @@ export type PositionalBin = {
   count: number;
 };
 
-export const N_POS_BINS = 100;
+export const N_POS_BINS = REGION_DIST_BINS;
 
 /**
  * Compute the bin width (in bp) used for positional binning.

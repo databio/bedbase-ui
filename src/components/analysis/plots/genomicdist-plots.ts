@@ -132,7 +132,7 @@ export function widthsHistogramSlot(widths: number[]): PlotSlot | null {
         x: { label: null, tickSize: 0 },
         y: { label: null, tickSize: 0 },
         marks: [
-          Plot.rectY(pctBins, { x1: 'x1', x2: 'x2', y: 'pct', fill: 'teal', ry1: 2 }),
+          Plot.rectY(pctBins, { x1: 'x1', x2: 'x2', y: 'pct', fill: 'teal' }),
           Plot.ruleY([0]),
         ],
       }),
@@ -142,7 +142,7 @@ export function widthsHistogramSlot(widths: number[]): PlotSlot | null {
         x: { label: 'Region width (bp)', labelArrow: 'none' },
         y: { label: 'Percentage', labelArrow: 'none' },
         marks: [
-          Plot.rectY(pctBins, { x1: 'x1', x2: 'x2', y: 'pct', fill: 'teal', ry1: 2, tip: true }),
+          Plot.rectY(pctBins, { x1: 'x1', x2: 'x2', y: 'pct', fill: 'teal', tip: true }),
           Plot.ruleY([0]),
         ],
       }),

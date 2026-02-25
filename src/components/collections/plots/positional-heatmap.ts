@@ -2,6 +2,7 @@ import * as Plot from '@observablehq/plot';
 import type { PlotSlot } from '../../../lib/plot-specs';
 import type { PositionalBin } from '../../../lib/multi-file-analysis';
 import { chrBinCounts } from '../../../lib/multi-file-analysis';
+import { REGION_DIST_BINS } from '../../../lib/bed-analysis';
 
 const STANDARD_CHR_ORDER = [
   'chr1', 'chr2', 'chr3', 'chr4', 'chr5', 'chr6', 'chr7', 'chr8', 'chr9', 'chr10',
@@ -99,8 +100,11 @@ export function positionalHeatmapSlot(
 
   // Build per-bin stats for the mean variant
   const statsData: BinStats[] = [];
+  // Edge-padded version for area/line marks so step curve reaches plot edges
+  const statsDataPadded: BinStats[] = [];
   for (const chr of chrOrder) {
     const chrMax = maxBinsPerChr?.[chr] ?? globalMaxBin;
+    const chrStats: BinStats[] = [];
     for (let bin = 0; bin < chrMax; bin++) {
       const key = `${chr}\0${bin}`;
       const entry = keyMap.get(key);
@@ -109,7 +113,16 @@ export function positionalHeatmapSlot(
       while (counts.length < nFiles) counts.push(0);
       counts.sort((a, b) => a - b);
       const mean = counts.reduce((s, v) => s + v, 0) / nFiles;
-      statsData.push({ chr, bin, mean, q25: quantile(counts, 0.25), q75: quantile(counts, 0.75) });
+      chrStats.push({ chr, bin, mean, q25: quantile(counts, 0.25), q75: quantile(counts, 0.75) });
+    }
+    statsData.push(...chrStats);
+    // Add boundary points so step curve extends to bar edges
+    if (chrStats.length > 0) {
+      const first = chrStats[0];
+      const last = chrStats[chrStats.length - 1];
+      statsDataPadded.push({ ...first, bin: first.bin - 0.5 });
+      statsDataPadded.push(...chrStats);
+      statsDataPadded.push({ ...last, bin: last.bin + 0.5 });
     }
   }
 
@@ -146,9 +159,11 @@ export function positionalHeatmapSlot(
           y2: 'mean',
           fy: 'chr',
           fill: () => 'Mean',
+          insetLeft: 0.15,
+          insetRight: 0.15,
         }),
         // IQR shaded area (25th–75th percentile)
-        Plot.areaY(statsData, {
+        Plot.areaY(statsDataPadded, {
           x: 'bin',
           y1: 'q25',
           y2: 'q75',
@@ -158,7 +173,7 @@ export function positionalHeatmapSlot(
           curve: 'step',
         }),
         // IQR lines (25th–75th percentile)
-        Plot.line(statsData, {
+        Plot.line(statsDataPadded, {
           x: 'bin',
           y: 'q75',
           fy: 'chr',
@@ -167,7 +182,7 @@ export function positionalHeatmapSlot(
           curve: 'step',
           strokeDasharray: '2,2',
         }),
-        Plot.line(statsData, {
+        Plot.line(statsDataPadded, {
           x: 'bin',
           y: 'q25',
           fy: 'chr',
@@ -214,7 +229,8 @@ export function positionalHeatmapSlot(
           x: 'bin',
           y: 'chr',
           fill: 'totalCount',
-          inset: 0,
+          insetLeft: 0.15,
+          insetRight: 0.15,
           tip: true,
           channels: {
             'Files with regions': 'fileCount',
@@ -228,7 +244,7 @@ export function positionalHeatmapSlot(
   return {
     id: 'positionalHeatmap',
     title: 'Aggregated region density',
-    description: 'Genome-wide view showing where regions concentrate across chromosomes. A universal bin width is set so the longest chromosome spans 100 bins (~2.5 Mb each for hg38); shorter chromosomes get proportionally fewer bins, preserving their relative extent. Each region is counted once in the bin containing its midpoint. "Total regions" shows a heatmap summing counts from all files per bin. "Mean per file" shows histogram bars of the mean count with a shaded 25th–75th percentile ribbon.',
+    description: `Genome-wide view showing where regions concentrate across chromosomes. A universal bin width is set so the longest chromosome spans ${REGION_DIST_BINS} bins; shorter chromosomes get proportionally fewer bins, preserving their relative extent. Each region is counted once in the bin containing its midpoint. "Total regions" shows a heatmap summing counts from all files per bin. "Mean per file" shows histogram bars of the mean count with a shaded 25th–75th percentile ribbon.`,
     type: 'observable',
     renderThumbnail,
     render: renderTotal,

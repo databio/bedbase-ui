@@ -10,6 +10,7 @@ import { Hub } from '../hub/hub';
 import { TabContent } from '../tabs/tab-content';
 import { ReportPage } from '../report/report-page';
 import { MetricsPage } from '../metrics/metrics-page';
+import { DebugPage } from '../debug/debug-page';
 import { UmapView } from '../umap/umap-view';
 import { Footer } from './footer';
 
@@ -172,6 +173,10 @@ export function AppLayout() {
 
     if (location.pathname.startsWith('/metrics')) {
       return <MetricsPage />;
+    }
+
+    if (location.pathname.startsWith('/debug')) {
+      return <DebugPage />;
     }
 
     if (activeTabs.length === 0) {
