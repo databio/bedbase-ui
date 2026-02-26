@@ -10,13 +10,20 @@ const STANDARD_CHR_ORDER = [
   'chr20', 'chr21', 'chr22', 'chrX', 'chrY', 'chrM',
 ];
 
+/** Resolve bare names ("1", "X") to canonical chr-prefixed form for sorting. */
+function toCanonical(c: string, standardSet: Set<string>): string {
+  if (standardSet.has(c)) return c;
+  const prefixed = 'chr' + c;
+  return standardSet.has(prefixed) ? prefixed : c;
+}
+
 function sortChromosomes(chrs: string[]): string[] {
   const standardSet = new Set(STANDARD_CHR_ORDER);
   const known = chrs
-    .filter((c) => standardSet.has(c))
-    .sort((a, b) => STANDARD_CHR_ORDER.indexOf(a) - STANDARD_CHR_ORDER.indexOf(b));
+    .filter((c) => standardSet.has(toCanonical(c, standardSet)))
+    .sort((a, b) => STANDARD_CHR_ORDER.indexOf(toCanonical(a, standardSet)) - STANDARD_CHR_ORDER.indexOf(toCanonical(b, standardSet)));
   const unknown = chrs
-    .filter((c) => !standardSet.has(c))
+    .filter((c) => !standardSet.has(toCanonical(c, standardSet)))
     .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
   return [...known, ...unknown];
 }
@@ -179,8 +186,8 @@ export function positionalHeatmapSlot(
           fy: 'chr',
           stroke: () => 'IQR (25th–75th)',
           strokeWidth: 0.75,
+          strokeOpacity: 0.5,
           curve: 'step',
-          strokeDasharray: '2,2',
         }),
         Plot.line(statsDataPadded, {
           x: 'bin',
@@ -188,8 +195,8 @@ export function positionalHeatmapSlot(
           fy: 'chr',
           stroke: () => 'IQR (25th–75th)',
           strokeWidth: 0.75,
+          strokeOpacity: 0.5,
           curve: 'step',
-          strokeDasharray: '2,2',
         }),
         // Tooltip
         Plot.tip(statsData, Plot.pointer({

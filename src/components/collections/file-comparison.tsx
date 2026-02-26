@@ -1,5 +1,6 @@
 import { useReducer, useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import { ChevronLeft, AlertTriangle, Plus, GitCompareArrows, ArrowRight } from 'lucide-react';
+import { toast } from 'sonner';
 import { RegionSet, type ChromosomeStatistics } from '@databio/gtars';
 import { useTab } from '../../contexts/tab-context';
 import { useFileSet } from '../../contexts/fileset-context';
@@ -12,14 +13,16 @@ import {
   type MultiFileResult,
   type PositionalBin,
   type PerFileGenomeResult,
+  type TssHistPoint,
 } from '../../lib/multi-file-analysis';
-import { loadRefBase } from '../../lib/reference-data';
+import { loadRefBase, columnsToTuples } from '../../lib/reference-data';
 import { PlotGallery } from '../analysis/plot-gallery';
 import { GenomeCompatModal } from '../analysis/genome-compat-modal';
 import { similarityHeatmapSlot } from './plots/jaccard-heatmap';
 import { consensusPlotSlot } from './plots/consensus-plot';
-import { consensusByChrSlot } from './plots/consensus-by-chr';
 import { positionalHeatmapSlot } from './plots/positional-heatmap';
+import { chrRegionBoxplotSlot } from './plots/chr-region-boxplot';
+import { consensusTssSlot } from './plots/consensus-tss';
 import type { PlotSlot } from '../../lib/plot-specs';
 import type { components } from '../../bedbase-types';
 
@@ -152,7 +155,6 @@ export function FileComparison() {
   const parsedFilesRef = useRef<Map<string, File>>(new Map());
   const inputRef = useRef<HTMLInputElement>(null);
   const cancelledRef = useRef(false);
-  const [warning, setWarning] = useState<string | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [genomeResults, setGenomeResults] = useState<PerFileGenomeResult[]>([]);
   const [majorityGenome, setMajorityGenome] = useState<string>('hg38');
@@ -283,8 +285,48 @@ export function FileComparison() {
         if (!cancelledRef.current) dispatch({ type: 'ANALYSIS_PROGRESS', fraction });
       });
 
+      // Compute per-file TSS distance histograms
+      const TSS_RANGE = 100_000;
+      const TSS_BINS = 100;
+      const TSS_BIN_W = (2 * TSS_RANGE) / TSS_BINS;
+      let tssHist: TssHistPoint[] | null = null;
+      if (Object.keys(chromSizes).length > 0) {
+        try {
+          const refBase = await loadRefBase(majority);
+          const tssTuples = columnsToTuples(refBase.tss);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const gtars = await import('@databio/gtars') as any;
+          const tssRs = new gtars.RegionSet(tssTuples);
+          const tssIndex = new gtars.TssIndex(tssRs);
+
+          tssHist = [];
+          for (let i = 0; i < regionSets.length; i++) {
+            const distances = tssIndex.calcFeatureDistances(regionSets[i]) as (number | null)[];
+            const clamped = distances.filter((d): d is number => d != null && Math.abs(d) <= TSS_RANGE);
+            if (clamped.length === 0) continue;
+            const counts = new Array<number>(TSS_BINS).fill(0);
+            for (const d of clamped) {
+              const idx = Math.min(Math.max(Math.floor((d + TSS_RANGE) / TSS_BIN_W), 0), TSS_BINS - 1);
+              counts[idx]++;
+            }
+            const total = clamped.length;
+            for (let b = 0; b < TSS_BINS; b++) {
+              const x1 = -TSS_RANGE + b * TSS_BIN_W;
+              tssHist.push({
+                fileName: fileNames[i],
+                binMid: Math.round(x1 + TSS_BIN_W / 2),
+                freq: counts[b] / total,
+              });
+            }
+          }
+
+          try { tssIndex.free?.(); } catch { /* */ }
+          try { tssRs.free?.(); } catch { /* */ }
+        } catch { /* ref data or WASM unavailable */ }
+      }
+
       if (!cancelledRef.current) {
-        const result = { ...rawResult, positionalBins };
+        const result = { ...rawResult, positionalBins, tssHist };
         dispatch({ type: 'ANALYSIS_DONE', result });
       }
     } catch (err) {
@@ -323,8 +365,7 @@ export function FileComparison() {
   useEffect(() => {
     if (contextFiles.length >= 2 && state.phase === 'idle') {
       if (contextFiles.length > MAX_FILES) {
-        setWarning(`Too many files (${contextFiles.length}). Maximum is ${MAX_FILES}.`);
-        setTimeout(() => setWarning(null), 3000);
+        toast.warning(`Too many files (${contextFiles.length}). Maximum is ${MAX_FILES}.`);
         clearFiles();
         return;
       }
@@ -349,18 +390,27 @@ export function FileComparison() {
     }
   }, [state.phase, state.result, state.fileNames, setCached, genomeResults, majorityGenome, genomeDefaulted]);
 
-  function handleFileDrop(files: File[]) {
+  function handleFileDrop(rawFiles: File[]) {
+    const files = rawFiles.filter((f) => {
+      const name = f.name.toLowerCase();
+      return name.endsWith('.bed') || name.endsWith('.bed.gz');
+    });
     if (files.length < 2) {
-      setWarning(files.length === 0 ? 'No BED files found' : 'Drop at least 2 files to compare');
-      setTimeout(() => setWarning(null), 3000);
+      const hasNonBedGz = rawFiles.some((f) => {
+        const name = f.name.toLowerCase();
+        return name.endsWith('.gz') && !name.endsWith('.bed.gz');
+      });
+      toast.warning(
+        hasNonBedGz
+          ? 'Only .bed and .bed.gz files are supported.'
+          : files.length === 0 ? 'No BED files found.' : 'Drop at least 2 BED files to compare.',
+      );
       return;
     }
     if (files.length > MAX_FILES) {
-      setWarning(`Too many files (${files.length}). Maximum is ${MAX_FILES}.`);
-      setTimeout(() => setWarning(null), 3000);
+      toast.warning(`Too many files (${files.length}). Maximum is ${MAX_FILES}.`);
       return;
     }
-    setWarning(null);
     // Free previous
     for (const rs of regionSetsRef.current) {
       try { (rs as unknown as { free?: () => void }).free?.(); } catch { /* */ }
@@ -370,10 +420,20 @@ export function FileComparison() {
     startPipeline(files);
   }
 
-  // --- Build plots (recompute when selection changes) ---
-  const plots = useMemo<PlotSlot[]>(() => {
+  // --- Consensus plots (independent of file selection) ---
+  const consensusPlots = useMemo<PlotSlot[]>(() => {
     if (state.phase !== 'done' || !state.result) return [];
-    const { jaccardMatrix, overlapMatrix, positionalBins, consensus, fileStats } = state.result;
+    const { consensus, fileStats } = state.result;
+    const out: PlotSlot[] = [];
+    const cp = consensusPlotSlot(consensus, fileStats.length);
+    if (cp) out.push(cp);
+    return out;
+  }, [state.phase, state.result]);
+
+  // --- Selection-dependent plots (recompute when selection changes) ---
+  const selectionPlots = useMemo<PlotSlot[]>(() => {
+    if (state.phase !== 'done' || !state.result) return [];
+    const { jaccardMatrix, overlapMatrix, positionalBins, fileStats, chrCounts } = state.result;
     const allNames = fileStats.map((f) => f.fileName);
     const sel = allNames.filter((n) => selectedFiles.has(n));
     const selIndices = sel.map((n) => allNames.indexOf(n));
@@ -393,14 +453,27 @@ export function FileComparison() {
       if (posPlot) out.push(posPlot);
     }
 
-    // Consensus: always all files (requires WASM recomputation to filter)
-    const cbcPlot = consensusByChrSlot(consensus, allNames.length, chromSizesRef.current);
-    if (cbcPlot) out.push(cbcPlot);
-    const cp = consensusPlotSlot(consensus, allNames.length);
-    if (cp) out.push(cp);
+    // Chromosome boxplot: filter to selected files
+    if (sel.length >= 2) {
+      const filtChrCounts = chrCounts.filter((d) => selectedFiles.has(d.fileName));
+      const boxPlot = chrRegionBoxplotSlot(filtChrCounts, sel, chromSizesRef.current);
+      if (boxPlot) out.push(boxPlot);
+    }
+
+    // TSS distance (mean/IQR across files)
+    if (state.result.tssHist && state.result.tssHist.length > 0) {
+      const filtTss = state.result.tssHist.filter((d) => selectedFiles.has(d.fileName));
+      const tssPlot = consensusTssSlot(filtTss, sel);
+      if (tssPlot) out.push(tssPlot);
+    }
 
     return out;
   }, [state.phase, state.result, selectedFiles]);
+
+  const plots = useMemo<PlotSlot[]>(
+    () => [...selectionPlots, ...consensusPlots],
+    [selectionPlots, consensusPlots],
+  );
 
   // Genome warning data (derived from genomeResults)
   const mismatched = useMemo(() => genomeResults.filter((r) => r.genome && r.genome !== majorityGenome), [genomeResults, majorityGenome]);
@@ -510,10 +583,6 @@ export function FileComparison() {
               <span className="hidden @xs:inline">New Comparison</span>
             </button>
           </div>
-
-          {warning && (
-            <p className="text-xs text-warning">{warning}</p>
-          )}
 
           {/* Per-file breakdown table */}
           {state.result.perFile.length > 0 ? (
@@ -713,11 +782,7 @@ export function FileComparison() {
         onChange={(e) => {
           const fileList = e.target.files;
           if (!fileList || fileList.length === 0) return;
-          const files = Array.from(fileList).filter((f) => {
-            const name = f.name.toLowerCase();
-            return name.endsWith('.bed') || name.endsWith('.bed.gz');
-          });
-          if (files.length > 0) handleFileDrop(files);
+          handleFileDrop(Array.from(fileList));
           e.target.value = '';
         }}
       />

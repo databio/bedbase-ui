@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { Search, Upload, FileText, X } from 'lucide-react';
+import { toast } from 'sonner';
 import { useTab } from '../../contexts/tab-context';
 import { useFile } from '../../contexts/file-context';
 import { EXAMPLE_QUERIES } from '../../lib/const';
@@ -24,6 +25,11 @@ export function SearchEmpty() {
   };
 
   const handleFileSelect = (file: File) => {
+    const lower = file.name.toLowerCase();
+    if (!lower.endsWith('.bed') && !lower.endsWith('.bed.gz')) {
+      toast.warning('Only .bed and .bed.gz files are supported.');
+      return;
+    }
     setBedFile(file);
     openTab('search', 'file');
   };
@@ -105,15 +111,11 @@ export function SearchEmpty() {
               className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0];
-                if (!f) return;
-                const name = f.name.toLowerCase();
-                if (!name.endsWith('.bed') && !name.endsWith('.bed.gz')) return;
-                handleFileSelect(f);
+                if (f) handleFileSelect(f);
               }}
             />
           </div>
         )}
-
         {/* Example queries */}
         <div className="flex items-center gap-1.5 mt-4 flex-wrap justify-center">
           <span className="text-base-content/30 text-xs">Try:</span>

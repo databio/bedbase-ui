@@ -6,6 +6,7 @@ import { CartProvider } from '../contexts/cart-context';
 import { MosaicCoordinatorProvider } from '../contexts/mosaic-coordinator-context';
 import { BucketProvider } from '../contexts/bucket-context';
 import { SettingsProvider } from '../contexts/settings-context';
+import { Toaster } from 'sonner';
 import { AppLayout } from '../components/layout/app-layout';
 
 const queryClient = new QueryClient({
@@ -28,6 +29,7 @@ export function App() {
               <BucketProvider>
                 <TabProvider>
                   <AppLayout />
+                  <Toaster position="top-center" />
                 </TabProvider>
               </BucketProvider>
             </MosaicCoordinatorProvider>

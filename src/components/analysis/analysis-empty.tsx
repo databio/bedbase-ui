@@ -3,6 +3,7 @@ import {
   Upload, FileText, X, ArrowRight, Search,
   BarChart3, Table2, PieChart, Dna, Ruler, Globe, Lock,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useFile } from '../../contexts/file-context';
 import { useTab } from '../../contexts/tab-context';
 import { useStats } from '../../queries/use-stats';
@@ -39,6 +40,11 @@ export function AnalysisEmpty() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   function handleFile(file: File) {
+    const lower = file.name.toLowerCase();
+    if (!lower.endsWith('.bed') && !lower.endsWith('.bed.gz')) {
+      toast.warning('Only .bed and .bed.gz files are supported.');
+      return;
+    }
     setBedFile(file);
     openTab('analysis', 'file');
   }
@@ -231,10 +237,7 @@ export function AnalysisEmpty() {
         className="hidden"
         onChange={(e) => {
           const f = e.target.files?.[0];
-          if (!f) return;
-          const name = f.name.toLowerCase();
-          if (!name.endsWith('.bed') && !name.endsWith('.bed.gz')) return;
-          handleFile(f);
+          if (f) handleFile(f);
         }}
       />
     </div>

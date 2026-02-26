@@ -71,10 +71,30 @@ export function chrBinCounts(chromSizes: Record<string, number>): Record<string,
 }
 
 /**
+ * Build a lookup that maps bare chromosome names (e.g. "1") to the canonical
+ * names used in chromSizes (e.g. "chr1"). Returns identity for names that
+ * already match.
+ */
+function buildChrAlias(chromSizes: Record<string, number>): Map<string, string> {
+  const alias = new Map<string, string>();
+  for (const canonical of Object.keys(chromSizes)) {
+    alias.set(canonical, canonical);
+    // Map bare name → prefixed name (e.g. "1" → "chr1", "X" → "chrX")
+    if (canonical.startsWith('chr')) {
+      alias.set(canonical.slice(3), canonical);
+    }
+  }
+  return alias;
+}
+
+/**
  * Bin BED entries by absolute genomic position using reference chromosome sizes.
  * Uses a universal bin width so that the longest chromosome spans N_POS_BINS bins
  * and shorter chromosomes get proportionally fewer bins, preserving their relative
  * extent while keeping bins aligned across files.
+ *
+ * Chromosome names are normalized so that bare names ("1", "X") match
+ * chr-prefixed reference names ("chr1", "chrX").
  */
 export function binByAbsolutePosition(
   entries: [string, number, number, string][],
@@ -83,15 +103,18 @@ export function binByAbsolutePosition(
 ): PositionalBin[] {
   const bw = posBinWidth(chromSizes);
   const maxBins = chrBinCounts(chromSizes);
+  const chrAlias = buildChrAlias(chromSizes);
 
   const counts = new Map<string, number>();
   for (const [chr, start, end] of entries) {
-    const chrSize = chromSizes[chr];
+    const canonical = chrAlias.get(chr);
+    if (!canonical) continue;
+    const chrSize = chromSizes[canonical];
     if (!chrSize || chrSize <= 0) continue;
     const mid = (start + end) / 2;
-    const chrMax = (maxBins[chr] ?? 1) - 1;
+    const chrMax = (maxBins[canonical] ?? 1) - 1;
     const bin = Math.min(Math.floor(mid / bw), chrMax);
-    const key = `${chr}\0${bin}`;
+    const key = `${canonical}\0${bin}`;
     counts.set(key, (counts.get(key) ?? 0) + 1);
   }
   const bins: PositionalBin[] = [];
@@ -109,6 +132,13 @@ export type PerFileGenomeResult = {
   raw: unknown;                // RefGenValidReturnModel from the API, opaque here
 };
 
+/** Per-file TSS distance histogram bin. */
+export type TssHistPoint = {
+  fileName: string;
+  binMid: number;     // bin center (bp, signed)
+  freq: number;       // fraction of file's clamped regions in this bin (0–1)
+};
+
 export type MultiFileResult = {
   fileStats: FileStats[];
   jaccardMatrix: number[][];
@@ -118,6 +148,7 @@ export type MultiFileResult = {
   widthHist: WidthHistPoint[];     // flat array for plotting: file × width bin
   positionalBins: PositionalBin[]; // flat array for plotting: file × chr × positional bin
   consensus: ConsensusRegion[];
+  tssHist: TssHistPoint[] | null;  // null if ref data unavailable
   unionStats: { regions: number; nucleotides: number } | null;
   intersectionStats: { regions: number; nucleotides: number } | null;
 };
@@ -367,5 +398,5 @@ export async function computeMultiFileAnalysis(
   if (unionRs) freeRs(unionRs);
 
   onProgress?.(1);
-  return { fileStats, jaccardMatrix, overlapMatrix, perFile, chrCounts, widthHist, positionalBins: [], consensus, unionStats, intersectionStats };
+  return { fileStats, jaccardMatrix, overlapMatrix, perFile, chrCounts, widthHist, positionalBins: [], consensus, tssHist: null, unionStats, intersectionStats };
 }

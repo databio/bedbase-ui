@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { Globe, Layers, Search, ChevronRight, FolderOpen, ArrowRight, GitCompareArrows, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useTab } from '../../contexts/tab-context';
 import { useBucket } from '../../contexts/bucket-context';
@@ -14,7 +15,6 @@ function formatNumber(n: number): string {
 
 export function CollectionsEmpty() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [compareWarning, setCompareWarning] = useState<string | null>(null);
   const { openTab } = useTab();
   const navigate = useNavigate();
   const { bucketCount } = useBucket();
@@ -24,18 +24,24 @@ export function CollectionsEmpty() {
   const compareInputRef = useRef<HTMLInputElement>(null);
 
   function handleCompareFiles(fileList: FileList | File[]) {
-    const files = Array.from(fileList).filter((f) => {
+    const all = Array.from(fileList);
+    const files = all.filter((f) => {
       const name = f.name.toLowerCase();
       return name.endsWith('.bed') || name.endsWith('.bed.gz');
     });
     if (files.length < 2) {
-      setCompareWarning(files.length === 0 ? 'No BED files found' : 'Drop at least 2 files to compare');
-      setTimeout(() => setCompareWarning(null), 3000);
+      const hasNonBedGz = all.some((f) => {
+        const name = f.name.toLowerCase();
+        return name.endsWith('.gz') && !name.endsWith('.bed.gz');
+      });
+      toast.warning(
+        hasNonBedGz
+          ? 'Only .bed and .bed.gz files are supported.'
+          : files.length === 0 ? 'No BED files found.' : 'Drop at least 2 BED files to compare.',
+      );
     } else if (files.length > MAX_FILES) {
-      setCompareWarning(`Too many files (${files.length}). Maximum is ${MAX_FILES}.`);
-      setTimeout(() => setCompareWarning(null), 3000);
+      toast.warning(`Too many files (${files.length}). Maximum is ${MAX_FILES}.`);
     } else {
-      setCompareWarning(null);
       setFiles(files);
       openTab('collections', 'files');
     }
@@ -208,9 +214,6 @@ export function CollectionsEmpty() {
               </div>
               <span className="text-xs text-base-content/40">Run Jaccard similarity, consensus regions, and set operations on up to {MAX_FILES} of your own files</span>
             </button>
-          )}
-          {compareWarning && (
-            <p className="text-xs text-warning mt-2 text-center">{compareWarning}</p>
           )}
 
         </div>

@@ -122,7 +122,7 @@ function ChartGroup({ label, charts }: { label: string; charts: ChartInfo[] }) {
 
 function SkeletonGrid() {
   return (
-    <div className="grid grid-cols-2 @3xl:grid-cols-4 gap-2">
+    <div className="grid grid-cols-2 @3xl:grid-cols-5 gap-2">
       {[0, 1, 2, 3, 4, 5].map((i) => (
         <div key={i} className="border border-base-300 rounded-lg overflow-hidden">
           <div className="aspect-square p-4">

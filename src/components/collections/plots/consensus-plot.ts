@@ -35,7 +35,7 @@ export function consensusPlotSlot(
       x: { domain: bins.map((b) => b.label), label: null, tickSize: 0 },
       y: { axis: null },
       marks: [
-        Plot.barY(bins, { x: 'label', y: 'count', fill: 'teal' }),
+        Plot.barY(bins, { x: 'label', y: 'count', fill: 'teal', ry1: 2 }),
       ],
     });
   }
@@ -53,6 +53,7 @@ export function consensusPlotSlot(
           x: 'label',
           y: 'count',
           fill: 'teal',
+          ry1: 2,
           tip: true,
           channels: { Fraction: (d: SupportBin) => `${(d.fraction * 100).toFixed(1)}%` },
         }),

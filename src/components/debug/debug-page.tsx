@@ -110,7 +110,7 @@ export function DebugPage() {
             <p className="text-xs text-base-content/40 mb-3">
               {slots.length} plot{slots.length !== 1 ? 's' : ''} rendered
             </p>
-            <PlotGallery plots={slots} />
+            <PlotGallery plots={slots} columns={4} />
           </div>
         )}
       </div>

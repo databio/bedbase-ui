@@ -349,14 +349,20 @@ function PlotModal({
 
 // --- Gallery grid ---
 
-export function PlotGallery({ plots }: { plots: PlotSlot[] }) {
+const GRID_COLS: Record<number, string> = {
+  3: 'grid-cols-2 @3xl:grid-cols-3',
+  4: 'grid-cols-2 @3xl:grid-cols-4',
+  5: 'grid-cols-2 @3xl:grid-cols-5',
+};
+
+export function PlotGallery({ plots, columns = 5 }: { plots: PlotSlot[]; columns?: number }) {
   const [expanded, setExpanded] = useState<PlotSlot | null>(null);
 
   if (plots.length === 0) return null;
 
   return (
     <>
-      <div className="grid grid-cols-2 @3xl:grid-cols-4 gap-2">
+      <div className={`grid ${GRID_COLS[columns] ?? GRID_COLS[5]} gap-2`}>
         {plots.map((plot) => (
           <button
             key={plot.id}

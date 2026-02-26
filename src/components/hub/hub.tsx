@@ -1,6 +1,7 @@
 import { useState, useRef, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Search, Upload, FileText, X, Forward } from 'lucide-react';
+import { toast } from 'sonner';
 import { useFile } from '../../contexts/file-context';
 import { useTab } from '../../contexts/tab-context';
 import { EXAMPLE_QUERIES, EXAMPLE_BEDSET_QUERIES } from '../../lib/const';
@@ -28,11 +29,20 @@ function SearchInput({ onFileSelect }: { onFileSelect: (f: File) => void }) {
   const { openTab } = useTab();
   const navigate = useNavigate();
 
+  function tryFileSelect(f: File) {
+    const lower = f.name.toLowerCase();
+    if (!lower.endsWith('.bed') && !lower.endsWith('.bed.gz')) {
+      toast.warning('Only .bed and .bed.gz files are supported.');
+      return;
+    }
+    onFileSelect(f);
+  }
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
     const f = e.dataTransfer.files[0];
-    if (f) onFileSelect(f);
+    if (f) tryFileSelect(f);
   };
 
   const handleSubmit = () => {
@@ -115,10 +125,7 @@ function SearchInput({ onFileSelect }: { onFileSelect: (f: File) => void }) {
               className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0];
-                if (!f) return;
-                const name = f.name.toLowerCase();
-                if (!name.endsWith('.bed') && !name.endsWith('.bed.gz')) return;
-                onFileSelect(f);
+                if (f) tryFileSelect(f);
               }}
             />
           </div>

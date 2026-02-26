@@ -37,6 +37,14 @@ export function Footer() {
           </div>
           <span className="text-base-content/20">·</span>
           <SettingsPopover />
+          <span className="text-base-content/20">·</span>
+          <Link
+            to="/debug"
+            className="hover:text-base-content transition-colors"
+            title="Debug"
+          >
+            <Bug size={18} />
+          </Link>
         </div>
 
         {/* Center: version badges (absolutely centered) */}
@@ -59,14 +67,7 @@ export function Footer() {
         </div>
 
         {/* Right: links */}
-        <div className="flex items-center gap-5 text-sm text-base-content/50 ml-auto">
-          <Link
-            to="/debug"
-            className="hover:text-base-content transition-colors"
-            title="Debug"
-          >
-            <Bug size={18} />
-          </Link>
+        <div className="flex items-center gap-5 text-sm text-base-content/50 ml-auto pr-[7.25rem]">
           <Link
             to="/metrics"
             className="hover:text-base-content transition-colors"
@@ -99,6 +100,11 @@ export function Footer() {
             <Github size={18} />
           </a>
         </div>
+
+        {/* Far right: lab logo (positioned absolutely to avoid affecting row height) */}
+        <a href="https://databio.org" target="_blank" rel="noopener noreferrer" className="absolute right-0 top-1/2 -translate-y-1/2 cursor-pointer select-none">
+          <img src="/databio_logo.svg" alt="Sheffield Lab" className="h-7" />
+        </a>
       </div>
     </footer>
   );

@@ -20,17 +20,26 @@ function makeLabels(fileNames: string[]): string[] {
   return fileNames.map((f) => f.replace(/\.(bed|bed\.gz)$/i, ''));
 }
 
+function estimateMargins(labels: string[]): { left: number; bottom: number } {
+  const longest = Math.max(...labels.map((l) => l.length));
+  const left = Math.max(40, longest * 7 + 16);
+  // Bottom labels are rotated -45°, so projected height ≈ length * sin(45°)
+  const bottom = Math.max(40, longest * 5 + 16);
+  return { left, bottom };
+}
+
 function renderHeatmap(
   cells: Cell[],
   labels: string[],
   fileNames: string[],
   opts: { width: number; height: number; maxVal: number; scheme: string; label: string; format: (v: number) => string; legend: boolean },
 ): Element {
+  const margins = opts.legend ? estimateMargins(labels) : { left: 4, bottom: 4 };
   return Plot.plot({
     width: opts.width,
     height: opts.height,
-    marginLeft: opts.legend ? 120 : 4,
-    marginBottom: opts.legend ? 120 : 4,
+    marginLeft: margins.left,
+    marginBottom: margins.bottom,
     x: opts.legend ? { domain: labels, label: null, tickRotate: -45 } : { domain: labels, axis: null },
     y: opts.legend ? { domain: labels, label: null } : { domain: labels, axis: null },
     color: { domain: [0, opts.maxVal], scheme: opts.scheme as Plot.ColorScheme, label: opts.legend ? opts.label : undefined, legend: opts.legend },
@@ -64,9 +73,10 @@ export function similarityHeatmapSlot(
   const oCells = matrixToCells(overlapMatrix, fileNames);
 
   const n = fileNames.length;
+  const margins = estimateMargins(labels);
   function fullSize(width: number) {
-    const cellSize = Math.min(60, Math.floor((width - 120) / n));
-    return cellSize * n + 120;
+    const cellSize = Math.min(60, Math.floor((width - margins.left) / n));
+    return cellSize * n + margins.bottom;
   }
 
   function renderThumbnail(width: number, height: number): Element {
