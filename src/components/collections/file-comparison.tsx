@@ -1,5 +1,6 @@
 import { useReducer, useEffect, useRef, useCallback, useMemo, useState } from 'react';
-import { ChevronLeft, AlertTriangle, Plus, GitCompareArrows, ArrowRight } from 'lucide-react';
+import { AlertTriangle, Plus, GitCompareArrows, ArrowRight } from 'lucide-react';
+import { Breadcrumb } from '../shared/breadcrumb';
 import { toast } from 'sonner';
 import { RegionSet, type ChromosomeStatistics } from '@databio/gtars';
 import { useTab } from '../../contexts/tab-context';
@@ -483,14 +484,10 @@ export function FileComparison() {
 
   return (
     <div className="flex flex-col h-full overflow-auto p-4 @md:p-6">
-      {/* Back button */}
-      <button
-        onClick={() => openTab('collections', '')}
-        className="inline-flex items-center gap-0.5 text-xs text-base-content/40 hover:text-base-content/60 transition-colors cursor-pointer w-fit mb-4"
-      >
-        <ChevronLeft size={14} />
-        Collections
-      </button>
+      <Breadcrumb crumbs={[
+        { label: 'Collections', onClick: () => openTab('collections', '') },
+        { label: 'Compare' },
+      ]} />
 
       {/* Idle: redirecting to collections */}
       {state.phase === 'idle' && null}

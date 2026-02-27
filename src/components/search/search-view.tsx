@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Search, FileText, AlertCircle, RefreshCw, X, ChevronLeft, ScatterChart } from 'lucide-react';
+import { Search, FileText, AlertCircle, RefreshCw, X, ScatterChart } from 'lucide-react';
+import { Breadcrumb } from '../shared/breadcrumb';
 import { useTab } from '../../contexts/tab-context';
 import { useFile } from '../../contexts/file-context';
 import { useBucket } from '../../contexts/bucket-context';
@@ -190,13 +191,10 @@ function SearchResults({
   return (
     <div className="flex flex-col h-full overflow-auto p-4 @md:p-6">
       <div className="flex items-center justify-between mb-4">
-        <button
-          onClick={() => openTab('search')}
-          className="inline-flex items-center gap-0.5 text-xs text-base-content/40 hover:text-base-content/60 transition-colors cursor-pointer w-fit"
-        >
-          <ChevronLeft size={14} />
-          Search
-        </button>
+        <Breadcrumb className="" crumbs={[
+          { label: 'Search', onClick: () => openTab('search') },
+          { label: searchQuery ? 'Text2BED search' : 'BED2BED search' },
+        ]} />
         <button
           onClick={handleViewOnUmap}
           className={`inline-flex items-center gap-1 text-xs text-base-content hover:text-base-content/70 transition-colors cursor-pointer ${!(data?.results && data.results.length > 0) ? 'invisible' : ''}`}

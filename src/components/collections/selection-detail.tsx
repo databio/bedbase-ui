@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, Check, X, Trash2, ScatterChart, Pencil } from 'lucide-react';
+import { Check, X, Trash2, ScatterChart, Pencil } from 'lucide-react';
+import { Breadcrumb } from '../shared/breadcrumb';
 
 const PAGE_SIZE_OPTIONS = [10, 20] as const;
 import { useTab } from '../../contexts/tab-context';
@@ -45,13 +46,11 @@ export function SelectionDetail({ selectionId }: { selectionId: string }) {
   if (!bucket) {
     return (
       <div className="flex flex-col h-full overflow-auto p-4 @md:p-6">
-        <button
-          onClick={() => openTab('collections', 'selection')}
-          className="inline-flex items-center gap-0.5 text-xs text-base-content/40 hover:text-base-content/60 transition-colors cursor-pointer w-fit mb-4"
-        >
-          <ChevronLeft size={14} />
-          Selections
-        </button>
+        <Breadcrumb crumbs={[
+          { label: 'Collections', onClick: () => openTab('collections', '') },
+          { label: 'Selections', onClick: () => openTab('collections', 'selection') },
+          { label: 'Not found' },
+        ]} />
         <div className="flex flex-col items-center justify-center py-16 gap-3">
           <p className="text-sm font-medium text-base-content">Selection not found</p>
           <p className="text-xs text-base-content/50 max-w-md text-center">
@@ -61,7 +60,7 @@ export function SelectionDetail({ selectionId }: { selectionId: string }) {
             onClick={() => openTab('collections', 'selection')}
             className="btn btn-sm btn-ghost gap-1.5 mt-1"
           >
-            <ChevronLeft size={14} /> Back to selections
+            Back to selections
           </button>
         </div>
       </div>
@@ -70,13 +69,11 @@ export function SelectionDetail({ selectionId }: { selectionId: string }) {
 
   return (
     <div className="flex flex-col h-full overflow-auto p-4 @md:p-6">
-      <button
-        onClick={() => openTab('collections', 'selection')}
-        className="inline-flex items-center gap-0.5 text-xs text-base-content/40 hover:text-base-content/60 transition-colors cursor-pointer w-fit mb-4"
-      >
-        <ChevronLeft size={14} />
-        Selections
-      </button>
+      <Breadcrumb crumbs={[
+        { label: 'Collections', onClick: () => openTab('collections', '') },
+        { label: 'Selections', onClick: () => openTab('collections', 'selection') },
+        { label: bucket.name },
+      ]} />
 
       <div className="space-y-6 pb-6">
         {/* Header */}

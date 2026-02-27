@@ -176,7 +176,6 @@ export function neighborDistanceSlot(distances: number[]): PlotSlot | null {
         x: { label: null, tickSize: 0 },
         y: { label: null, tickSize: 0 },
         marks: [
-          Plot.areaY(kde, { x: 'x', y: 'density', fill: 'teal', fillOpacity: 0.3 }),
           Plot.lineY(kde, { x: 'x', y: 'density', stroke: 'teal', strokeWidth: 1.5 }),
         ],
       }),
@@ -190,7 +189,6 @@ export function neighborDistanceSlot(distances: number[]): PlotSlot | null {
         },
         y: { label: 'Density', labelArrow: 'none' },
         marks: [
-          Plot.areaY(kde, { x: 'x', y: 'density', fill: 'teal', fillOpacity: 0.15 }),
           Plot.lineY(kde, { x: 'x', y: 'density', stroke: 'teal', strokeWidth: 1.5 }),
           Plot.tip(kde, Plot.pointerX({ x: 'x', y: 'density' })),
           Plot.ruleY([0]),

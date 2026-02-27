@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { ChevronLeft, Loader2, AlertCircle, Search, Plus, Check, Copy, CheckCheck, ExternalLink, Terminal, Download, X, ScatterChart } from 'lucide-react';
+import { Loader2, AlertCircle, Search, Plus, Check, Copy, CheckCheck, ExternalLink, Terminal, Download, X, ScatterChart } from 'lucide-react';
+import { Breadcrumb } from '../shared/breadcrumb';
 import { useTab } from '../../contexts/tab-context';
 import { useCart } from '../../contexts/cart-context';
 import { useBucket } from '../../contexts/bucket-context';
@@ -169,13 +170,11 @@ export function CollectionDetail({ bedsetId }: { bedsetId: string }) {
 
   return (
     <div className="flex flex-col h-full overflow-auto p-4 @md:p-6">
-      <button
-        onClick={() => openTab('collections', 'bedset')}
-        className="inline-flex items-center gap-0.5 text-xs text-base-content/40 hover:text-base-content/60 transition-colors cursor-pointer w-fit mb-4"
-      >
-        <ChevronLeft size={14} />
-        BEDsets
-      </button>
+      <Breadcrumb crumbs={[
+        { label: 'Collections', onClick: () => openTab('collections', '') },
+        { label: 'BEDsets', onClick: () => openTab('collections', 'bedset') },
+        { label: meta.name || bedsetId },
+      ]} />
 
       <div className="space-y-6">
         {/* Header — matches DatabaseHeader layout */}

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Loader2, FileText, AlertCircle, Search, Copy, CheckCheck, X, ChevronLeft, Dna, ScatterChart } from 'lucide-react';
+import { Loader2, FileText, AlertCircle, Search, Copy, CheckCheck, X, Dna, ScatterChart } from 'lucide-react';
+import { Breadcrumb } from '../shared/breadcrumb';
 import { useFile } from '../../contexts/file-context';
 import { useTab } from '../../contexts/tab-context';
 import { fromApiResponse, type BedAnalysis } from '../../lib/bed-analysis';
@@ -503,13 +504,10 @@ function AnalysisPanels({ analysis }: { analysis: BedAnalysis }) {
 
   return (
     <div className="flex flex-col h-full overflow-auto p-4 @md:p-6">
-      <button
-        onClick={() => openTab('analysis')}
-        className="inline-flex items-center gap-0.5 text-xs text-base-content/40 hover:text-base-content/60 transition-colors cursor-pointer w-fit mb-4"
-      >
-        <ChevronLeft size={14} />
-        Analysis
-      </button>
+      <Breadcrumb crumbs={[
+        { label: 'Analysis', onClick: () => openTab('analysis') },
+        { label: analysis.name || (isLocal ? 'Uploaded file' : analysis.id || 'BED') },
+      ]} />
       <div className="space-y-6">
       <AnalysisHeader analysis={analysis} />
 

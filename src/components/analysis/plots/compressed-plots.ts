@@ -268,7 +268,6 @@ export function compressedNeighborDistanceSlot(kde: CompressedKde): PlotSlot | n
         x: { label: null, tickSize: 0 },
         y: { label: null, tickSize: 0 },
         marks: [
-          Plot.areaY(points, { x: 'x', y: 'density', fill: 'teal', fillOpacity: 0.3 }),
           Plot.lineY(points, { x: 'x', y: 'density', stroke: 'teal', strokeWidth: 1.5 }),
         ],
       }),
@@ -282,7 +281,6 @@ export function compressedNeighborDistanceSlot(kde: CompressedKde): PlotSlot | n
         },
         y: { label: 'Density', labelArrow: 'none' },
         marks: [
-          Plot.areaY(points, { x: 'x', y: 'density', fill: 'teal', fillOpacity: 0.15 }),
           Plot.lineY(points, { x: 'x', y: 'density', stroke: 'teal', strokeWidth: 1.5 }),
           Plot.tip(points, Plot.pointerX({ x: 'x', y: 'density' })),
           Plot.ruleY([0]),
@@ -327,7 +325,6 @@ export function compressedGcContentSlot(kde: CompressedKde): PlotSlot | null {
         x: { label: null, tickSize: 0 },
         y: { label: null, tickSize: 0 },
         marks: [
-          Plot.areaY(points, { x: 'x', y: 'density', fill: 'teal', fillOpacity: 0.3 }),
           Plot.lineY(points, { x: 'x', y: 'density', stroke: 'teal', strokeWidth: 1.5 }),
           ...meanRule,
         ],
@@ -342,7 +339,6 @@ export function compressedGcContentSlot(kde: CompressedKde): PlotSlot | null {
         },
         y: { label: 'Density', labelArrow: 'none' },
         marks: [
-          Plot.areaY(points, { x: 'x', y: 'density', fill: 'teal', fillOpacity: 0.15 }),
           Plot.lineY(points, { x: 'x', y: 'density', stroke: 'teal', strokeWidth: 1.5 }),
           Plot.tip(points, Plot.pointerX({ x: 'x', y: 'density' })),
           Plot.ruleY([0]),

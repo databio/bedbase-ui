@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Search, AlertCircle, RefreshCw, ChevronLeft } from 'lucide-react';
+import { Search, AlertCircle, RefreshCw } from 'lucide-react';
+import { Breadcrumb } from '../shared/breadcrumb';
 import { useLocation } from 'react-router-dom';
 import { useTab } from '../../contexts/tab-context';
 import { useBedsetList } from '../../queries/use-bedset-list';
@@ -76,13 +77,10 @@ export function BedsetList() {
 
   return (
     <div className="flex flex-col h-full overflow-auto p-4 @md:p-6">
-      <button
-        onClick={() => openTab('collections', '')}
-        className="inline-flex items-center gap-0.5 text-xs text-base-content/40 hover:text-base-content/60 transition-colors cursor-pointer w-fit mb-4"
-      >
-        <ChevronLeft size={14} />
-        Collections
-      </button>
+      <Breadcrumb crumbs={[
+        { label: 'Collections', onClick: () => openTab('collections', '') },
+        { label: 'BEDsets' },
+      ]} />
 
       <div className="space-y-2 pb-6">
         <h3 className="text-lg font-semibold text-base-content">BEDsets</h3>

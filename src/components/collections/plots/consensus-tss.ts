@@ -75,7 +75,7 @@ export function consensusTssSlot(
       x: { domain: [-RANGE, RANGE], label: null, tickSize: 0 },
       y: { label: null, tickSize: 0 },
       marks: [
-        Plot.areaY(pctStats, { x: 'binMid', y1: 'q25', y2: 'q75', fill: 'orange', fillOpacity: 0.3 }),
+        Plot.areaY(pctStats, { x: 'binMid', y1: 'q25', y2: 'q75', fill: 'teal', fillOpacity: 0.15 }),
         Plot.lineY(pctStats, { x: 'binMid', y: 'mean', stroke: 'teal', strokeWidth: 1.5 }),
         Plot.ruleX([0], { stroke: '#F1C40F', strokeWidth: 1.5, strokeDasharray: '3 3' }),
       ],
@@ -95,40 +95,20 @@ export function consensusTssSlot(
         tickFormat: tssTickFormat,
       },
       y: { label: 'Frequency (%)', labelArrow: 'none', grid: true },
-      color: {
-        domain: ['Mean', 'IQR (25th\u201375th)'],
-        range: ['teal', 'orange'],
-        legend: true,
-      },
       marks: [
         // IQR shaded area
         Plot.areaY(pctStats, {
           x: 'binMid',
           y1: 'q25',
           y2: 'q75',
-          fill: 'orange',
-          fillOpacity: 0.25,
-        }),
-        // IQR boundary lines
-        Plot.lineY(pctStats, {
-          x: 'binMid',
-          y: 'q75',
-          stroke: () => 'IQR (25th\u201375th)',
-          strokeWidth: 0.75,
-          strokeOpacity: 0.5,
-        }),
-        Plot.lineY(pctStats, {
-          x: 'binMid',
-          y: 'q25',
-          stroke: () => 'IQR (25th\u201375th)',
-          strokeWidth: 0.75,
-          strokeOpacity: 0.5,
+          fill: 'teal',
+          fillOpacity: 0.1,
         }),
         // Mean line
         Plot.lineY(pctStats, {
           x: 'binMid',
           y: 'mean',
-          stroke: () => 'Mean',
+          stroke: 'teal',
           strokeWidth: 2,
         }),
         // TSS marker
@@ -163,7 +143,7 @@ export function consensusTssSlot(
     id: 'tssDistance',
     title: 'TSS distance',
     description:
-      'Average distance from regions to the nearest transcription start site (TSS) across all compared files. The teal line shows the mean frequency per distance bin; the orange band shows the 25th\u201375th percentile range across files. A sharp peak at TSS indicates promoter-proximal regions. A narrow IQR band means files agree on the TSS proximity profile; a wide band suggests variability across files.',
+      'Average distance from regions to the nearest transcription start site (TSS) across all compared files. The teal line shows the mean frequency per distance bin; the shaded band shows the 25th\u201375th percentile range across files. A sharp peak at TSS indicates promoter-proximal regions. A narrow band means files agree on the TSS proximity profile; a wide band suggests variability across files.',
     type: 'observable',
     renderThumbnail,
     render,
