@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Loader2, AlertCircle, Search, Plus, Check, Copy, CheckCheck, ExternalLink, Terminal, Download, X, ScatterChart } from 'lucide-react';
 import { Breadcrumb } from '../shared/breadcrumb';
 import { useTab } from '../../contexts/tab-context';
@@ -6,9 +6,11 @@ import { useCart } from '../../contexts/cart-context';
 import { useBucket } from '../../contexts/bucket-context';
 import { useBedsetMetadata } from '../../queries/use-bedset-metadata';
 import { useBedsetBedfiles } from '../../queries/use-bedset-bedfiles';
-import { API_BASE, fileModelToPlotSlot } from '../../lib/file-model-utils';
+import { API_BASE } from '../../lib/file-model-utils';
 import { BedfileTable } from './bedfile-table';
 import { KvTable } from '../shared/kv-table';
+import { bedsetStatsSlots, type BedSetStats } from '../analysis/plots/bedset-plots';
+import { PlotGallery } from '../analysis/plot-gallery';
 
 const linkClass = 'inline-flex items-center gap-1.5 text-xs font-medium text-base-content/60 hover:text-base-content/80 bg-base-200 hover:bg-base-300 px-2.5 py-1.5 rounded-md transition-colors cursor-pointer';
 
@@ -78,6 +80,14 @@ export function CollectionDetail({ bedsetId }: { bedsetId: string }) {
   const { data: meta, isLoading: metaLoading, error: metaError, refetch } = useBedsetMetadata(bedsetId);
   const { data: bedfiles } = useBedsetBedfiles(bedsetId);
 
+  // Must be above early returns — hooks must be called unconditionally
+  const metaStats = meta?.statistics as Record<string, unknown> | undefined;
+  const isNewFormat = metaStats != null && 'n_files' in metaStats;
+  const plotSlots = useMemo(() => {
+    if (!isNewFormat || !metaStats) return [];
+    return bedsetStatsSlots(metaStats as unknown as BedSetStats);
+  }, [metaStats, isNewFormat]);
+
   if (metaLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-full py-16 gap-3">
@@ -114,33 +124,44 @@ export function CollectionDetail({ bedsetId }: { bedsetId: string }) {
 
   if (!meta) return null;
 
-  const stats = meta.statistics;
-  const meanStats = stats?.mean;
-  const sdStats = stats?.sd;
-
   // Info rows
   const infoRows: { label: string; value: string }[] = [];
   if (meta.author) infoRows.push({ label: 'Author', value: meta.author });
   if (meta.source) infoRows.push({ label: 'Source', value: meta.source });
-  infoRows.push({ label: 'BED files', value: String(meta.bed_ids?.length ?? 0) });
+  infoRows.push({ label: 'BED files', value: String(isNewFormat ? (metaStats as BedSetStats).n_files : (meta.bed_ids?.length ?? 0)) });
   infoRows.push({ label: 'MD5', value: meta.md5sum });
 
-  // Stats rows
+  // Stats rows — new format uses scalar_summaries, old uses mean/sd
   const statsRows: { label: string; value: string }[] = [];
   const fmt = (n: number) => n.toLocaleString(undefined, { maximumFractionDigits: 2 });
   const fmtSd = (mean: number, sd?: number | null) =>
     sd != null ? `${fmt(mean)} ± ${fmt(sd)}` : fmt(mean);
 
-  if (meanStats?.number_of_regions != null)
-    statsRows.push({ label: 'Number of regions', value: fmtSd(meanStats.number_of_regions, sdStats?.number_of_regions) });
-  if (meanStats?.mean_region_width != null)
-    statsRows.push({ label: 'Mean region width', value: fmtSd(meanStats.mean_region_width, sdStats?.mean_region_width) });
-  if (meanStats?.gc_content != null)
-    statsRows.push({ label: 'GC content', value: fmtSd(meanStats.gc_content, sdStats?.gc_content) });
-  if (meanStats?.median_tss_dist != null)
-    statsRows.push({ label: 'Median TSS distance', value: fmtSd(meanStats.median_tss_dist, sdStats?.median_tss_dist) });
-
-  const regionPlot = fileModelToPlotSlot(meta.plots?.region_commonality, 'region_commonality', 'Region commonality');
+  if (isNewFormat) {
+    const ss = (metaStats as BedSetStats).scalar_summaries;
+    if (ss) {
+      for (const [key, summary] of Object.entries(ss)) {
+        const UPPER_WORDS: Record<string, string> = { tss: 'TSS', gc: 'GC' };
+        const label = key.replace(/_/g, ' ').replace(/\b\w+/g, (w) => UPPER_WORDS[w] ?? w.charAt(0).toUpperCase() + w.slice(1));
+        if (summary && typeof summary === 'object' && 'mean' in summary) {
+          const s = summary as { mean: number; sd?: number };
+          statsRows.push({ label, value: fmtSd(s.mean, s.sd) });
+        }
+      }
+    }
+  } else if (metaStats) {
+    // Old format fallback: stats.mean / stats.sd
+    const meanStats = (metaStats as Record<string, unknown>).mean as Record<string, number> | undefined;
+    const sdStats = (metaStats as Record<string, unknown>).sd as Record<string, number> | undefined;
+    if (meanStats?.number_of_regions != null)
+      statsRows.push({ label: 'Number of regions', value: fmtSd(meanStats.number_of_regions, sdStats?.number_of_regions) });
+    if (meanStats?.mean_region_width != null)
+      statsRows.push({ label: 'Mean region width', value: fmtSd(meanStats.mean_region_width, sdStats?.mean_region_width) });
+    if (meanStats?.gc_content != null)
+      statsRows.push({ label: 'GC content', value: fmtSd(meanStats.gc_content, sdStats?.gc_content) });
+    if (meanStats?.median_tss_dist != null)
+      statsRows.push({ label: 'Median TSS distance', value: fmtSd(meanStats.median_tss_dist, sdStats?.median_tss_dist) });
+  }
 
   const bedfileList = bedfiles?.results ?? [];
   const inCartCount = bedfileList.filter((b) => isInCart(b.id)).length;
@@ -262,15 +283,13 @@ export function CollectionDetail({ bedsetId }: { bedsetId: string }) {
           </div>
         </div>
 
-        {/* Region commonality plot */}
-        {regionPlot && regionPlot.type === 'image' && (
+        {/* Aggregated distribution plots */}
+        {plotSlots.length > 0 && (
           <div className="space-y-2">
             <h3 className="text-sm font-semibold text-base-content/50 uppercase tracking-wide">
               Plots
             </h3>
-            <div className="border border-base-300 rounded-lg p-4 bg-base-100 inline-block">
-              <img src={regionPlot.thumbnail} alt="Region commonality" className="max-w-full h-auto" />
-            </div>
+            <PlotGallery plots={plotSlots} />
           </div>
         )}
 

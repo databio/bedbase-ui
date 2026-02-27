@@ -526,6 +526,20 @@ export function compressedDistributionSlots(
   const slots: PlotSlot[] = [];
   const inner = distributions.distributions;
 
+  // Order matches the local analysis view (analysis-view.tsx buildPlotSlots):
+  // 1. Region distribution, 2. Chromosome bar, 3. Widths, 4. Neighbor distances,
+  // 5. TSS distance, 6. GC content, 7. Partitions, 8. Expected partitions, 9. Open signal
+
+  if (inner?.region_distribution) {
+    const s = compressedRegionDistributionSlot(inner.region_distribution);
+    if (s) slots.push(s);
+  }
+
+  if (inner?.chromosome_stats) {
+    const s = compressedChromosomeBarSlot(inner.chromosome_stats);
+    if (s) slots.push(s);
+  }
+
   if (inner?.widths) {
     const s = compressedWidthsSlot(inner.widths);
     if (s) slots.push(s);
@@ -543,16 +557,6 @@ export function compressedDistributionSlots(
 
   if (inner?.gc_content) {
     const s = compressedGcContentSlot(inner.gc_content);
-    if (s) slots.push(s);
-  }
-
-  if (inner?.region_distribution) {
-    const s = compressedRegionDistributionSlot(inner.region_distribution);
-    if (s) slots.push(s);
-  }
-
-  if (inner?.chromosome_stats) {
-    const s = compressedChromosomeBarSlot(inner.chromosome_stats);
     if (s) slots.push(s);
   }
 

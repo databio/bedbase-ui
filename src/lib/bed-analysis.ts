@@ -1,6 +1,7 @@
 import type { RegionSet, ChromosomeStatistics } from '@databio/gtars';
 import type { components } from '../bedbase-types';
 import type { PlotSlot } from './plot-specs';
+import type { CompressedDistributions } from '../components/analysis/plots/compressed-plots';
 import { fileModelToUrl, fileModelToPlotSlot } from './file-model-utils';
 
 type BedMetadataAll = components['schemas']['BedMetadataAll'];
@@ -113,7 +114,9 @@ export type BedAnalysis = {
   // New genomicdist results (local only)
   genomicdist?: GenomicDistResult;
 
-  // Database only — image-based plots from server
+  // Database only — compressed distributions from server (preferred over serverPlots)
+  compressedDistributions?: CompressedDistributions;
+  // Database only — image-based plots from server (fallback when distributions absent)
   serverPlots?: PlotSlot[];
   bedsets?: { id: string; name: string; description?: string }[];
   genomeAlias?: string;
@@ -136,9 +139,13 @@ function nonEmpty(s: string | null | undefined): string | undefined {
 export function fromApiResponse(data: BedMetadataAll): BedAnalysis {
   const { stats, plots, files, annotation } = data;
 
-  // Build server plot slots
+  // Extract compressed distributions (not in generated types yet — cast through any)
+  const compressedDistributions =
+    (stats as Record<string, unknown> | undefined)?.distributions as CompressedDistributions | undefined;
+
+  // Build server plot slots (fallback when compressed distributions are absent)
   const serverPlots: PlotSlot[] = [];
-  if (plots) {
+  if (!compressedDistributions && plots) {
     const plotEntries: [string, string][] = [
       ['chrombins', 'Chromosome bins'],
       ['gccontent', 'GC content'],
@@ -207,8 +214,8 @@ export function fromApiResponse(data: BedMetadataAll): BedAnalysis {
           treatment: nonEmpty(annotation.treatment),
           librarySource: nonEmpty(annotation.library_source),
           description: nonEmpty(data.description),
-          globalSampleId: annotation.global_sample_id?.filter(Boolean).join(', ') || undefined,
-          globalExperimentId: annotation.global_experiment_id?.filter(Boolean).join(', ') || undefined,
+          globalSampleId: nonEmpty(Array.isArray(annotation.global_sample_id) ? annotation.global_sample_id.filter(Boolean).join(', ') : String(annotation.global_sample_id ?? '')),
+          globalExperimentId: nonEmpty(Array.isArray(annotation.global_experiment_id) ? annotation.global_experiment_id.filter(Boolean).join(', ') : String(annotation.global_experiment_id ?? '')),
           originalFileName: nonEmpty((annotation as Record<string, unknown>).original_file_name as string),
         }
       : data.description
@@ -217,6 +224,7 @@ export function fromApiResponse(data: BedMetadataAll): BedAnalysis {
     genomicFeatures,
     chromosomeStats: [],
     plots: {},
+    compressedDistributions: compressedDistributions || undefined,
     serverPlots: serverPlots.length > 0 ? serverPlots : undefined,
     bedsets: bedsets && bedsets.length > 0 ? bedsets : undefined,
     genomeAlias: data.genome_alias || undefined,
