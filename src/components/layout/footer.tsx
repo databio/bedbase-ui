@@ -48,7 +48,7 @@ export function Footer() {
         </div>
 
         {/* Center: version badges (absolutely centered) */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div className="absolute inset-0 hidden md:flex items-center justify-center pointer-events-none">
           <div className="flex flex-wrap items-center gap-1.5 pointer-events-auto">
             {versions ? (
               <>

@@ -506,7 +506,7 @@ function AnalysisPanels({ analysis }: { analysis: BedAnalysis }) {
     <div className="flex flex-col h-full overflow-auto p-4 @md:p-6">
       <Breadcrumb crumbs={[
         { label: 'Analysis', onClick: () => openTab('analysis') },
-        { label: analysis.name || (isLocal ? 'Uploaded file' : analysis.id || 'BED') },
+        { label: analysis.fileName || (isLocal ? 'Uploaded file' : analysis.id || 'BED') },
       ]} />
       <div className="space-y-6">
       <AnalysisHeader analysis={analysis} />
