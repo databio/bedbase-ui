@@ -1,11 +1,9 @@
-import { useState, useRef } from 'react';
-import { Globe, Layers, Search, ChevronRight, FolderOpen, ArrowRight, GitCompareArrows, Trash2 } from 'lucide-react';
+import { useRef } from 'react';
+import { Layers, ChevronRight, FolderOpen, GitCompareArrows, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
 import { useTab } from '../../contexts/tab-context';
 import { useBucket } from '../../contexts/bucket-context';
 import { useFileSet } from '../../contexts/fileset-context';
-import { useStats } from '../../queries/use-stats';
 import { useBedsetList } from '../../queries/use-bedset-list';
 import { MAX_FILES } from './file-comparison';
 
@@ -14,12 +12,9 @@ function formatNumber(n: number): string {
 }
 
 export function CollectionsEmpty() {
-  const [searchQuery, setSearchQuery] = useState('');
   const { openTab } = useTab();
-  const navigate = useNavigate();
   const { bucketCount } = useBucket();
   const { setFiles, cached, clearCached } = useFileSet();
-  const { data: stats } = useStats();
   const { data: sampleBedsets } = useBedsetList({ limit: 3 });
   const compareInputRef = useRef<HTMLInputElement>(null);
 
@@ -53,82 +48,38 @@ export function CollectionsEmpty() {
         <div className="max-w-3xl mx-auto">
           <h2 className="text-2xl font-bold text-base-content mb-1 text-center">Collections</h2>
           <p className="text-base-content/50 text-sm max-w-md mx-auto text-center mb-8">
-            Explore collections of BED files with BEDsets and manage your saved selections from the UMAP embeddings.
+            Browse BEDset collections, manage your saved UMAP selections, and compare your own files.
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {/* BEDsets card */}
-            <div className="flex flex-col rounded-lg border border-base-300 overflow-hidden">
-              <div className="flex-1 p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="p-1.5 rounded-md bg-primary/10">
-                    <Globe size={14} className="text-primary" />
-                  </div>
-                  <p className="text-sm font-medium text-base-content">BEDsets</p>
+          {/* Your Selections card */}
+          <div className="flex flex-col rounded-lg border border-base-300 overflow-hidden max-w-lg mx-auto">
+            <div className="flex-1 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="p-1.5 rounded-md bg-secondary/10">
+                  <Layers size={14} className="text-secondary" />
                 </div>
-                <ul className="space-y-1 text-xs text-base-content/50 list-disc list-inside">
-                  <li>Curated collections of BED files</li>
-                  <li>{stats ? `${stats.bedsets_number.toLocaleString()} BEDsets` : 'Browse BEDsets'} with aggregate statistics</li>
-                  <li>Rich metadata — author, source, submission date</li>
-                </ul>
+                <p className="text-sm font-medium text-base-content">Your Selections</p>
               </div>
-              <div className="border-t border-base-300">
-              <div className="flex items-center gap-3 px-4 h-11 bg-primary/5">
-                <Search size={16} className="text-base-content/30 shrink-0" />
-                <input
-                  type="text"
-                  placeholder="Search BEDsets..."
-                  className="flex-1 bg-transparent outline-none text-sm text-base-content placeholder:text-base-content/50 p-0 m-0 border-0 min-h-0"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      navigate('/collections/bedset' + (searchQuery.trim() ? '?q=' + encodeURIComponent(searchQuery.trim()) : ''));
-                    }
-                  }}
-                />
-                {searchQuery.trim() && (
-                  <button
-                    onClick={() => navigate('/collections/bedset?q=' + encodeURIComponent(searchQuery.trim()))}
-                    className="p-1 rounded cursor-pointer transition-colors"
-                  >
-                    <ArrowRight size={14} className="text-primary" />
-                  </button>
-                )}
-              </div>
-              </div>
+              <ul className="space-y-1 text-xs text-base-content/50 list-disc list-inside">
+                <li>Saved from UMAP embedding explorations</li>
+                <li>Stored locally in your browser</li>
+                <li>Aggregate analyses coming soon</li>
+              </ul>
             </div>
-
-            {/* Your Selections card */}
-            <div className="flex flex-col rounded-lg border border-base-300 overflow-hidden">
-              <div className="flex-1 p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="p-1.5 rounded-md bg-secondary/10">
-                    <Layers size={14} className="text-secondary" />
-                  </div>
-                  <p className="text-sm font-medium text-base-content">Your Selections</p>
-                </div>
-                <ul className="space-y-1 text-xs text-base-content/50 list-disc list-inside">
-                  <li>Saved from UMAP embedding explorations</li>
-                  <li>Stored locally in your browser</li>
-                  <li>Aggregate analyses coming soon</li>
-                </ul>
-              </div>
-              <div className="border-t border-base-300">
-                <button
-                  onClick={() => openTab('collections', 'selection')}
-                  className="flex items-center gap-3 px-4 h-11 bg-secondary/5 hover:bg-secondary/10 transition-colors cursor-pointer text-left w-full"
-                >
-                  <Layers size={16} className="text-base-content/30 shrink-0" />
-                  <span className="text-sm text-base-content/50 flex-1">
-                    Browse selections
-                    {bucketCount > 0 && (
-                      <span className="text-base-content/30 ml-1">({bucketCount})</span>
-                    )}
-                  </span>
-                  <ChevronRight size={14} className="text-base-content/30" />
-                </button>
-              </div>
+            <div className="border-t border-base-300">
+              <button
+                onClick={() => openTab('collections', 'selection')}
+                className="flex items-center gap-3 px-4 h-11 bg-secondary/5 hover:bg-secondary/10 transition-colors cursor-pointer text-left w-full"
+              >
+                <Layers size={16} className="text-base-content/30 shrink-0" />
+                <span className="text-sm text-base-content/50 flex-1">
+                  Browse selections
+                  {bucketCount > 0 && (
+                    <span className="text-base-content/30 ml-1">({bucketCount})</span>
+                  )}
+                </span>
+                <ChevronRight size={14} className="text-base-content/30" />
+              </button>
             </div>
           </div>
 

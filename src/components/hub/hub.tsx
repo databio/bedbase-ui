@@ -50,7 +50,7 @@ function SearchInput({ onFileSelect }: { onFileSelect: (f: File) => void }) {
     if (searchMode === 'bed') {
       openTab('search', query);
     } else {
-      navigate(`/collections/bedset?q=${encodeURIComponent(query)}`);
+      openTab('search', 'bedset:' + query);
     }
   };
 

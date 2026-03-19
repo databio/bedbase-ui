@@ -6,6 +6,7 @@ import { useFile } from '../../contexts/file-context';
 import { useBucket } from '../../contexts/bucket-context';
 import { useTextSearch } from '../../queries/use-text-search';
 import { useBedSearch } from '../../queries/use-bed-search';
+import { useBedsetList } from '../../queries/use-bedset-list';
 import { useGenomes } from '../../queries/use-genomes';
 import { useAssays } from '../../queries/use-assays';
 import { SearchEmpty } from './search-empty';
@@ -14,6 +15,8 @@ import { SkeletonTable } from '../skeleton-table';
 import type { components } from '../../bedbase-types';
 
 type SearchResponse = components['schemas']['BedListSearchResult'];
+
+const BEDSET_PREFIX = 'bedset:';
 
 const LIMIT_OPTIONS = [10, 20, 50, 100] as const;
 
@@ -280,6 +283,7 @@ function TextSearchResults({ query }: { query: string }) {
           <X size={14} className="text-base-content/40" />
         </button>
       )}
+      <SearchModeToggle mode="bed" query={query} />
       <button
         type="button"
         onClick={handleSubmit}
@@ -383,10 +387,176 @@ function BedSearchResults() {
   );
 }
 
+// --- Search mode toggle ---
+
+function SearchModeToggle({ mode, query }: { mode: 'bed' | 'bedset'; query: string }) {
+  const { openTab } = useTab();
+  return (
+    <button
+      onClick={() => {
+        if (mode === 'bed') {
+          openTab('search', BEDSET_PREFIX + query);
+        } else {
+          openTab('search', query);
+        }
+      }}
+      className="text-xs text-base-content/40 hover:text-base-content/60 transition-colors cursor-pointer shrink-0 select-none"
+    >
+      {mode === 'bed' ? 'BED Search' : 'BEDset Search'}
+    </button>
+  );
+}
+
+// --- BEDset search mode ---
+
+const BEDSET_SKELETON_COLUMNS = [
+  'h-3 w-40 rounded',
+  'h-3 flex-1 rounded',
+  'h-3 w-12 rounded',
+  'h-3 w-24 rounded',
+];
+
+function BedsetSearchResults({ query }: { query: string }) {
+  const [offset, setOffset] = useState(0);
+  const [limit, setLimit] = useState(20);
+  const [editQuery, setEditQuery] = useState(query);
+  const { openTab } = useTab();
+  const { data, isLoading, error, refetch } = useBedsetList({
+    query: query || undefined,
+    limit,
+    offset,
+  });
+
+  const handleSubmit = () => {
+    const q = editQuery.trim();
+    if (q && q !== query) {
+      setOffset(0);
+      openTab('search', BEDSET_PREFIX + q);
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-full overflow-auto p-4 @md:p-6">
+      <div className="flex items-center justify-between mb-4">
+        <Breadcrumb className="" crumbs={[
+          { label: 'Search', onClick: () => openTab('search') },
+          { label: 'Text2BEDset search' },
+        ]} />
+      </div>
+      <div className="flex flex-col gap-2 mb-4">
+        <div className="flex items-center gap-2 border border-base-300 rounded-lg px-3 py-2 bg-base-100">
+          <input
+            type="text"
+            className="flex-1 bg-transparent outline-none text-sm text-base-content placeholder:text-base-content/50"
+            placeholder="Search for BEDsets..."
+            value={editQuery}
+            onChange={(e) => setEditQuery(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+          />
+          {editQuery && (
+            <button
+              type="button"
+              onClick={() => { setEditQuery(''); openTab('search'); }}
+              title="Clear search"
+              className="p-0.5 rounded hover:bg-base-300 transition-colors cursor-pointer"
+            >
+              <X size={14} className="text-base-content/40" />
+            </button>
+          )}
+          <SearchModeToggle mode="bedset" query={query} />
+          <button
+            type="button"
+            onClick={handleSubmit}
+            className="btn btn-primary btn-sm"
+            disabled={!editQuery.trim()}
+          >
+            <Search size={16} />
+          </button>
+        </div>
+        <div className="flex items-center gap-3 flex-wrap text-xs">
+          <label className="flex items-center gap-1.5 text-base-content/60 ml-auto">
+            Limit
+            <select
+              className="select select-xs border border-base-300"
+              value={limit}
+              onChange={(e) => { setLimit(Number(e.target.value)); setOffset(0); }}
+            >
+              {LIMIT_OPTIONS.map((n) => (
+                <option key={n} value={n}>{n}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </div>
+      <div className="flex-1">
+        {isLoading ? (
+          <SkeletonTable columns={BEDSET_SKELETON_COLUMNS} />
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-3">
+            <AlertCircle size={24} className="text-error" />
+            <p className="text-sm text-error text-center max-w-md">
+              {error instanceof Error ? error.message : 'Failed to search BEDsets.'}
+            </p>
+            <button onClick={() => refetch()} className="btn btn-sm btn-ghost gap-1">
+              <RefreshCw size={14} /> Retry
+            </button>
+          </div>
+        ) : data?.results && data.results.length > 0 ? (
+          <>
+            <div className="overflow-x-auto border border-base-300 rounded-lg bg-base-100">
+              <table className="table table-sm text-xs w-full">
+                <thead className="text-base-content">
+                  <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th className="text-right">BED files</th>
+                    <th>Submitted</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.results.map((bs) => (
+                    <tr
+                      key={bs.id}
+                      onClick={() => openTab('collections', 'bedset/' + bs.id)}
+                      className="hover:bg-primary/5 cursor-pointer transition-colors"
+                    >
+                      <td className="font-medium max-w-48 truncate text-primary">{bs.name}</td>
+                      <td className="max-w-xs truncate text-base-content/50">
+                        {bs.description || <span className="text-base-content/30">—</span>}
+                      </td>
+                      <td className="text-right">{bs.bed_ids?.length ?? '—'}</td>
+                      <td className="text-base-content/40">
+                        {bs.submission_date
+                          ? new Date(bs.submission_date).toLocaleDateString()
+                          : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {data.count > limit && (
+              <Pagination
+                count={data.count}
+                offset={offset}
+                limit={limit}
+                onOffsetChange={setOffset}
+              />
+            )}
+          </>
+        ) : (
+          <p className="text-center text-sm text-base-content/40 py-12">No BEDsets found.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // --- Main search view (routes on param) ---
 
 export function SearchView({ param }: { param?: string }) {
   if (!param) return <SearchEmpty />;
   if (param === 'file') return <BedSearchResults />;
+  if (param.startsWith(BEDSET_PREFIX)) return <BedsetSearchResults query={param.slice(BEDSET_PREFIX.length)} />;
   return <TextSearchResults query={param} />;
 }
