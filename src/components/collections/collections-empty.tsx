@@ -49,42 +49,11 @@ export function CollectionsEmpty() {
           <h2 className="text-2xl font-bold text-base-content mb-1 text-center">Collections</h2>
           <p className="text-base-content/50 text-sm max-w-md mx-auto text-center mb-8">
             Browse BEDset collections, manage your saved UMAP selections, and compare your own files.
+            Search for BEDsets in the <button onClick={() => openTab('search')} className="text-primary hover:underline cursor-pointer">Search</button> tab.
           </p>
 
-          {/* Your Selections card */}
-          <div className="flex flex-col rounded-lg border border-base-300 overflow-hidden max-w-lg mx-auto">
-            <div className="flex-1 p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="p-1.5 rounded-md bg-secondary/10">
-                  <Layers size={14} className="text-secondary" />
-                </div>
-                <p className="text-sm font-medium text-base-content">Your Selections</p>
-              </div>
-              <ul className="space-y-1 text-xs text-base-content/50 list-disc list-inside">
-                <li>Saved from UMAP embedding explorations</li>
-                <li>Stored locally in your browser</li>
-                <li>Aggregate analyses coming soon</li>
-              </ul>
-            </div>
-            <div className="border-t border-base-300">
-              <button
-                onClick={() => openTab('collections', 'selection')}
-                className="flex items-center gap-3 px-4 h-11 bg-secondary/5 hover:bg-secondary/10 transition-colors cursor-pointer text-left w-full"
-              >
-                <Layers size={16} className="text-base-content/30 shrink-0" />
-                <span className="text-sm text-base-content/50 flex-1">
-                  Browse selections
-                  {bucketCount > 0 && (
-                    <span className="text-base-content/30 ml-1">({bucketCount})</span>
-                  )}
-                </span>
-                <ChevronRight size={14} className="text-base-content/30" />
-              </button>
-            </div>
-          </div>
-
           {/* Sample bedsets */}
-          <h3 className="text-sm font-semibold text-base-content mb-4 mt-10 text-center">Browse a BEDset:</h3>
+          <h3 className="text-sm font-semibold text-base-content mb-4 text-center">Browse a BEDset:</h3>
           <div className="grid grid-cols-3 gap-2">
             {sampleBedsets ? sampleBedsets.results.map((bs) => (
               <button
@@ -112,6 +81,22 @@ export function CollectionsEmpty() {
               ))
             )}
           </div>
+
+          {/* Your Selections */}
+          <h3 className="text-sm font-semibold text-base-content mb-4 mt-10 text-center">Your selections:</h3>
+          <button
+            onClick={() => openTab('collections', 'selection')}
+            className="flex items-center gap-3 px-4 py-3 rounded-lg border border-base-300 hover:bg-base-200/30 transition-colors cursor-pointer text-left w-full"
+          >
+            <Layers size={16} className="text-secondary shrink-0" />
+            <span className="text-sm text-base-content/70 flex-1">
+              Browse saved UMAP selections
+              {bucketCount > 0 && (
+                <span className="text-base-content/40 ml-1">({bucketCount})</span>
+              )}
+            </span>
+            <ChevronRight size={14} className="text-base-content/30" />
+          </button>
 
           {/* Compare Files */}
           <h3 className="text-sm font-semibold text-base-content mb-4 mt-10 text-center">Compare your own files:</h3>
