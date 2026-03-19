@@ -282,7 +282,7 @@ export function FileComparison() {
       dispatch({ type: 'PARSE_DONE', regionSets, fileNames, wasmAvailable: true });
 
       // Run analysis
-      const rawResult = await computeMultiFileAnalysis(regionSets, fileNames, (fraction) => {
+      const rawResult = await computeMultiFileAnalysis(allEntries, fileNames, (fraction) => {
         if (!cancelledRef.current) dispatch({ type: 'ANALYSIS_PROGRESS', fraction });
       });
 

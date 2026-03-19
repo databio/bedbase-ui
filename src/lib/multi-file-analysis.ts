@@ -1,5 +1,5 @@
-import { RegionSet, type ChromosomeStatistics } from '@databio/gtars';
-import type { ProgressCallback } from './bed-parser';
+import { RegionSet, RegionSetList, type ChromosomeStatistics } from '@databio/gtars';
+import type { ProgressCallback, BedEntry } from './bed-parser';
 import { REGION_DIST_BINS } from './bed-analysis';
 
 export type FileStats = {
@@ -190,36 +190,36 @@ function binWidths(widths: number[], fileName: string): WidthHistPoint[] {
 /**
  * Run the full multi-file comparison pipeline.
  *
- * Progress phases:
- *   0.00–0.05  per-file stats
- *   0.05–0.45  pairwise Jaccard + overlap fractions
- *   0.45–0.60  consensus
- *   0.60–0.80  union / intersection
- *   0.80–1.00  per-file unique (setdiff)
+ * Uses RegionSetList.fromEntries() to build a single collection in Rust,
+ * then indexed operations (pintersectCount, unionExcept, etc.) to avoid
+ * cloning RegionSets across the wasm boundary.
  */
 export async function computeMultiFileAnalysis(
-  regionSets: RegionSet[],
+  allEntries: BedEntry[][],
   fileNames: string[],
   onProgress?: ProgressCallback,
 ): Promise<MultiFileResult> {
-  const n = regionSets.length;
+  const n = allEntries.length;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const sets = regionSets as any[];
+  // --- 0–10%: build RegionSetList + per-file stats ---
+  const rsl = RegionSetList.fromEntries(allEntries, fileNames);
 
-  // --- 0–5%: per-file stats + chromosome counts ---
-  const fileStats: FileStats[] = regionSets.map((rs, i) => ({
-    fileName: fileNames[i],
-    regions: rs.numberOfRegions,
-    meanWidth: rs.meanRegionWidth,
-    nucleotides: rs.nucleotidesLength,
-  }));
-
+  const fileStats: FileStats[] = [];
   const chrCounts: ChrRegionCount[] = [];
+  const widthHist: WidthHistPoint[] = [];
+
   for (let i = 0; i < n; i++) {
-    const total = fileStats[i].regions;
-    const calc = regionSets[i].chromosomeStatistics();
+    const rs = rsl.get(i);
+    fileStats.push({
+      fileName: fileNames[i],
+      regions: rs.numberOfRegions,
+      meanWidth: rs.meanRegionWidth,
+      nucleotides: rs.nucleotidesLength,
+    });
+
+    const calc = rs.chromosomeStatistics();
     if (calc) {
+      const total = fileStats[i].regions;
       for (const entry of Array.from(calc.entries())) {
         const [chrom, stats] = entry as [unknown, ChromosomeStatistics];
         const count = stats.number_of_regions;
@@ -232,171 +232,140 @@ export async function computeMultiFileAnalysis(
         try { (stats as unknown as { free?: () => void }).free?.(); } catch { /* */ }
       }
     }
-  }
 
-  // Width distributions (per-file, binned on log scale)
-  const widthHist: WidthHistPoint[] = [];
-  for (let i = 0; i < n; i++) {
     try {
-      const widths = sets[i].calcWidths() as number[];
+      const widths = rs.calcWidths() as number[];
       widthHist.push(...binWidths(Array.from(widths), fileNames[i]));
     } catch { /* calcWidths not available */ }
+
+    freeRs(rs);
   }
 
-  onProgress?.(0.05);
+  onProgress?.(0.10);
   await yieldToMain();
 
-  // --- 5–45%: pairwise Jaccard + overlap fractions ---
-  const jaccardMatrix: number[][] = Array.from({ length: n }, () => Array(n).fill(0));
+  // --- 10–15%: batch pairwise Jaccard (single wasm call, near-instant) ---
+  const jaccardResult = rsl.pairwiseJaccard() as { matrix: number[][]; names: string[] | null };
+  const jaccardMatrix = jaccardResult.matrix;
+
+  onProgress?.(0.15);
+  await yieldToMain();
+
+  // --- 15–75%: pairwise overlap fractions via pintersectCount (dominant cost) ---
   const overlapMatrix: number[][] = Array.from({ length: n }, () => Array(n).fill(0));
-  for (let i = 0; i < n; i++) {
-    jaccardMatrix[i][i] = 1;
-    overlapMatrix[i][i] = 100;
-  }
+  for (let i = 0; i < n; i++) overlapMatrix[i][i] = 100;
 
   const totalPairs = (n * (n - 1)) / 2;
   let pairsDone = 0;
 
   for (let i = 0; i < n; i++) {
     for (let j = i + 1; j < n; j++) {
-      // Jaccard (symmetric)
-      const jVal = sets[i].jaccard(sets[j]) as number;
-      jaccardMatrix[i][j] = jVal;
-      jaccardMatrix[j][i] = jVal;
-
-      // Overlap fractions (asymmetric) via pintersect
-      const inter = sets[i].pintersect(sets[j]) as RegionSet;
-      const interCount = inter.numberOfRegions;
-      freeRs(inter);
-
+      const interCount = rsl.pintersectCount(i, j);
       const countI = fileStats[i].regions;
       const countJ = fileStats[j].regions;
       overlapMatrix[i][j] = countI > 0 ? (interCount / countI) * 100 : 0;
       overlapMatrix[j][i] = countJ > 0 ? (interCount / countJ) * 100 : 0;
 
       pairsDone++;
-      onProgress?.(0.05 + 0.4 * (pairsDone / totalPairs));
+      onProgress?.(0.15 + 0.60 * (pairsDone / totalPairs));
       await yieldToMain();
     }
   }
 
-  // --- 45–60%: consensus ---
+  // --- 75–85%: consensus ---
   let consensus: ConsensusRegion[] = [];
-
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const gtars = await import('@databio/gtars') as any;
     if (typeof gtars.ConsensusBuilder === 'function') {
       const builder = new gtars.ConsensusBuilder();
-      for (const rs of regionSets) {
+      for (let i = 0; i < n; i++) {
+        const rs = rsl.get(i);
         builder.add(rs);
+        freeRs(rs);
       }
-      onProgress?.(0.55);
+      onProgress?.(0.80);
       await yieldToMain();
-
       const raw = builder.compute() as Array<{ chr: string; start: number; end: number; count: number }>;
       consensus = raw;
       try { builder.free?.(); } catch { /* */ }
     }
   } catch (err) { console.warn('ConsensusBuilder failed:', err); }
 
-  onProgress?.(0.6);
+  onProgress?.(0.85);
   await yieldToMain();
 
-  // --- 60–80%: union / intersection via left fold ---
+  // --- 85–95%: union, intersection, and per-file breakdown (O(n) batch) ---
   let unionStats: MultiFileResult['unionStats'] = null;
   let intersectionStats: MultiFileResult['intersectionStats'] = null;
-  let unionRs: RegionSet | null = null;
-
-  if (n >= 2 && typeof sets[0].union === 'function') {
-    try {
-      let acc: RegionSet = sets[0].union(sets[1]) as RegionSet;
-      for (let i = 2; i < n; i++) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const next = (acc as any).union(sets[i]) as RegionSet;
-        freeRs(acc);
-        acc = next;
-      }
-      unionStats = {
-        regions: acc.numberOfRegions,
-        nucleotides: acc.nucleotidesLength,
-      };
-      unionRs = acc; // keep for setdiff below
-    } catch (err) { console.warn('Union failed:', err); }
-
-    onProgress?.(0.7);
-    await yieldToMain();
-
-    try {
-      let acc: RegionSet = sets[0].pintersect(sets[1]) as RegionSet;
-      for (let i = 2; i < n; i++) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const next = (acc as any).pintersect(sets[i]) as RegionSet;
-        freeRs(acc);
-        acc = next;
-      }
-      intersectionStats = {
-        regions: acc.numberOfRegions,
-        nucleotides: acc.nucleotidesLength,
-      };
-      freeRs(acc);
-    } catch (err) { console.warn('Intersection failed:', err); }
-  }
-
-  onProgress?.(0.8);
-  await yieldToMain();
-
-  // --- 80–100%: per-file breakdown (unique via setdiff) ---
   const perFile: FileBreakdown[] = [];
-  const hasSetdiff = typeof sets[0]?.setdiff === 'function';
 
-  for (let i = 0; i < n; i++) {
-    let unique = 0;
-    let shared = 0;
+  if (n >= 2) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const bulk = (rsl as any).bulkUnionExcept() as {
+        union_regions: number;
+        union_nucleotides: number;
+        except_unique: number[];
+      };
 
-    if (hasSetdiff && n >= 2) {
-      // Build union of all OTHER files
-      const others = sets.filter((_: unknown, idx: number) => idx !== i);
-      try {
-        let othersUnion: RegionSet = others[0].union(others[1 % others.length]) as RegionSet;
-        for (let k = 1; k < others.length; k++) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const next = (othersUnion as any).union(others[k]) as RegionSet;
-          freeRs(othersUnion);
-          othersUnion = next;
-        }
+      unionStats = {
+        regions: bulk.union_regions,
+        nucleotides: bulk.union_nucleotides,
+      };
 
-        // Unique = this file minus all others
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const diff = (sets[i] as any).setdiff(othersUnion) as RegionSet;
-        unique = diff.numberOfRegions;
-        freeRs(diff);
-        freeRs(othersUnion);
-
-        shared = fileStats[i].regions - unique;
-      } catch (err) {
-        console.warn(`setdiff failed for file ${i}:`, err);
-        shared = fileStats[i].regions;
+      for (let i = 0; i < n; i++) {
+        const unique = bulk.except_unique[i];
+        const shared = fileStats[i].regions - unique;
+        perFile.push({
+          fileName: fileStats[i].fileName,
+          regions: fileStats[i].regions,
+          shared,
+          unique,
+          overlapPct: fileStats[i].regions > 0 ? (shared / fileStats[i].regions) * 100 : 0,
+        });
       }
-    } else {
-      shared = fileStats[i].regions;
+    } catch (err) {
+      console.warn('bulkUnionExcept failed:', err);
+      for (let i = 0; i < n; i++) {
+        perFile.push({
+          fileName: fileStats[i].fileName,
+          regions: fileStats[i].regions,
+          shared: fileStats[i].regions,
+          unique: 0,
+          overlapPct: 100,
+        });
+      }
     }
 
-    perFile.push({
-      fileName: fileStats[i].fileName,
-      regions: fileStats[i].regions,
-      shared,
-      unique,
-      overlapPct: fileStats[i].regions > 0 ? (shared / fileStats[i].regions) * 100 : 0,
-    });
-
-    onProgress?.(0.8 + 0.2 * ((i + 1) / n));
+    onProgress?.(0.92);
     await yieldToMain();
+
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const interAll = (rsl as any).intersectAll() as RegionSet;
+      intersectionStats = {
+        regions: interAll.numberOfRegions,
+        nucleotides: interAll.nucleotidesLength,
+      };
+      freeRs(interAll);
+    } catch (err) { console.warn('Intersection failed:', err); }
+  } else {
+    for (let i = 0; i < n; i++) {
+      perFile.push({
+        fileName: fileStats[i].fileName,
+        regions: fileStats[i].regions,
+        shared: fileStats[i].regions,
+        unique: 0,
+        overlapPct: 100,
+      });
+    }
   }
 
-  // Free the union RS we kept
-  if (unionRs) freeRs(unionRs);
+  onProgress?.(0.95);
+  await yieldToMain();
 
+  freeRs(rsl);
   onProgress?.(1);
   return { fileStats, jaccardMatrix, overlapMatrix, perFile, chrCounts, widthHist, positionalBins: [], consensus, tssHist: null, unionStats, intersectionStats };
 }
