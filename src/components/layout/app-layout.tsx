@@ -98,7 +98,7 @@ export function AppLayout() {
   }
 
   const tabBasePaths: Record<TabId, string> = {
-    file: '/file',
+    file: '/upload',
     search: '/search',
     analysis: '/analysis',
     umap: '/umap',
@@ -167,7 +167,7 @@ export function AppLayout() {
   }
 
   function renderContent() {
-    if (location.pathname.startsWith('/file/report')) {
+    if (location.pathname.startsWith('/upload/report')) {
       return <ReportPage />;
     }
 
@@ -286,7 +286,7 @@ export function AppLayout() {
           <img src="/bedbase_logo.svg" alt="BEDbase" className="h-8" />
         </button>
         <div className="flex items-center justify-end flex-1 gap-1">
-          {bedFile && renderTab('file', 'file' === primaryId || 'file' === splitId)}
+          {renderTab('file', 'file' === primaryId || 'file' === splitId)}
           {tabIds.map((id) =>
             renderTab(id, id === primaryId || id === splitId),
           )}

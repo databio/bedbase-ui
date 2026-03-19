@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Search, FlaskConical, ScatterChart, FolderOpen, X, FileText, FileBarChart } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Search, FlaskConical, ScatterChart, FolderOpen, X, FileText, FileBarChart, Upload } from 'lucide-react';
+import { toast } from 'sonner';
 import { useTab, type TabId } from '../../contexts/tab-context';
 import { useFile } from '../../contexts/file-context';
 import { tabMeta, tabColorClasses } from '../../lib/tab-meta';
@@ -154,21 +154,74 @@ function FilePreview({ file, onClear }: { file: File; onClear: () => void }) {
 
 // --- File page ---
 
+// --- Upload empty state ---
+
+function FileEmpty() {
+  const { setBedFile } = useFile();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  function handleFile(file: File) {
+    const lower = file.name.toLowerCase();
+    if (!lower.endsWith('.bed') && !lower.endsWith('.bed.gz')) {
+      toast.warning('Only .bed and .bed.gz files are supported.');
+      return;
+    }
+    setBedFile(file);
+  }
+
+  return (
+    <div className="flex-1 overflow-auto">
+      <div className="flex flex-col items-center px-4 md:px-6 pt-12 pb-10">
+        <h2 className="text-2xl font-bold text-base-content mb-1">Upload a BED file</h2>
+        <p className="text-base-content/50 text-sm max-w-md text-center mb-8">
+          Analyze it, search for similar files, or view it in the embedding space.
+        </p>
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+          onDragLeave={() => setIsDragOver(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setIsDragOver(false);
+            const f = e.dataTransfer.files[0];
+            if (f) handleFile(f);
+          }}
+          className={`flex flex-col items-center justify-center w-full max-w-xl h-32 rounded-lg border-2 border-dashed transition-colors cursor-pointer gap-2 ${
+            isDragOver ? 'border-secondary bg-secondary/10' : 'border-secondary/30 bg-secondary/5 hover:bg-secondary/10 hover:border-secondary/50'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Upload size={16} className="text-secondary" />
+            <span className="text-sm font-medium text-base-content">Drop a BED file here or click to browse</span>
+          </div>
+          <span className="text-xs text-base-content/40">.bed and .bed.gz files supported</span>
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".bed,.gz"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) handleFile(f);
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+// --- File page ---
+
 export function FilePage() {
   const { bedFile, setBedFile } = useFile();
-  const { closeTab } = useTab();
-  const navigate = useNavigate();
   const [showRelatedSets, setShowRelatedSets] = useState(false);
 
-  useEffect(() => {
-    if (!bedFile) navigate('/', { replace: true });
-  }, [bedFile, navigate]);
-
-  if (!bedFile) return null;
+  if (!bedFile) return <FileEmpty />;
 
   function handleClear() {
     setBedFile(null);
-    closeTab('file');
   }
 
   return (

@@ -1,6 +1,5 @@
-import { useState, useRef } from 'react';
-import { Search, Upload, FileText, X } from 'lucide-react';
-import { toast } from 'sonner';
+import { useState } from 'react';
+import { Search, FileText } from 'lucide-react';
 import { useTab } from '../../contexts/tab-context';
 import { useFile } from '../../contexts/file-context';
 import { EXAMPLE_QUERIES } from '../../lib/const';
@@ -13,9 +12,7 @@ function formatBytes(bytes: number): string {
 
 export function SearchEmpty() {
   const [query, setQuery] = useState('');
-  const [isDragOver, setIsDragOver] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const { bedFile, setBedFile } = useFile();
+  const { bedFile } = useFile();
   const { openTab } = useTab();
 
   const handleSubmit = () => {
@@ -24,33 +21,16 @@ export function SearchEmpty() {
     openTab('search', q);
   };
 
-  const handleFileSelect = (file: File) => {
-    const lower = file.name.toLowerCase();
-    if (!lower.endsWith('.bed') && !lower.endsWith('.bed.gz')) {
-      toast.warning('Only .bed and .bed.gz files are supported.');
-      return;
-    }
-    setBedFile(file);
-    openTab('search', 'file');
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    const f = e.dataTransfer.files[0];
-    if (f) handleFileSelect(f);
-  };
-
   return (
     <div className="flex flex-col items-center justify-center h-full min-h-64 px-4 py-12">
       <h2 className="text-2xl font-bold text-base-content mb-1">Search BEDbase</h2>
       <p className="text-base-content/50 text-sm max-w-md mx-auto text-center mb-8">
-        Search by text query to find BED files by metadata, or upload a BED file to find similar genomic regions.
+        Search by text query to find BED files by metadata.
       </p>
 
       <div className="w-full max-w-xl">
-        {/* Text search row */}
-        <div className="flex items-center gap-2 border-[1.5px] border-primary/30 rounded-t-lg px-3 py-2.5">
+        {/* Text search */}
+        <div className="flex items-center gap-2 border-[1.5px] border-primary/30 rounded-lg px-3 py-2.5">
           <input
             type="text"
             placeholder="Search for BED files..."
@@ -70,52 +50,18 @@ export function SearchEmpty() {
           </button>
         </div>
 
-        {/* File upload row or file indicator */}
-        {bedFile ? (
-          <div
-            className="flex items-center gap-2 px-3 py-2.5 rounded-b-lg border-[1.5px] border-t-0 border-dotted border-primary/30 bg-primary/5 cursor-pointer hover:bg-primary/10 transition-colors"
+        {/* File indicator — if a file is already loaded, show quick link to BED2BED search */}
+        {bedFile && (
+          <button
+            className="flex items-center gap-2 mt-3 px-3 py-2 rounded-lg border border-base-300 hover:bg-base-200/30 transition-colors cursor-pointer w-full text-left"
             onClick={() => openTab('search', 'file')}
           >
-            <FileText size={16} className="text-primary shrink-0 mx-2" />
-            <span className="text-sm font-medium text-base-content/70 truncate flex-1">{bedFile.name}</span>
+            <FileText size={14} className="text-primary shrink-0" />
+            <span className="text-sm text-base-content/70 truncate flex-1">Search by similarity to {bedFile.name}</span>
             <span className="text-xs text-base-content/40">{formatBytes(bedFile.size)}</span>
-            <button
-              onClick={(e) => { e.stopPropagation(); setBedFile(null); }}
-              className="p-1 rounded hover:bg-base-200 transition-colors cursor-pointer shrink-0"
-              title="Remove file"
-            >
-              <X size={14} className="text-base-content/40" />
-            </button>
-          </div>
-        ) : (
-          <div
-            className={`flex items-center gap-2 px-3 py-2.5 rounded-b-lg border-[1.5px] border-t-0 border-dotted transition-colors cursor-pointer ${
-              isDragOver ? 'border-primary bg-primary/10' : 'border-primary/30 bg-primary/5'
-            }`}
-            onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
-            onDragLeave={() => setIsDragOver(false)}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <div className="shrink-0 flex items-center justify-center w-8 h-8 rounded bg-primary/10">
-              <Upload size={14} className="text-primary" />
-            </div>
-            <div className="flex flex-col items-start">
-              <span className="text-sm font-medium text-base-content/70">Upload BED file to search by similarity</span>
-              <span className="text-[11px] text-base-content/45">.bed, .bed.gz</span>
-            </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".bed,.gz"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) handleFileSelect(f);
-              }}
-            />
-          </div>
+          </button>
         )}
+
         {/* Example queries */}
         <div className="flex items-center gap-1.5 mt-4 flex-wrap justify-center">
           <span className="text-base-content/30 text-xs">Try:</span>

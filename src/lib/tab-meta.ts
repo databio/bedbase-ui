@@ -1,4 +1,4 @@
-import { FileText, Search, FlaskConical, ScatterChart, FolderOpen, ShoppingCart, type LucideIcon } from 'lucide-react';
+import { Upload, Search, FlaskConical, ScatterChart, FolderOpen, ShoppingCart, type LucideIcon } from 'lucide-react';
 import type { TabId } from '../contexts/tab-context';
 
 export type TabMeta = {
@@ -10,9 +10,9 @@ export type TabMeta = {
 
 export const tabMeta: Record<TabId, TabMeta> = {
   file: {
-    label: 'File',
-    icon: FileText,
-    description: 'Your BED file — view details and choose what to do with it.',
+    label: 'Upload',
+    icon: Upload,
+    description: 'Upload a BED file to analyze, search, or explore.',
     color: 'secondary',
   },
   search: {
