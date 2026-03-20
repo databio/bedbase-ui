@@ -50,7 +50,7 @@ export function chromosomeHeatmapSlot(
     return Plot.plot({
       width,
       height,
-      margin: 4,
+      margin: 8,
       x: { domain: chrOrder, axis: null },
       y: { domain: labels, axis: null },
       color: { scheme: 'ylgnbu', type: 'linear' },

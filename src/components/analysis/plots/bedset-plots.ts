@@ -395,7 +395,7 @@ export function bedsetRegionDistributionSlot(
     return Plot.plot({
       width,
       height,
-      margin: 4,
+      margin: 8,
       x: { domain: binSet, axis: null },
       y: { domain: chrOrder, axis: null },
       color: { scheme: 'bupu' as Plot.ColorScheme, type: 'sqrt' },

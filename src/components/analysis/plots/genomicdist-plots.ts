@@ -293,8 +293,11 @@ export function partitionsSlot(partitions: PartitionRow[]): PlotSlot | null {
       Plot.plot({
         width,
         height,
-        style: { fontSize: '7px' },
+        marginTop: 8,
+        marginRight: 8,
+        marginLeft: 8,
         marginBottom: Math.min(maxLabel * 4 + 8, height * 0.5),
+        style: { fontSize: '7px' },
         x: { label: null, tickSize: 0, tickRotate: -45 },
         y: { axis: null },
         marks: [
@@ -352,10 +355,11 @@ export function expectedPartitionsSlot(rows: ExpectedPartitionRow[]): PlotSlot |
       Plot.plot({
         width,
         height,
-        style: { fontSize: '7px' },
+        marginTop: 8,
+        marginRight: 8,
+        marginBottom: 8,
         marginLeft: Math.min(maxLabel * 5 + 8, width * 0.55),
-        marginTop: 0,
-        marginBottom: 0,
+        style: { fontSize: '7px' },
         x: { axis: null },
         y: { label: null, tickSize: 0 },
         marks: barMarks(false),

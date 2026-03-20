@@ -104,8 +104,8 @@ export function CollectionDetail({ bedsetId }: { bedsetId: string }) {
           {!is404 && (
             <button onClick={() => refetch()} className="btn btn-sm btn-outline">Retry</button>
           )}
-          <button onClick={() => openTab('collections', 'bedset')} className="btn btn-sm btn-ghost gap-1.5">
-            <Search size={14} /> Back to BEDsets
+          <button onClick={() => openTab('collections')} className="btn btn-sm btn-ghost gap-1.5">
+            <Search size={14} /> Back to Collections
           </button>
         </div>
       </div>
@@ -171,8 +171,7 @@ export function CollectionDetail({ bedsetId }: { bedsetId: string }) {
   return (
     <div className="flex flex-col h-full overflow-auto p-4 @md:p-6">
       <Breadcrumb crumbs={[
-        { label: 'Collections', onClick: () => openTab('collections', '') },
-        { label: 'BEDsets', onClick: () => openTab('collections', 'bedset') },
+        { label: 'Collections', onClick: () => openTab('collections') },
         { label: meta.name || bedsetId },
       ]} />
 

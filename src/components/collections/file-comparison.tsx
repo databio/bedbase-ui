@@ -457,7 +457,7 @@ export function FileComparison() {
     <div className="flex flex-col h-full overflow-auto p-4 @md:p-6">
       <Breadcrumb crumbs={[
         { label: 'Collections', onClick: () => openTab('collections', '') },
-        { label: 'Compare' },
+        { label: 'File comparison' },
       ]} />
 
       {/* Idle: redirecting to collections */}

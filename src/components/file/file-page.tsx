@@ -174,7 +174,7 @@ function AddFilesInline({ onFiles }: { onFiles: (files: File[]) => void }) {
           if (files.length > 0) onFiles(files);
         }}
         className={`flex flex-col items-center justify-center w-full h-20 rounded-t-md border-[1.5px] border-dashed border-b-0 transition-colors cursor-pointer gap-1 ${
-          isDragOver ? 'border-secondary bg-secondary/10' : 'border-secondary/30 hover:bg-secondary/5 hover:border-secondary/50'
+          isDragOver ? 'border-secondary bg-secondary/10' : 'border-secondary/30 bg-secondary/5 hover:bg-secondary/10 hover:border-secondary/50'
         }`}
       >
         <Upload size={14} className="text-secondary" />
@@ -261,7 +261,7 @@ function FileEmpty() {
       <div className="flex flex-col items-center px-4 md:px-6 pt-12 pb-10">
         <h2 className="text-2xl font-bold text-base-content mb-1">Upload BED files</h2>
         <p className="text-base-content/50 text-sm max-w-md text-center mb-8">
-          Analyze, search for similar files, compare multiple files, or view in the embedding space.
+          Analyze, search for similar files, compare multiple files, or view in the embedding space. Up to 15 files.
         </p>
 
         <div className="w-full max-w-xl">
@@ -526,9 +526,9 @@ export function FilePage() {
                     <div>
                       <div className="flex items-center gap-2">
                         <FileBarChart size={16} className="text-primary" />
-                        <h3 className="text-sm font-semibold text-base-content">Export report</h3>
+                        <h3 className="text-sm font-semibold text-base-content">Generate comprehensive report</h3>
                       </div>
-                      <p className="text-xs text-base-content/50 mt-0.5 ml-6">Generate a printable report or download plots and data.</p>
+                      <p className="text-xs text-base-content/50 mt-0.5 ml-6">Create a printable report or download plots and data.</p>
                     </div>
 
                     <div className="flex flex-col gap-1.5">
@@ -570,7 +570,7 @@ export function FilePage() {
                         {downloading
                           ? <Loader2 size={14} className="animate-spin" />
                           : <Download size={14} />}
-                        Download SVGs + CSVs
+                        Download plots and data
                       </button>
                     </div>
                   </div>

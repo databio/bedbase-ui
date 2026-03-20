@@ -315,7 +315,7 @@ export function UmapView() {
             colorGrouping={colorGrouping}
             setColorGrouping={setColorGrouping}
           />
-          <EmbeddingSelections currentSelection={allVisiblePoints} />
+          <EmbeddingSelections currentSelection={allVisiblePoints} pinnedCategories={pinnedCategories} plotRef={plotRef} />
           <EmbeddingStats
             selectedPoints={allVisiblePoints}
             colorGrouping={colorGrouping}

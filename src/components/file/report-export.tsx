@@ -173,7 +173,7 @@ async function loadBackgroundData(): Promise<{ points: BgPoint[]; legend: { name
   if (ranked.length > TOP_N) {
     legend.push({ name: 'Other', color: tableau20[OTHER_CATEGORY] });
   }
-  legend.push({ name: 'Uploaded file', color: tableau20[UPLOADED_CATEGORY] });
+  legend.push({ name: 'Uploaded file', color: '#000' });
 
   cachedBgData = { points, legend };
   return cachedBgData;
@@ -185,7 +185,7 @@ async function renderUmapSvg(umapCoordinates: number[]): Promise<string | null> 
     const marks: Plot.Markish[] = [
       Plot.dot(points, { x: 'x', y: 'y', fill: 'color', r: 1.5, opacity: 0.4 }),
       Plot.dot([{ x: umapCoordinates[0], y: umapCoordinates[1] }], {
-        x: 'x', y: 'y', stroke: tableau20[UPLOADED_CATEGORY], strokeWidth: 3, r: 8, fill: 'none',
+        x: 'x', y: 'y', stroke: '#000', strokeWidth: 3, r: 8, fill: 'none',
         symbol: 'times',
       }),
     ];
@@ -200,7 +200,7 @@ async function renderUmapSvg(umapCoordinates: number[]): Promise<string | null> 
     if (!plot.getAttribute('xmlns')) plot.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
 
     // Build legend HTML (returned separately, not part of SVG)
-    const legendHtml = `<div style="display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:8px;">
+    const legendHtml = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px 12px;margin-top:8px;">
       ${legend.map(({ name, color }) => `
         <span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#666;">
           <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${color};"></span>
@@ -325,7 +325,7 @@ export function openReport(opts: ReportOptions) {
         ? `<div style="page-break-inside:avoid;margin-bottom:24px;">
             <h2 style="font-size:14px;font-weight:600;margin:0 0 8px 0;">UMAP Embedding</h2>
             <p style="font-size:12px;color:#666;margin:0 0 8px 0;">
-              Position of this file (pink dot) in the hg38 UMAP embedding space.
+              Position of this file in the hg38 UMAP embedding space.
             </p>
             <div style="max-width:100%;overflow:hidden;">${umapSvg}</div>
           </div>`

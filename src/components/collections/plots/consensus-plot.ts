@@ -29,9 +29,11 @@ export function consensusPlotSlot(
     return Plot.plot({
       width,
       height,
-      marginLeft: 0,
-      marginBottom: 16,
-      style: { fontSize: '8px' },
+      marginTop: 8,
+      marginRight: 8,
+      marginLeft: 8,
+      marginBottom: Math.min(Math.max(...bins.map((b) => b.label.length)) * 6 + 8, height * 0.5),
+      style: { fontSize: '7px' },
       x: { domain: bins.map((b) => b.label), label: null, tickSize: 0 },
       y: { axis: null },
       marks: [

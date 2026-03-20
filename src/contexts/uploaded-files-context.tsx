@@ -47,7 +47,7 @@ export function UploadedFilesProvider({ children }: { children: ReactNode }) {
     setFilesState((prev) => {
       const existingKeys = new Set(prev.map(fileKey));
       const deduped = valid.filter((f) => !existingKeys.has(fileKey(f)));
-      if (deduped.length < valid.length) {
+      if (deduped.length < valid.length && deduped.length > 0) {
         toast.info(`${valid.length - deduped.length} duplicate file(s) skipped.`);
       }
       const combined = [...prev, ...deduped];

@@ -3,25 +3,46 @@ import { useBucket } from '../../contexts/bucket-context';
 import { useCart } from '../../contexts/cart-context';
 import { useTab } from '../../contexts/tab-context';
 import type { UmapPoint } from '../../lib/umap-utils';
+import type { EmbeddingPlotRef } from './embedding-plot';
 
 type Props = {
   currentSelection: UmapPoint[];
+  pinnedCategories: number[];
+  plotRef: React.RefObject<EmbeddingPlotRef | null>;
 };
 
-export function EmbeddingSelections({ currentSelection }: Props) {
+export function EmbeddingSelections({ currentSelection, pinnedCategories, plotRef }: Props) {
   const { buckets, createBucket, deleteBucket, toggleBucket } = useBucket();
   const { addToCart } = useCart();
   const { openTab } = useTab();
 
   const validPoints = currentSelection.filter((p) => p.identifier !== 'custom_point');
+  const hasSelection = validPoints.length > 0 || pinnedCategories.length > 0;
 
-  const handleSave = () => {
-    if (validPoints.length === 0) return;
-    createBucket(`Selection ${buckets.length + 1}`, validPoints.map((p) => p.identifier));
+  const handleSave = async () => {
+    if (validPoints.length > 0) {
+      createBucket(`Selection ${buckets.length + 1}`, validPoints.map((p) => p.identifier));
+    } else if (pinnedCategories.length > 0 && plotRef.current) {
+      // Query points for all pinned categories
+      const results = await Promise.all(
+        pinnedCategories.map((c) => plotRef.current!.queryByCategory(String(c))),
+      );
+      const ids = results.flat().map((p) => p.identifier).filter((id) => id !== 'custom_point');
+      if (ids.length > 0) {
+        createBucket(`Selection ${buckets.length + 1}`, ids);
+      }
+    }
   };
 
-  const handleAddToCart = () => {
-    for (const p of validPoints) {
+  const handleAddToCart = async () => {
+    let points = validPoints;
+    if (points.length === 0 && pinnedCategories.length > 0 && plotRef.current) {
+      const results = await Promise.all(
+        pinnedCategories.map((c) => plotRef.current!.queryByCategory(String(c))),
+      );
+      points = results.flat().filter((p) => p.identifier !== 'custom_point');
+    }
+    for (const p of points) {
       addToCart({
         id: p.identifier,
         name: p.text || p.identifier,
@@ -38,12 +59,16 @@ export function EmbeddingSelections({ currentSelection }: Props) {
   return (
     <div className="border border-base-300 rounded-lg overflow-clip bg-base-100 shrink-0 max-h-[33%] overflow-y-auto">
       <div className="px-3 py-2 border-b border-base-300 bg-base-200 flex items-center justify-between">
-        <span className="text-xs font-bold">Selections{validPoints.length > 0 && <span className="hidden @2xs:inline font-normal text-base-content/50 ml-1">({validPoints.length})</span>}</span>
+        <span className="text-xs font-bold">Selections{validPoints.length > 0
+          ? <span className="hidden @2xs:inline font-normal text-base-content/50 ml-1">({validPoints.length})</span>
+          : pinnedCategories.length > 0
+            ? <span className="hidden @2xs:inline font-normal text-base-content/50 ml-1">(pinned)</span>
+            : null}</span>
         <span className="flex items-center gap-1 -my-0.5">
           {/* Narrow: plain colored icons */}
           <button
             className="@2xs:hidden p-1 text-secondary disabled:opacity-30 cursor-pointer disabled:cursor-default"
-            disabled={validPoints.length === 0}
+            disabled={!hasSelection}
             onClick={handleSave}
             title="Save selection"
           >
@@ -51,7 +76,7 @@ export function EmbeddingSelections({ currentSelection }: Props) {
           </button>
           <button
             className="@2xs:hidden p-1 text-primary disabled:opacity-30 cursor-pointer disabled:cursor-default"
-            disabled={validPoints.length === 0}
+            disabled={!hasSelection}
             onClick={handleAddToCart}
             title="Add to cart"
           >
@@ -60,14 +85,14 @@ export function EmbeddingSelections({ currentSelection }: Props) {
           {/* Wide: full buttons */}
           <button
             className="hidden @2xs:inline-flex btn btn-xs btn-soft btn-secondary h-[18px] min-h-0 text-[10px] px-1.5"
-            disabled={validPoints.length === 0}
+            disabled={!hasSelection}
             onClick={handleSave}
           >
             Save
           </button>
           <button
             className="hidden @2xs:inline-flex btn btn-xs btn-soft btn-primary h-[18px] min-h-0 text-[10px] px-1.5"
-            disabled={validPoints.length === 0}
+            disabled={!hasSelection}
             onClick={handleAddToCart}
           >
             Add to Cart
