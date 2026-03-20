@@ -1,11 +1,13 @@
 import { useRef, useState } from 'react';
-import { Search, FlaskConical, ScatterChart, FolderOpen, X, FileText, Upload, GitCompareArrows, Plus } from 'lucide-react';
+import { Search, FlaskConical, ScatterChart, FolderOpen, X, FileText, Upload, GitCompareArrows, Plus, FileBarChart, Download, Loader2 } from 'lucide-react';
 import { useTab, type TabId } from '../../contexts/tab-context';
 import { useFile } from '../../contexts/file-context';
 import { useUploadedFiles } from '../../contexts/uploaded-files-context';
 import { useFileSet } from '../../contexts/fileset-context';
 import { tabMeta, tabColorClasses } from '../../lib/tab-meta';
 import { RelatedBedsetsModal } from './related-bedsets-modal';
+import { useFileReport } from './file-report';
+import { defaultReportConfig, type ReportConfig } from './report-export';
 
 function formatNumber(n: number): string {
   return n.toLocaleString();
@@ -19,57 +21,6 @@ function formatBytes(bytes: number): string {
 
 function fileKey(f: File): string {
   return `${f.name}|${f.size}|${f.lastModified}`;
-}
-
-// --- Drop zone ---
-
-function DropZone({ onFiles, multiple, compact }: { onFiles: (files: File[]) => void; multiple?: boolean; compact?: boolean }) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isDragOver, setIsDragOver] = useState(false);
-
-  return (
-    <>
-      <button
-        onClick={() => fileInputRef.current?.click()}
-        onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
-        onDragLeave={() => setIsDragOver(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setIsDragOver(false);
-          const files = Array.from(e.dataTransfer.files);
-          if (files.length > 0) onFiles(files);
-        }}
-        className={`flex flex-col items-center justify-center w-full rounded-lg border-2 border-dashed transition-colors cursor-pointer gap-2 ${
-          compact ? 'h-20' : 'max-w-xl h-32'
-        } ${
-          isDragOver ? 'border-secondary bg-secondary/10' : 'border-secondary/30 bg-secondary/5 hover:bg-secondary/10 hover:border-secondary/50'
-        }`}
-      >
-        <div className="flex items-center gap-2">
-          {compact ? <Plus size={14} className="text-secondary" /> : <Upload size={16} className="text-secondary" />}
-          <span className={`font-medium text-base-content ${compact ? 'text-xs' : 'text-sm'}`}>
-            {compact ? 'Add more files' : `Drop BED file${multiple ? 's' : ''} here or click to browse`}
-          </span>
-        </div>
-        {!compact && (
-          <span className="text-xs text-base-content/40">.bed and .bed.gz files supported</span>
-        )}
-      </button>
-      <input
-        ref={fileInputRef}
-        type="file"
-        multiple={multiple}
-        accept=".bed,.gz"
-        className="hidden"
-        onChange={(e) => {
-          if (e.target.files && e.target.files.length > 0) {
-            onFiles(Array.from(e.target.files));
-          }
-          e.target.value = '';
-        }}
-      />
-    </>
-  );
 }
 
 // --- File list row ---
@@ -94,7 +45,7 @@ function FileRow({ file, isActive, onActivate, onRemove }: {
       <span className="text-[11px] text-base-content/30 shrink-0">{formatBytes(file.size)}</span>
       <button
         onClick={(e) => { e.stopPropagation(); onRemove(); }}
-        className="p-0.5 rounded hover:bg-base-300 transition-colors cursor-pointer shrink-0"
+        className="opacity-0 group-hover/row:opacity-100 transition-opacity cursor-pointer shrink-0"
       >
         <X size={10} className="text-base-content/30 hover:text-base-content/60" />
       </button>
@@ -166,11 +117,117 @@ function ActionCard({ action, onClickOverride }: { action: (typeof actions)[numb
   );
 }
 
+// --- Fetch BED from URL ---
+
+async function fetchBedFromUrl(input: string): Promise<File> {
+  const trimmed = input.trim();
+  // 32-char hex string → BEDbase ID shortcut
+  const url =
+    trimmed.length === 32 && !trimmed.startsWith('http')
+      ? `https://api.bedbase.org/v1/files/files/${trimmed[0]}/${trimmed[1]}/${trimmed}.bed.gz`
+      : trimmed;
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch: ${response.status} ${response.statusText}`);
+  }
+  const blob = await response.blob();
+  const fileName = url.split('/').pop()?.split('?')[0] || 'remote.bed';
+  return new File([blob], fileName, { type: blob.type || 'application/octet-stream' });
+}
+
+// --- Inline add files panel (drop zone + URL input) ---
+
+function AddFilesInline({ onFiles }: { onFiles: (files: File[]) => void }) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [url, setUrl] = useState('');
+  const [urlLoading, setUrlLoading] = useState(false);
+  const [urlError, setUrlError] = useState<string | null>(null);
+
+  async function handleUrlSubmit() {
+    if (!url.trim()) return;
+    setUrlLoading(true);
+    setUrlError(null);
+    try {
+      const file = await fetchBedFromUrl(url);
+      onFiles([file]);
+      setUrl('');
+    } catch (err) {
+      setUrlError(err instanceof Error ? err.message : 'Failed to fetch URL');
+    } finally {
+      setUrlLoading(false);
+    }
+  }
+
+  return (
+    <div className="mt-2">
+      {/* Drop zone (top) */}
+      <button
+        onClick={() => fileInputRef.current?.click()}
+        onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+        onDragLeave={() => setIsDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setIsDragOver(false);
+          const files = Array.from(e.dataTransfer.files);
+          if (files.length > 0) onFiles(files);
+        }}
+        className={`flex flex-col items-center justify-center w-full h-20 rounded-t-md border-[1.5px] border-dashed border-b-0 transition-colors cursor-pointer gap-1 ${
+          isDragOver ? 'border-secondary bg-secondary/10' : 'border-secondary/30 hover:bg-secondary/5 hover:border-secondary/50'
+        }`}
+      >
+        <Upload size={14} className="text-secondary" />
+        <span className="text-xs font-medium text-base-content/60">Drop files or click to browse</span>
+      </button>
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept=".bed,.gz"
+        className="hidden"
+        onChange={(e) => {
+          if (e.target.files && e.target.files.length > 0) onFiles(Array.from(e.target.files));
+          e.target.value = '';
+        }}
+      />
+
+      {/* URL input (bottom, attached) */}
+      <div className="flex items-center gap-1.5 border-[1.5px] border-solid border-secondary/30 rounded-b-md px-2.5 py-1.5">
+        <input
+          type="text"
+          value={url}
+          onChange={(e) => { setUrl(e.target.value); setUrlError(null); }}
+          onKeyDown={(e) => { if (e.key === 'Enter') handleUrlSubmit(); }}
+          placeholder="or paste a URL..."
+          disabled={urlLoading}
+          className="flex-1 bg-transparent outline-none text-xs text-base-content placeholder:text-base-content/30"
+        />
+        {url.trim() && (
+          <button
+            onClick={handleUrlSubmit}
+            disabled={urlLoading || !url.trim()}
+            className="text-secondary hover:text-secondary/80 disabled:opacity-40 cursor-pointer"
+          >
+            {urlLoading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+          </button>
+        )}
+      </div>
+      {urlError && <p className="text-xs text-error mt-1 px-1">{urlError}</p>}
+    </div>
+  );
+}
+
 // --- Empty state ---
 
 function FileEmpty() {
   const { setBedFile } = useFile();
   const { addFiles, setActiveIndex } = useUploadedFiles();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [url, setUrl] = useState('');
+  const [urlLoading, setUrlLoading] = useState(false);
+  const [urlError, setUrlError] = useState<string | null>(null);
 
   function handleFiles(files: File[]) {
     addFiles(files);
@@ -184,6 +241,21 @@ function FileEmpty() {
     }
   }
 
+  async function handleUrlSubmit() {
+    if (!url.trim()) return;
+    setUrlLoading(true);
+    setUrlError(null);
+    try {
+      const file = await fetchBedFromUrl(url);
+      handleFiles([file]);
+      setUrl('');
+    } catch (err) {
+      setUrlError(err instanceof Error ? err.message : 'Failed to fetch URL');
+    } finally {
+      setUrlLoading(false);
+    }
+  }
+
   return (
     <div className="flex-1 overflow-auto">
       <div className="flex flex-col items-center px-4 md:px-6 pt-12 pb-10">
@@ -191,7 +263,73 @@ function FileEmpty() {
         <p className="text-base-content/50 text-sm max-w-md text-center mb-8">
           Analyze, search for similar files, compare multiple files, or view in the embedding space.
         </p>
-        <DropZone onFiles={handleFiles} multiple />
+
+        <div className="w-full max-w-xl">
+          {/* Drop zone (top) */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+            onDragLeave={() => setIsDragOver(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setIsDragOver(false);
+              handleFiles(Array.from(e.dataTransfer.files));
+            }}
+            className={`flex flex-col items-center justify-center w-full h-32 rounded-t-lg border-[1.5px] border-dashed border-b-0 transition-colors cursor-pointer gap-2 ${
+              isDragOver ? 'border-secondary bg-secondary/10' : 'border-secondary/30 bg-secondary/5 hover:bg-secondary/10 hover:border-secondary/50'
+            }`}
+          >
+            <Upload size={16} className="text-secondary" />
+            <span className="text-sm font-medium text-base-content">Drop BED files here or click to browse</span>
+            <span className="text-xs text-base-content/40">.bed and .bed.gz files supported</span>
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept=".bed,.gz"
+            className="hidden"
+            onChange={(e) => {
+              if (e.target.files && e.target.files.length > 0) handleFiles(Array.from(e.target.files));
+              e.target.value = '';
+            }}
+          />
+
+          {/* URL input (bottom, attached) */}
+          <div className="flex items-center gap-2 border-[1.5px] border-solid border-secondary/30 rounded-b-lg px-3 py-2.5">
+            <input
+              type="text"
+              value={url}
+              onChange={(e) => { setUrl(e.target.value); setUrlError(null); }}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleUrlSubmit(); }}
+              placeholder="Paste a URL to a BED file..."
+              disabled={urlLoading}
+              className="flex-1 bg-transparent outline-none text-sm text-base-content placeholder:text-base-content/40"
+            />
+            <button
+              onClick={handleUrlSubmit}
+              disabled={urlLoading || !url.trim()}
+              className="btn btn-secondary btn-sm disabled:opacity-40"
+            >
+              {urlLoading ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+            </button>
+          </div>
+
+          {urlError && <p className="text-xs text-error mt-1.5 px-1">{urlError}</p>}
+          <p className="text-xs text-base-content/30 mt-1.5 px-1">
+            Paste a direct link to a .bed or .bed.gz file.{' '}
+            Try:{' '}
+            <button
+              onClick={() => {
+                setUrl('https://api.bedbase.org/v1/files/files/d/c/dcc005e8761ad5599545cc538f6a2a4d.bed.gz');
+                setUrlError(null);
+              }}
+              className="text-secondary/60 hover:text-secondary hover:underline cursor-pointer"
+            >
+              example BED file
+            </button>
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -201,12 +339,20 @@ function FileEmpty() {
 
 export function FilePage() {
   const { bedFile, setBedFile } = useFile();
-  const { regionSet, parsing, parseProgress, parseError, parseTime } = useFile();
+  const { regionSet, parsing, parseProgress, parseError, parseTime, analysis, analyzing } = useFile();
   const { files, addFiles, removeFile, setActiveIndex, clearAll } = useUploadedFiles();
   const { setFiles: setCompareFiles } = useFileSet();
   const { openTab } = useTab();
   const [showRelatedSets, setShowRelatedSets] = useState(false);
-  const addInputRef = useRef<HTMLInputElement>(null);
+  const [showAddFiles, setShowAddFiles] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [reportConfig, setReportConfig] = useState<ReportConfig>({ ...defaultReportConfig });
+  const { handleOpenReport, handleDownload, ready: reportReady } = useFileReport();
+
+  async function onDownload() {
+    setDownloading(true);
+    try { await handleDownload(reportConfig); } finally { setDownloading(false); }
+  }
 
   if (files.length === 0) return <FileEmpty />;
 
@@ -260,7 +406,7 @@ export function FilePage() {
     <div className="flex-1 overflow-auto flex flex-col">
       <div className="px-4 md:px-6 pt-10 pb-10">
         <div className="mx-auto">
-          <div className="grid gap-6 grid-cols-[minmax(180px,300px)_1fr]">
+          <div className="grid gap-6 grid-cols-[minmax(220px,350px)_1fr]">
 
             {/* Left column: file list */}
             <div className="border border-base-300 rounded-lg p-3 self-start">
@@ -292,23 +438,16 @@ export function FilePage() {
 
               {/* Add more */}
               <button
-                onClick={() => addInputRef.current?.click()}
-                className="flex items-center gap-1.5 mt-2 px-3 py-1.5 w-full rounded-md text-xs text-secondary/70 hover:text-secondary hover:bg-secondary/5 transition-colors cursor-pointer"
+                onClick={() => setShowAddFiles(!showAddFiles)}
+                className={`flex items-center gap-1.5 mt-2 px-3 py-1.5 w-full rounded-md text-xs transition-colors cursor-pointer ${
+                  showAddFiles ? 'text-secondary bg-secondary/5' : 'text-secondary/70 hover:text-secondary hover:bg-secondary/5'
+                }`}
               >
-                <Plus size={12} />
+                <Plus size={12} className={`transition-transform ${showAddFiles ? 'rotate-45' : ''}`} />
                 <span>Add files</span>
               </button>
-              <input
-                ref={addInputRef}
-                type="file"
-                multiple
-                accept=".bed,.gz"
-                className="hidden"
-                onChange={(e) => {
-                  if (e.target.files && e.target.files.length > 0) handleAddFiles(Array.from(e.target.files));
-                  e.target.value = '';
-                }}
-              />
+
+              {showAddFiles && <AddFilesInline onFiles={handleAddFiles} />}
 
               {/* Compare action */}
               {isMulti && (
@@ -327,7 +466,10 @@ export function FilePage() {
               <div>
                 {/* File name + stats */}
                 <div className="mb-6">
-                  <h2 className="text-lg font-semibold text-base-content truncate">{bedFile.name}</h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-semibold text-base-content truncate">{bedFile.name}</h2>
+                    <span className="text-[10px] font-medium uppercase tracking-wide text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">Active</span>
+                  </div>
                   <p className="text-xs text-base-content/40 mt-0.5">
                     {formatBytes(bedFile.size)}
                     {!parsing && parseTime != null && ` · parsed in ${parseTime.toFixed(0)} ms`}
@@ -377,6 +519,61 @@ export function FilePage() {
                       onClickOverride={action.id === 'collections' ? () => setShowRelatedSets(true) : undefined}
                     />
                   ))}
+
+
+                  {/* Report card */}
+                  <div className={`col-span-2 border border-base-300 rounded-lg p-3 space-y-3 ${parsing || analyzing || !reportReady ? 'opacity-40 pointer-events-none' : ''}`}>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <FileBarChart size={16} className="text-primary" />
+                        <h3 className="text-sm font-semibold text-base-content">Export report</h3>
+                      </div>
+                      <p className="text-xs text-base-content/50 mt-0.5 ml-6">Generate a printable report or download plots and data.</p>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      {([
+                        ['summary', 'Summary stats', 'Regions, widths, nucleotides, format'],
+                        ['plots', 'Distribution plots', 'Chromosome counts, widths, neighbor distances'],
+                        ['refPlots', 'Reference plots', 'TSS distance, genomic partitions, enrichment'],
+                        ['umap', 'UMAP embedding', 'Static scatter colored by assay category'],
+                        ['chromosomeStats', 'Chromosome table', 'Per-chromosome region statistics'],
+                      ] as const).map(([key, label, desc]) => (
+                        <label key={key} className="flex items-start gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={reportConfig[key]}
+                            onChange={(e) => setReportConfig((prev) => ({ ...prev, [key]: e.target.checked }))}
+                            className="checkbox checkbox-xs checkbox-primary mt-[10px]"
+                          />
+                          <div>
+                            <span className="text-xs font-medium text-base-content">{label}</span>
+                            <p className="text-[11px] text-base-content/40 leading-tight">{desc}</p>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        onClick={() => handleOpenReport(reportConfig)}
+                        className="btn btn-sm btn-primary gap-1.5"
+                      >
+                        <FileBarChart size={14} />
+                        Open report
+                      </button>
+                      <button
+                        onClick={onDownload}
+                        disabled={downloading}
+                        className="btn btn-sm btn-ghost gap-1.5"
+                      >
+                        {downloading
+                          ? <Loader2 size={14} className="animate-spin" />
+                          : <Download size={14} />}
+                        Download SVGs + CSVs
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -394,6 +591,7 @@ export function FilePage() {
           onClose={() => setShowRelatedSets(false)}
         />
       )}
+
     </div>
   );
 }

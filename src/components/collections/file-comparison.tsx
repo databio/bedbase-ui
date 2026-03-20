@@ -1,5 +1,5 @@
 import { useReducer, useEffect, useRef, useCallback, useMemo, useState } from 'react';
-import { AlertTriangle, Plus, GitCompareArrows, ArrowRight } from 'lucide-react';
+import { AlertTriangle, GitCompareArrows, ArrowRight } from 'lucide-react';
 import { Breadcrumb } from '../shared/breadcrumb';
 import { toast } from 'sonner';
 import { RegionSet, type ChromosomeStatistics } from '@databio/gtars';
@@ -148,7 +148,7 @@ function formatBp(bp: number): string {
 
 export function FileComparison() {
   const { openTab } = useTab();
-  const { files: contextFiles, clearFiles, cached, setCached, clearCached } = useFileSet();
+  const { files: contextFiles, clearFiles, cached, setCached } = useFileSet();
   const { setBedFile } = useFile();
   const { files: uploadedFiles, addFiles: addToUploaded, setActiveIndex } = useUploadedFiles();
   const { api } = useApi();
@@ -156,7 +156,6 @@ export function FileComparison() {
   const regionSetsRef = useRef<RegionSet[]>([]);
   const chromSizesRef = useRef<Record<string, number>>({});
   const parsedFilesRef = useRef<Map<string, File>>(new Map());
-  const inputRef = useRef<HTMLInputElement>(null);
   const cancelledRef = useRef(false);
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [genomeResults, setGenomeResults] = useState<PerFileGenomeResult[]>([]);
@@ -393,36 +392,6 @@ export function FileComparison() {
     }
   }, [state.phase, state.result, state.fileNames, setCached, genomeResults, majorityGenome, genomeDefaulted]);
 
-  function handleFileDrop(rawFiles: File[]) {
-    const files = rawFiles.filter((f) => {
-      const name = f.name.toLowerCase();
-      return name.endsWith('.bed') || name.endsWith('.bed.gz');
-    });
-    if (files.length < 2) {
-      const hasNonBedGz = rawFiles.some((f) => {
-        const name = f.name.toLowerCase();
-        return name.endsWith('.gz') && !name.endsWith('.bed.gz');
-      });
-      toast.warning(
-        hasNonBedGz
-          ? 'Only .bed and .bed.gz files are supported.'
-          : files.length === 0 ? 'No BED files found.' : 'Drop at least 2 BED files to compare.',
-      );
-      return;
-    }
-    if (files.length > MAX_FILES) {
-      toast.warning(`Too many files (${files.length}). Maximum is ${MAX_FILES}.`);
-      return;
-    }
-    // Free previous
-    for (const rs of regionSetsRef.current) {
-      try { (rs as unknown as { free?: () => void }).free?.(); } catch { /* */ }
-    }
-    regionSetsRef.current = [];
-    clearCached();
-    startPipeline(files);
-  }
-
   // --- Consensus plots (independent of file selection) ---
   const consensusPlots = useMemo<PlotSlot[]>(() => {
     if (state.phase !== 'done' || !state.result) return [];
@@ -574,13 +543,6 @@ export function FileComparison() {
                 <><span className="shrink-0 hidden @md:inline">·</span><span className="shrink-0 hidden @md:inline">{formatNumber(state.result.intersectionStats.regions)} shared</span></>
               )}
             </div>
-            <button
-              onClick={() => inputRef.current?.click()}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-success/70 hover:text-success bg-success/10 hover:bg-success/15 px-2.5 py-1.5 rounded-md transition-colors cursor-pointer shrink-0"
-            >
-              <Plus size={13} />
-              <span className="hidden @xs:inline">New Comparison</span>
-            </button>
           </div>
 
           {/* Per-file breakdown table */}
@@ -776,20 +738,6 @@ export function FileComparison() {
         </div>
       )}
 
-      {/* Hidden file input */}
-      <input
-        ref={inputRef}
-        type="file"
-        multiple
-        accept=".bed,.gz"
-        className="hidden"
-        onChange={(e) => {
-          const fileList = e.target.files;
-          if (!fileList || fileList.length === 0) return;
-          handleFileDrop(Array.from(fileList));
-          e.target.value = '';
-        }}
-      />
     </div>
   );
 }
