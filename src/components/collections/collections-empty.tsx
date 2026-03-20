@@ -1,11 +1,9 @@
-import { useRef } from 'react';
-import { Layers, ChevronRight, FolderOpen, GitCompareArrows, Trash2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { Layers, ChevronRight, FolderOpen, GitCompareArrows } from 'lucide-react';
 import { useTab } from '../../contexts/tab-context';
 import { useBucket } from '../../contexts/bucket-context';
 import { useFileSet } from '../../contexts/fileset-context';
+import { useUploadedFiles } from '../../contexts/uploaded-files-context';
 import { useBedsetList } from '../../queries/use-bedset-list';
-import { MAX_FILES } from './file-comparison';
 
 function formatNumber(n: number): string {
   return n.toLocaleString();
@@ -14,33 +12,10 @@ function formatNumber(n: number): string {
 export function CollectionsEmpty() {
   const { openTab } = useTab();
   const { bucketCount } = useBucket();
-  const { setFiles, cached, clearCached } = useFileSet();
+  const { cached, clearCached } = useFileSet();
+  const { files: uploadedFiles } = useUploadedFiles();
+  const { setFiles: setCompareFiles } = useFileSet();
   const { data: sampleBedsets } = useBedsetList({ limit: 3 });
-  const compareInputRef = useRef<HTMLInputElement>(null);
-
-  function handleCompareFiles(fileList: FileList | File[]) {
-    const all = Array.from(fileList);
-    const files = all.filter((f) => {
-      const name = f.name.toLowerCase();
-      return name.endsWith('.bed') || name.endsWith('.bed.gz');
-    });
-    if (files.length < 2) {
-      const hasNonBedGz = all.some((f) => {
-        const name = f.name.toLowerCase();
-        return name.endsWith('.gz') && !name.endsWith('.bed.gz');
-      });
-      toast.warning(
-        hasNonBedGz
-          ? 'Only .bed and .bed.gz files are supported.'
-          : files.length === 0 ? 'No BED files found.' : 'Drop at least 2 BED files to compare.',
-      );
-    } else if (files.length > MAX_FILES) {
-      toast.warning(`Too many files (${files.length}). Maximum is ${MAX_FILES}.`);
-    } else {
-      setFiles(files);
-      openTab('collections', 'files');
-    }
-  }
 
   return (
     <div className="flex-1 overflow-auto">
@@ -48,8 +23,9 @@ export function CollectionsEmpty() {
         <div className="max-w-3xl mx-auto">
           <h2 className="text-2xl font-bold text-base-content mb-1 text-center">Collections</h2>
           <p className="text-base-content/50 text-sm max-w-md mx-auto text-center mb-8">
-            Browse BEDset collections, manage your saved UMAP selections, and compare your own files.
+            Browse BEDset collections and manage your saved UMAP selections.
             Search for BEDsets in the <button onClick={() => openTab('search')} className="text-primary hover:underline cursor-pointer">Search</button> tab.
+            Upload files in the <button onClick={() => openTab('file')} className="text-primary hover:underline cursor-pointer">Upload</button> tab.
           </p>
 
           {/* Sample bedsets */}
@@ -95,77 +71,51 @@ export function CollectionsEmpty() {
                 <span className="text-base-content/40 ml-1">({bucketCount})</span>
               )}
             </span>
-            <ChevronRight size={14} className="text-base-content/30" />
+            <ChevronRight size={14} className="text-base-content/30 shrink-0" />
           </button>
 
-          {/* Compare Files */}
-          <h3 className="text-sm font-semibold text-base-content mb-4 mt-10 text-center">Compare your own files:</h3>
-          {cached ? (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => openTab('collections', 'files')}
-                className="flex items-center gap-3 flex-1 px-4 py-3 rounded-lg border border-success/30 bg-success/5 hover:bg-success/10 hover:border-success/50 transition-colors cursor-pointer min-w-0"
-              >
-                <div className="p-1.5 rounded-md bg-success/10">
-                  <GitCompareArrows size={14} className="text-success" />
-                </div>
-                <div className="flex-1 text-left min-w-0">
-                  <p className="text-sm font-medium text-base-content">
-                    {cached.fileNames.length} files compared
-                  </p>
-                  <p className="text-xs text-base-content/40">
-                    {formatNumber(cached.result.fileStats.reduce((s, f) => s + f.regions, 0))} total regions
-                  </p>
-                </div>
-                <ChevronRight size={14} className="text-base-content/30 shrink-0" />
-              </button>
-              <button
-                onClick={() => clearCached()}
-                className="p-2 rounded-md text-error/40 hover:text-error hover:bg-error/10 transition-colors cursor-pointer shrink-0"
-                title="Clear comparison"
-              >
-                <Trash2 size={14} />
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => compareInputRef.current?.click()}
-              onDragOver={(e) => {
-                e.preventDefault();
-                e.currentTarget.classList.add('border-success', 'bg-success/10');
-              }}
-              onDragLeave={(e) => {
-                e.currentTarget.classList.remove('border-success', 'bg-success/10');
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                e.currentTarget.classList.remove('border-success', 'bg-success/10');
-                if (e.dataTransfer.files.length > 0) handleCompareFiles(e.dataTransfer.files);
-              }}
-              className="flex flex-col items-center justify-center w-full h-32 rounded-lg border-2 border-dashed border-success/30 bg-success/5 hover:bg-success/10 hover:border-success/50 transition-colors cursor-pointer gap-2"
-            >
-              <div className="flex items-center gap-2">
-                <GitCompareArrows size={16} className="text-success" />
-                <span className="text-sm font-medium text-base-content">Drop BED files here to compare</span>
-              </div>
-              <span className="text-xs text-base-content/40">Run Jaccard similarity, consensus regions, and set operations on up to {MAX_FILES} of your own files</span>
-            </button>
+          {/* Uploaded files comparison prompt or cached result */}
+          {(cached || uploadedFiles.length >= 2) && (
+            <>
+              <h3 className="text-sm font-semibold text-base-content mb-4 mt-10 text-center">File comparison:</h3>
+              {cached ? (
+                <button
+                  onClick={() => openTab('collections', 'files')}
+                  className="flex items-center gap-3 w-full px-4 py-3 rounded-lg border border-success/30 bg-success/5 hover:bg-success/10 hover:border-success/50 transition-colors cursor-pointer"
+                >
+                  <div className="p-1.5 rounded-md bg-success/10">
+                    <GitCompareArrows size={14} className="text-success" />
+                  </div>
+                  <div className="flex-1 text-left min-w-0">
+                    <p className="text-sm font-medium text-base-content">
+                      {cached.fileNames.length} files compared
+                    </p>
+                    <p className="text-xs text-base-content/40">
+                      {formatNumber(cached.result.fileStats.reduce((s, f) => s + f.regions, 0))} total regions
+                    </p>
+                  </div>
+                  <ChevronRight size={14} className="text-base-content/30 shrink-0" />
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    setCompareFiles(uploadedFiles);
+                    openTab('collections', 'files');
+                  }}
+                  className="flex items-center gap-3 w-full px-4 py-3 rounded-lg border border-success/30 bg-success/5 hover:bg-success/10 hover:border-success/50 transition-colors cursor-pointer"
+                >
+                  <GitCompareArrows size={16} className="text-success shrink-0" />
+                  <div className="flex-1 text-left min-w-0">
+                    <p className="text-sm font-medium text-base-content">Compare {uploadedFiles.length} uploaded files</p>
+                    <p className="text-xs text-base-content/40">Run Jaccard similarity, consensus regions, and set operations</p>
+                  </div>
+                  <ChevronRight size={14} className="text-base-content/30 shrink-0" />
+                </button>
+              )}
+            </>
           )}
-
         </div>
       </div>
-
-      <input
-        ref={compareInputRef}
-        type="file"
-        multiple
-        accept=".bed,.gz"
-        className="hidden"
-        onChange={(e) => {
-          if (e.target.files && e.target.files.length > 0) handleCompareFiles(e.target.files);
-          e.target.value = '';
-        }}
-      />
     </div>
   );
 }

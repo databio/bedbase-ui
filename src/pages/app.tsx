@@ -1,6 +1,8 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TabProvider } from '../contexts/tab-context';
 import { FileProvider } from '../contexts/file-context';
+import { FileSetProvider } from '../contexts/fileset-context';
+import { UploadedFilesProvider } from '../contexts/uploaded-files-context';
 import { ApiProvider } from '../contexts/api-context';
 import { CartProvider } from '../contexts/cart-context';
 import { MosaicCoordinatorProvider } from '../contexts/mosaic-coordinator-context';
@@ -25,14 +27,18 @@ export function App() {
       <QueryClientProvider client={queryClient}>
         <CartProvider>
           <FileProvider>
-            <MosaicCoordinatorProvider>
-              <BucketProvider>
-                <TabProvider>
+            <UploadedFilesProvider>
+              <FileSetProvider>
+                <MosaicCoordinatorProvider>
+                  <BucketProvider>
+                    <TabProvider>
                   <AppLayout />
                   <Toaster position="top-center" />
-                </TabProvider>
-              </BucketProvider>
-            </MosaicCoordinatorProvider>
+                    </TabProvider>
+                  </BucketProvider>
+                </MosaicCoordinatorProvider>
+              </FileSetProvider>
+            </UploadedFilesProvider>
           </FileProvider>
         </CartProvider>
       </QueryClientProvider>

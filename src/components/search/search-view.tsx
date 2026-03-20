@@ -557,6 +557,7 @@ function BedsetSearchResults({ query }: { query: string }) {
 export function SearchView({ param }: { param?: string }) {
   if (!param) return <SearchEmpty />;
   if (param === 'file') return <BedSearchResults />;
+  if (param === BEDSET_PREFIX) return <SearchEmpty initialMode="bedset" />;
   if (param.startsWith(BEDSET_PREFIX)) return <BedsetSearchResults query={param.slice(BEDSET_PREFIX.length)} />;
   return <TextSearchResults query={param} />;
 }

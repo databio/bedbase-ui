@@ -6,6 +6,7 @@ import { RegionSet, type ChromosomeStatistics } from '@databio/gtars';
 import { useTab } from '../../contexts/tab-context';
 import { useFileSet } from '../../contexts/fileset-context';
 import { useFile } from '../../contexts/file-context';
+import { useUploadedFiles } from '../../contexts/uploaded-files-context';
 import { useApi } from '../../contexts/api-context';
 import { parseBedFile, type BedEntry } from '../../lib/bed-parser';
 import {
@@ -149,6 +150,7 @@ export function FileComparison() {
   const { openTab } = useTab();
   const { files: contextFiles, clearFiles, cached, setCached, clearCached } = useFileSet();
   const { setBedFile } = useFile();
+  const { files: uploadedFiles, addFiles: addToUploaded, setActiveIndex } = useUploadedFiles();
   const { api } = useApi();
   const [state, dispatch] = useReducer(reducer, initialState);
   const regionSetsRef = useRef<RegionSet[]>([]);
@@ -699,7 +701,12 @@ export function FileComparison() {
                               onClick={() => {
                                 const file = parsedFilesRef.current.get(f.fileName);
                                 if (file) {
+                                  addToUploaded([file]);
+                                  const uploadIdx = uploadedFiles.findIndex((u) =>
+                                    u.name === file.name && u.size === file.size && u.lastModified === file.lastModified
+                                  );
                                   setBedFile(file);
+                                  setActiveIndex(uploadIdx >= 0 ? uploadIdx : uploadedFiles.length);
                                   openTab('analysis', 'file');
                                 }
                               }}

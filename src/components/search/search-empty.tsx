@@ -10,9 +10,9 @@ function formatBytes(bytes: number): string {
   return `${(bytes / 1024).toFixed(1)} KB`;
 }
 
-export function SearchEmpty() {
+export function SearchEmpty({ initialMode = 'bed' }: { initialMode?: 'bed' | 'bedset' } = {}) {
   const [query, setQuery] = useState('');
-  const [searchMode, setSearchMode] = useState<'bed' | 'bedset'>('bed');
+  const [searchMode, setSearchMode] = useState<'bed' | 'bedset'>(initialMode);
   const inputRef = useRef<HTMLInputElement>(null);
   const { bedFile } = useFile();
   const { openTab } = useTab();
@@ -30,7 +30,7 @@ export function SearchEmpty() {
       <h2 className="text-2xl font-bold text-base-content mb-1">Search BEDbase</h2>
       <p className="text-base-content/50 text-sm max-w-md mx-auto text-center mb-8">
         {searchMode === 'bed'
-          ? 'Search by text query to find BED files by metadata.'
+          ? <>Search by text query to find BED files, or upload your own in the <button onClick={() => openTab('file')} className="text-primary hover:underline cursor-pointer">Upload</button> tab to search by similarity.</>
           : 'Search for curated BEDset collections.'}
       </p>
 
@@ -49,7 +49,12 @@ export function SearchEmpty() {
           />
           <button
             type="button"
-            onClick={() => { setSearchMode(searchMode === 'bed' ? 'bedset' : 'bed'); inputRef.current?.focus(); }}
+            onClick={() => {
+              const next = searchMode === 'bed' ? 'bedset' : 'bed';
+              setSearchMode(next);
+              openTab('search', next === 'bedset' ? 'bedset:' : '');
+              inputRef.current?.focus();
+            }}
             className="text-xs text-base-content/40 hover:text-base-content/60 transition-colors cursor-pointer shrink-0 select-none"
           >
             {searchMode === 'bed' ? 'BED Search' : 'BEDset Search'}

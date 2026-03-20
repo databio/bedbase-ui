@@ -12,7 +12,7 @@ export const tabMeta: Record<TabId, TabMeta> = {
   file: {
     label: 'Upload',
     icon: Upload,
-    description: 'Upload a BED file to analyze, search, or explore.',
+    description: 'Upload and manage BED files. Analyze, search, compare, or explore.',
     color: 'secondary',
   },
   search: {

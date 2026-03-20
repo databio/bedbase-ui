@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Search, Upload, FileText, X, Forward } from 'lucide-react';
 import { toast } from 'sonner';
 import { useFile } from '../../contexts/file-context';
+import { useUploadedFiles } from '../../contexts/uploaded-files-context';
 import { useTab } from '../../contexts/tab-context';
 import { EXAMPLE_QUERIES, EXAMPLE_BEDSET_QUERIES } from '../../lib/const';
 import { useStats } from '../../queries/use-stats';
@@ -192,11 +193,14 @@ const aboutFeatures: AboutFeature[] = [
 
 export function Hub() {
   const { setBedFile } = useFile();
+  const { addFiles, setActiveIndex } = useUploadedFiles();
   const { openTab } = useTab();
   const { data: stats, isLoading: statsLoading } = useStats();
 
   function handleFileSelect(file: File) {
+    addFiles([file]);
     setBedFile(file);
+    setActiveIndex(0);
     openTab('file');
   }
 

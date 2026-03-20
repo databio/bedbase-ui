@@ -28,8 +28,13 @@ function pathToActiveTab(pathname: string, search: string): ActiveTab | null {
     // 'file' stays as a path segment: /search/file
     const match = pathname.match(/^\/search\/(.+)/);
     if (match?.[1]) return { id: 'search', param: decodeURIComponent(match[1]) };
-    // Text queries use ?q= param
-    const q = new URLSearchParams(search).get('q');
+    // Text queries use ?q= param, bedset mode uses &type=bedset
+    const sp = new URLSearchParams(search);
+    const q = sp.get('q');
+    const type = sp.get('type');
+    if (type === 'bedset') {
+      return { id: 'search', param: q ? 'bedset:' + q : 'bedset:' };
+    }
     return { id: 'search', param: q || undefined };
   }
   if (pathname.startsWith('/analysis')) {
@@ -80,9 +85,15 @@ function buildUrl(primary: ActiveTab, split?: ActiveTab | null): string {
   const path = tabToPath(primary);
   const params = new URLSearchParams();
 
-  // Search text queries go in ?q=
+  // Search: split bedset: prefix into ?type=bedset&q=
   if (primary.id === 'search' && primary.param && primary.param !== 'file') {
-    params.set('q', primary.param);
+    if (primary.param.startsWith('bedset:')) {
+      params.set('type', 'bedset');
+      const q = primary.param.slice(7);
+      if (q) params.set('q', q);
+    } else {
+      params.set('q', primary.param);
+    }
   }
 
   // UMAP bed ID goes in ?bed= regardless of which panel it's in
