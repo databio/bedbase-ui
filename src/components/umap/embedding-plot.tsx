@@ -5,7 +5,7 @@ import * as vg from '@uwdata/vgplot';
 import { tableau20 } from '../../lib/tableau20';
 import { isIn } from '@uwdata/mosaic-sql';
 import { umapSelectParams, pointInPolygonPredicate, boundingRect, type UmapPoint } from '../../lib/umap-utils';
-import { AtlasTooltip } from './atlas-tooltip';
+import { AtlasTooltip, tooltipGate } from './atlas-tooltip';
 import { useMosaicCoordinator } from '../../contexts/mosaic-coordinator-context';
 import { useTab } from '../../contexts/tab-context';
 
@@ -114,6 +114,10 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
     }
     return merged;
   }, [persistentPoints, interactivePoints, highlightPoints, isRangeInteraction, highlightRangeSelection]);
+
+  // Suppress hover tooltips when nothing is selected
+  tooltipGate.enabled = visualSelection.length > 0;
+
 
   const centerOnPoint = (point: any, scale = 0.2, tooltip = true) => {
     if (tooltip) {
@@ -455,6 +459,7 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
           viewportState={viewportState}
           onViewportState={setViewportState}
           tooltip={tooltipPoint}
+          onTooltip={setTooltipPoint}
           customTooltip={{
             class: AtlasTooltip,
             props: {

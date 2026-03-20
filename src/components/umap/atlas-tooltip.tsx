@@ -1,5 +1,8 @@
 import { createRoot, type Root } from 'react-dom/client';
 
+/** Shared ref set by EmbeddingPlot to control whether hover tooltips are shown */
+export const tooltipGate = { enabled: false };
+
 interface TooltipProps {
   tooltip?: {
     text: string;
@@ -29,7 +32,7 @@ function TooltipContent({
   simpleTooltip?: boolean;
   onNavigate?: (id: string) => void;
 }) {
-  if (!tooltip) return null;
+  if (!tooltip || !tooltipGate.enabled) return null;
   return (
     <div
       className="border border-base-300 rounded-lg text-xs overflow-hidden"
@@ -97,12 +100,14 @@ function TooltipContent({
 
 export class AtlasTooltip {
   private root: Root;
+  private target: HTMLElement;
   private showLink: boolean;
   private simpleTooltip: boolean;
   private onNavigate?: (id: string) => void;
 
   constructor(target: HTMLElement, props: TooltipProps) {
     this.root = createRoot(target);
+    this.target = target;
     this.showLink = props.showLink || false;
     this.simpleTooltip = props.simpleTooltip || false;
     this.onNavigate = props.onNavigate;
@@ -110,6 +115,12 @@ export class AtlasTooltip {
   }
 
   update(props: TooltipProps) {
+    // Hide the library's container when tooltips are suppressed
+    if (!tooltipGate.enabled) {
+      this.target.style.display = 'none';
+    } else {
+      this.target.style.display = '';
+    }
     this.root.render(
       <TooltipContent
         tooltip={props.tooltip}
