@@ -36,6 +36,9 @@ function SearchInput({ onFileSelect }: { onFileSelect: (f: File) => void }) {
       toast.warning('Only .bed and .bed.gz files are supported.');
       return;
     }
+    if (f.size > 250 * 1024 * 1024) {
+      toast.warning(`Large file (${formatBytes(f.size)}). Parsing may be slow in the browser.`);
+    }
     onFileSelect(f);
   }
 
@@ -137,7 +140,7 @@ function SearchInput({ onFileSelect }: { onFileSelect: (f: File) => void }) {
         {(searchMode === 'bed' ? EXAMPLE_QUERIES : EXAMPLE_BEDSET_QUERIES).map((term) => (
           <button
             key={term}
-            onClick={() => { setQuery(term); searchInputRef.current?.focus(); }}
+            onClick={() => { openTab('search', searchMode === 'bed' ? term : 'bedset:' + term); }}
             className="text-xs px-2.5 py-1 rounded-full border border-base-300 text-base-content/50 hover:text-base-content hover:border-base-content/30 transition-colors cursor-pointer"
           >
             {term}

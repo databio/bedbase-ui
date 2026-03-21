@@ -1,5 +1,5 @@
 import { EmbeddingViewMosaic } from 'embedding-atlas/react';
-import { useEffect, useState, useRef, useMemo, forwardRef, useImperativeHandle } from 'react';
+import { useEffect, useLayoutEffect, useState, useRef, useMemo, forwardRef, useImperativeHandle } from 'react';
 import * as vg from '@uwdata/vgplot';
 
 import { tableau20 } from '../../lib/tableau20';
@@ -116,8 +116,9 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
   }, [persistentPoints, interactivePoints, highlightPoints, isRangeInteraction, highlightRangeSelection]);
 
   // Suppress hover tooltips when nothing is selected
-  tooltipGate.enabled = visualSelection.length > 0;
-
+  useLayoutEffect(() => {
+    tooltipGate.enabled = visualSelection.length > 0;
+  }, [visualSelection.length]);
 
   const centerOnPoint = (point: any, scale = 0.2, tooltip = true) => {
     if (tooltip) {

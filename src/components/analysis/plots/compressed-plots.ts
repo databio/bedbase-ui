@@ -268,6 +268,7 @@ export function compressedNeighborDistanceSlot(kde: CompressedKde): PlotSlot | n
         x: { label: null, tickSize: 0 },
         y: { label: null, tickSize: 0 },
         marks: [
+          Plot.ruleY([0]),
           Plot.lineY(points, { x: 'x', y: 'density', stroke: 'teal', strokeWidth: 1.5 }),
         ],
       }),
@@ -420,8 +421,7 @@ export function compressedOpenSignalSlot(
     return Plot.plot({
       width,
       height,
-      marginLeft: 0,
-      marginBottom: 0,
+      margin: 4,
       y: { domain: conditionOrder, axis: null },
       x: { axis: null },
       marks: [
@@ -432,6 +432,8 @@ export function compressedOpenSignalSlot(
           x2: 'upper_whisker',
           stroke: '#999',
           strokeWidth: 0.5,
+          insetTop: 0.2,
+          insetBottom: 0.2,
         }),
         // Hinge boxes
         Plot.rect(sorted, {
@@ -441,6 +443,8 @@ export function compressedOpenSignalSlot(
           fill: 'teal',
           fillOpacity: 0.6,
           ry: 1,
+          insetTop: 0.2,
+          insetBottom: 0.2,
         }),
         // Median ticks
         Plot.tickX(sorted, {

@@ -39,15 +39,16 @@ export function chromosomeBarSlot(rows: ChromosomeRow[]): PlotSlot | null {
   const marginLeft = estimateMargin(chrOrder);
 
   function renderThumbnail(width: number, height: number): Element {
+    const barHeight = (height - 8) / chrOrder.length;
+    const rx = barHeight > 6 ? 2 : barHeight > 3 ? 1 : 0;
     return Plot.plot({
       width,
       height,
-      marginLeft: 0,
-      marginBottom: 0,
+      margin: 4,
       y: { domain: chrOrder, axis: null },
       x: { axis: null },
       marks: [
-        Plot.barX(data, { y: 'chr', x: 'count', fill: 'teal', rx2: 2 }),
+        Plot.barX(data, { y: 'chr', x: 'count', fill: 'teal', rx2: rx, insetTop: 0.2, insetBottom: 0.2 }),
       ],
     });
   }

@@ -43,8 +43,7 @@ export function regionDistributionSlot(data: DistributionPoint[]): PlotSlot | nu
     return Plot.plot({
       width,
       height,
-      marginLeft: 0,
-      marginBottom: 0,
+      margin: 4,
       x: { domain: [0, REGION_DIST_BINS], axis: null },
       y: { axis: null },
       fy: { domain: chrOrder, axis: null, padding: 0 },

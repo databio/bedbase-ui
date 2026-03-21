@@ -218,6 +218,7 @@ export function bedsetNeighborDistSlot(kde: BedSetKde): PlotSlot | null {
         x: { label: null, tickSize: 0 },
         y: { label: null, tickSize: 0 },
         marks: [
+          Plot.ruleY([0]),
           Plot.lineY(points, { x: 'x', y: 'mean', stroke: 'teal', strokeWidth: 1.5 }),
         ],
       }),
@@ -395,7 +396,7 @@ export function bedsetRegionDistributionSlot(
     return Plot.plot({
       width,
       height,
-      margin: 8,
+      margin: 4,
       x: { domain: binSet, axis: null },
       y: { domain: chrOrder, axis: null },
       color: { scheme: 'bupu' as Plot.ColorScheme, type: 'sqrt' },
@@ -574,8 +575,7 @@ export function bedsetChromosomeBoxplotSlot(
     return Plot.plot({
       width,
       height,
-      marginLeft: 0,
-      marginBottom: 0,
+      margin: 4,
       y: { domain: chrOrder, axis: null },
       x: { axis: null },
       marks: [
@@ -585,6 +585,8 @@ export function bedsetChromosomeBoxplotSlot(
           x2: 'upper_whisker',
           stroke: '#999',
           strokeWidth: 0.5,
+          insetTop: 0.2,
+          insetBottom: 0.2,
         }),
         Plot.rect(rows, {
           y: 'chr',
@@ -593,6 +595,8 @@ export function bedsetChromosomeBoxplotSlot(
           fill: 'teal',
           fillOpacity: 0.6,
           ry: 1,
+          insetTop: 0.2,
+          insetBottom: 0.2,
         }),
         Plot.tickX(rows, {
           y: 'chr',

@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import { RegionSet } from '@databio/gtars';
-import { parseBedFile } from '../lib/bed-parser';
+import type { BedEntry } from '../lib/bed-parser';
 import { fromRegionSet, type BedAnalysis } from '../lib/bed-analysis';
 import { useAnalyzeGenome } from '../queries/use-analyze-genome';
 import { useApi } from './api-context';
@@ -119,71 +119,90 @@ export function FileProvider({ children }: { children: ReactNode }) {
 
     let cancelled = false;
 
-    async function parse(file: File) {
-      setParsing(true);
-      setParseError(null);
-      setParseTime(null);
-      setParseProgress(0);
+    setParsing(true);
+    setParseError(null);
+    setParseTime(null);
+    setParseProgress(0);
 
-      try {
-        const start = performance.now();
-        const entries = await parseBedFile(file, (p) => {
-          if (!cancelled) setParseProgress(p);
-        });
-        const rs = new RegionSet(entries);
-        const elapsed = performance.now() - start;
+    const start = performance.now();
+    const worker = new Worker(
+      new URL('../lib/bed-parser.worker.ts', import.meta.url),
+      { type: 'module' },
+    );
 
-        if (cancelled) {
-          try {
-            (rs as unknown as { free?: () => void }).free?.();
-          } catch {
-            /* ignore */
-          }
-          return;
-        }
+    worker.onmessage = async (e: MessageEvent<{ type: string; value?: number; entries?: BedEntry[]; message?: string }>) => {
+      if (cancelled) return;
+      const msg = e.data;
 
-        // Free previous RegionSet
-        if (rsRef.current) {
-          try {
-            (rsRef.current as unknown as { free?: () => void }).free?.();
-          } catch {
-            /* ignore */
-          }
-        }
-
-        rsRef.current = rs;
-        setRegionSet(rs);
-        setParseTime(elapsed);
+      if (msg.type === 'progress') {
+        setParseProgress(msg.value!);
+      } else if (msg.type === 'error') {
+        setParseError(msg.message || 'Failed to parse BED file');
+        setRegionSet(null);
         setParsing(false);
+        worker.terminate();
+      } else if (msg.type === 'result') {
+        const entries = msg.entries!;
+        try {
+          const rs = new RegionSet(entries);
+          const elapsed = performance.now() - start;
 
-        // Run stepped analysis
-        if (!cancelled) {
-          setAnalyzing(true);
-          setAnalysisProgress(0);
-          try {
-            const result = await fromRegionSet(rs, file, elapsed, (p) => {
-              if (!cancelled) setAnalysisProgress(p);
-            });
-            if (!cancelled) setAnalysis(result);
-          } catch {
-            // Analysis failed — regionSet is still available
-          } finally {
-            if (!cancelled) setAnalyzing(false);
+          if (cancelled) {
+            try { (rs as unknown as { free?: () => void }).free?.(); } catch { /* ignore */ }
+            worker.terminate();
+            return;
+          }
+
+          // Free previous RegionSet
+          if (rsRef.current) {
+            try { (rsRef.current as unknown as { free?: () => void }).free?.(); } catch { /* ignore */ }
+          }
+
+          rsRef.current = rs;
+          setRegionSet(rs);
+          setParseTime(elapsed);
+          setParsing(false);
+
+          // Run stepped analysis
+          if (!cancelled) {
+            setAnalyzing(true);
+            setAnalysisProgress(0);
+            try {
+              const result = await fromRegionSet(rs, bedFile, elapsed, (p) => {
+                if (!cancelled) setAnalysisProgress(p);
+              });
+              if (!cancelled) setAnalysis(result);
+            } catch {
+              // Analysis failed — regionSet is still available
+            } finally {
+              if (!cancelled) setAnalyzing(false);
+            }
+          }
+        } catch (err) {
+          if (!cancelled) {
+            setParseError(err instanceof Error ? err.message : 'Failed to parse BED file');
+            setRegionSet(null);
+            setParsing(false);
           }
         }
-      } catch (err) {
-        if (!cancelled) {
-          setParseError(err instanceof Error ? err.message : 'Failed to parse BED file');
-          setRegionSet(null);
-          setParsing(false);
-        }
+        worker.terminate();
       }
-    }
+    };
 
-    parse(bedFile);
+    worker.onerror = () => {
+      if (!cancelled) {
+        setParseError('Failed to parse BED file');
+        setRegionSet(null);
+        setParsing(false);
+      }
+      worker.terminate();
+    };
+
+    worker.postMessage({ file: bedFile });
 
     return () => {
       cancelled = true;
+      worker.terminate();
     };
   }, [bedFile]);
 

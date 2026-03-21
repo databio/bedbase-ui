@@ -11,6 +11,10 @@ import { tableau20 } from '../../lib/tableau20';
 const serializer = new XMLSerializer();
 const REPORT_WIDTH = 700;
 
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 // --- Build plot slots from analysis data ---
 
 function buildPlotSlots(analysis: BedAnalysis): PlotSlot[] {
@@ -59,8 +63,8 @@ function buildSummaryHtml(analysis: BedAnalysis): string {
     ['Mean width', `${Math.round(summary.meanRegionWidth).toLocaleString()} bp`],
     ['Nucleotides', summary.nucleotides.toLocaleString()],
   ];
-  if (summary.dataFormat) rows.push(['Format', summary.dataFormat]);
-  if (summary.bedCompliance) rows.push(['Compliance', summary.bedCompliance]);
+  if (summary.dataFormat) rows.push(['Format', escapeHtml(summary.dataFormat)]);
+  if (summary.bedCompliance) rows.push(['Compliance', escapeHtml(summary.bedCompliance)]);
   if (genomicdist) {
     rows.push(['Reduced regions', genomicdist.reducedCount.toLocaleString()]);
     rows.push(['Promoter overlaps', genomicdist.promotersCount.toLocaleString()]);
@@ -97,7 +101,7 @@ function buildGenomeBarHtml(match: GenomeMatch): string {
     <div style="margin-bottom:24px;">
       <h2 style="font-size:14px;font-weight:600;margin:0 0 8px 0;">Reference Genome</h2>
       <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:10px 16px;border-radius:8px;background:${colors.bg};border:1px solid ${colors.border};">
-        <span style="font-size:13px;font-weight:600;">Best match: ${match.name}</span>
+        <span style="font-size:13px;font-weight:600;">Best match: ${escapeHtml(match.name)}</span>
         <span style="font-size:12px;font-weight:600;color:${colors.text};">Tier ${match.tier}</span>
         ${stats ? `<span style="font-size:12px;color:#666;">${stats}</span>` : ''}
       </div>
@@ -111,7 +115,7 @@ function buildChromStatsHtml(analysis: BedAnalysis): string {
   const headerRow = headers.map((h) => `<th style="padding:4px 8px;text-align:${h === 'Chromosome' ? 'left' : 'right'};font-size:11px;font-weight:600;border-bottom:2px solid #ddd;">${h}</th>`).join('');
   const bodyRows = analysis.chromosomeStats.map((s) => `
     <tr>
-      <td style="padding:3px 8px;font-size:11px;font-weight:500;border-bottom:1px solid #eee;">${s.chromosome}</td>
+      <td style="padding:3px 8px;font-size:11px;font-weight:500;border-bottom:1px solid #eee;">${escapeHtml(s.chromosome)}</td>
       <td style="padding:3px 8px;font-size:11px;text-align:right;border-bottom:1px solid #eee;">${s.count.toLocaleString()}</td>
       <td style="padding:3px 8px;font-size:11px;text-align:right;border-bottom:1px solid #eee;">${s.start.toLocaleString()}</td>
       <td style="padding:3px 8px;font-size:11px;text-align:right;border-bottom:1px solid #eee;">${s.end.toLocaleString()}</td>
@@ -204,7 +208,7 @@ async function renderUmapSvg(umapCoordinates: number[]): Promise<string | null> 
       ${legend.map(({ name, color }) => `
         <span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#666;">
           <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${color};"></span>
-          ${name}
+          ${escapeHtml(name)}
         </span>
       `).join('')}
     </div>`;
@@ -275,7 +279,7 @@ export function openReport(opts: ReportOptions) {
       if (!svgStr) return '';
       return `
         <div style="page-break-inside:avoid;margin-bottom:24px;">
-          <h2 style="font-size:14px;font-weight:600;margin:0 0 8px 0;">${slot.title}</h2>
+          <h2 style="font-size:14px;font-weight:600;margin:0 0 8px 0;">${escapeHtml(slot.title)}</h2>
           <div style="max-width:100%;overflow:hidden;">${svgStr}</div>
         </div>
       `;
@@ -288,7 +292,7 @@ export function openReport(opts: ReportOptions) {
 <html>
 <head>
   <meta charset="utf-8">
-  <title>${analysis.fileName || 'BED File'} — Report</title>
+  <title>${escapeHtml(analysis.fileName || 'BED File')} — Report</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto; padding: 24px; color: #1a1a1a; }
     svg { max-width: 100%; height: auto; }
@@ -299,7 +303,7 @@ export function openReport(opts: ReportOptions) {
   </style>
 </head>
 <body>
-  <h1 style="font-size:20px;font-weight:700;margin:0 0 4px 0;">${analysis.fileName || 'BED File Report'}</h1>
+  <h1 style="font-size:20px;font-weight:700;margin:0 0 4px 0;">${escapeHtml(analysis.fileName || 'BED File Report')}</h1>
   <p style="font-size:12px;color:#888;margin:0 0 24px 0;">Generated ${new Date().toLocaleDateString()} &middot; ${analysis.summary.regions.toLocaleString()} regions</p>
 
   ${c.summary ? `<h2 style="font-size:14px;font-weight:600;margin:0 0 8px 0;">Summary</h2>${buildSummaryHtml(analysis)}` : ''}
@@ -405,7 +409,9 @@ export async function downloadReportAssets(opts: ReportOptions) {
 }
 
 function csvEscape(v: string): string {
-  return `"${v.replace(/"/g, '""')}"`;
+  // Prefix formula-triggering characters to prevent CSV injection in spreadsheets
+  const safe = /^[=+\-@\t\r]/.test(v) ? `'${v}` : v;
+  return `"${safe.replace(/"/g, '""')}"`;
 }
 
 function sanitize(name: string): string {

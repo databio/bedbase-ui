@@ -8,7 +8,6 @@ import { useCart } from '../../contexts/cart-context';
 import { tabMeta, tabIds, tabColorClasses } from '../../lib/tab-meta';
 import { Hub } from '../hub/hub';
 import { TabContent } from '../tabs/tab-content';
-import { ReportPage } from '../report/report-page';
 import { MetricsPage } from '../metrics/metrics-page';
 import { DebugPage } from '../debug/debug-page';
 import { UmapView } from '../umap/umap-view';
@@ -167,10 +166,6 @@ export function AppLayout() {
   }
 
   function renderContent() {
-    if (location.pathname.startsWith('/upload/report')) {
-      return <ReportPage />;
-    }
-
     if (location.pathname.startsWith('/metrics')) {
       return <MetricsPage />;
     }

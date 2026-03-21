@@ -10,6 +10,7 @@ import { BucketProvider } from '../contexts/bucket-context';
 import { SettingsProvider } from '../contexts/settings-context';
 import { Toaster } from 'sonner';
 import { AppLayout } from '../components/layout/app-layout';
+import { ErrorBoundary } from '../components/shared/error-boundary';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -23,26 +24,28 @@ const queryClient = new QueryClient({
 export function App() {
   return (
     <SettingsProvider>
-    <ApiProvider>
-      <QueryClientProvider client={queryClient}>
-        <CartProvider>
-          <FileProvider>
-            <UploadedFilesProvider>
-              <FileSetProvider>
-                <MosaicCoordinatorProvider>
-                  <BucketProvider>
-                    <TabProvider>
-                  <AppLayout />
-                  <Toaster position="top-center" />
-                    </TabProvider>
-                  </BucketProvider>
-                </MosaicCoordinatorProvider>
-              </FileSetProvider>
-            </UploadedFilesProvider>
-          </FileProvider>
-        </CartProvider>
-      </QueryClientProvider>
-    </ApiProvider>
+      <ApiProvider>
+        <QueryClientProvider client={queryClient}>
+          <CartProvider>
+            <FileProvider>
+              <UploadedFilesProvider>
+                <FileSetProvider>
+                  <MosaicCoordinatorProvider>
+                    <BucketProvider>
+                      <TabProvider>
+                        <ErrorBoundary>
+                          <AppLayout />
+                        </ErrorBoundary>
+                        <Toaster position="top-center" />
+                      </TabProvider>
+                    </BucketProvider>
+                  </MosaicCoordinatorProvider>
+                </FileSetProvider>
+              </UploadedFilesProvider>
+            </FileProvider>
+          </CartProvider>
+        </QueryClientProvider>
+      </ApiProvider>
     </SettingsProvider>
   );
 }

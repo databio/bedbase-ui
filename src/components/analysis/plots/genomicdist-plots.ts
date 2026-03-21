@@ -176,6 +176,7 @@ export function neighborDistanceSlot(distances: number[]): PlotSlot | null {
         x: { label: null, tickSize: 0 },
         y: { label: null, tickSize: 0 },
         marks: [
+          Plot.ruleY([0]),
           Plot.lineY(kde, { x: 'x', y: 'density', stroke: 'teal', strokeWidth: 1.5 }),
         ],
       }),

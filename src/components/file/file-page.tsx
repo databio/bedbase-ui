@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { Search, FlaskConical, ScatterChart, FolderOpen, X, FileText, Upload, GitCompareArrows, Plus, FileBarChart, Download, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useTab, type TabId } from '../../contexts/tab-context';
 import { useFile } from '../../contexts/file-context';
 import { useUploadedFiles } from '../../contexts/uploaded-files-context';
@@ -122,10 +123,14 @@ function ActionCard({ action, onClickOverride }: { action: (typeof actions)[numb
 async function fetchBedFromUrl(input: string): Promise<File> {
   const trimmed = input.trim();
   // 32-char hex string → BEDbase ID shortcut
-  const url =
-    trimmed.length === 32 && !trimmed.startsWith('http')
-      ? `https://api.bedbase.org/v1/files/files/${trimmed[0]}/${trimmed[1]}/${trimmed}.bed.gz`
-      : trimmed;
+  const isBedbaseId = /^[0-9a-f]{32}$/i.test(trimmed);
+  const url = isBedbaseId
+    ? `https://api.bedbase.org/v1/files/files/${trimmed[0]}/${trimmed[1]}/${trimmed}.bed.gz`
+    : trimmed;
+
+  if (!url.startsWith('https://') && !url.startsWith('http://')) {
+    throw new Error('URL must start with http:// or https://');
+  }
 
   const response = await fetch(url);
   if (!response.ok) {
@@ -230,6 +235,11 @@ function FileEmpty() {
   const [urlError, setUrlError] = useState<string | null>(null);
 
   function handleFiles(files: File[]) {
+    for (const f of files) {
+      if (f.size > 250 * 1024 * 1024) {
+        toast.warning(`${f.name} is large (${formatBytes(f.size)}). Parsing may be slow in the browser.`);
+      }
+    }
     addFiles(files);
     const first = files.find((f) => {
       const name = f.name.toLowerCase();
@@ -389,6 +399,11 @@ export function FilePage() {
   }
 
   function handleAddFiles(newFiles: File[]) {
+    for (const f of newFiles) {
+      if (f.size > 250 * 1024 * 1024) {
+        toast.warning(`${f.name} is large (${formatBytes(f.size)}). Parsing may be slow in the browser.`);
+      }
+    }
     addFiles(newFiles);
     if (!bedFile) {
       const first = newFiles.find((f) => {

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Loader2, FileText, AlertCircle, Search, Copy, CheckCheck, X, Dna, ScatterChart } from 'lucide-react';
+import { Loader2, FileText, AlertCircle, Search, Copy, Check, X, Dna, ScatterChart } from 'lucide-react';
 import { Breadcrumb } from '../shared/breadcrumb';
 import { useFile } from '../../contexts/file-context';
 import { useTab } from '../../contexts/tab-context';
@@ -161,7 +161,7 @@ function CopyableId({ id }: { id: string }) {
       title="Copy ID"
     >
       <span className="truncate">{id}</span>
-      {copied ? <CheckCheck size={12} className="text-success shrink-0" /> : <Copy size={12} className="shrink-0" />}
+      {copied ? <Check size={12} className="text-success shrink-0" /> : <Copy size={12} className="shrink-0" />}
     </button>
   );
 }
@@ -327,8 +327,6 @@ function DatabaseHeader({ analysis }: { analysis: BedAnalysis }) {
           )}
         </div>
       </div>
-
-      {/* <ComparisonStrip /> */}
 
       {/* Reference genome section card */}
       {(analysis.genomeAlias || genomeStats) && (

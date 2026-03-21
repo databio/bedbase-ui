@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Loader2, AlertCircle, Search, Plus, Check, Copy, CheckCheck, ExternalLink, Terminal, Download, X, ScatterChart } from 'lucide-react';
+import { Loader2, AlertCircle, Search, Plus, Check, Copy, ExternalLink, Terminal, Download, X, ScatterChart } from 'lucide-react';
 import { Breadcrumb } from '../shared/breadcrumb';
 import { useTab } from '../../contexts/tab-context';
 import { useCart } from '../../contexts/cart-context';
@@ -64,7 +64,7 @@ function CopyableId({ id }: { id: string }) {
       title="Copy ID"
     >
       <span className="truncate">{id}</span>
-      {copied ? <CheckCheck size={12} className="text-success shrink-0" /> : <Copy size={12} className="shrink-0" />}
+      {copied ? <Check size={12} className="text-success shrink-0" /> : <Copy size={12} className="shrink-0" />}
     </button>
   );
 }

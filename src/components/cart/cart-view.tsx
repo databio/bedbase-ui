@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { ShoppingCart, X, Download, Search, Trash2, Copy, CheckCheck, Terminal, FolderPlus, ExternalLink, Send, AlertCircle, CheckCircle2 } from 'lucide-react';
-import axios from 'axios';
 import { useTab } from '../../contexts/tab-context';
 import { useCart } from '../../contexts/cart-context';
-import { API_BASE } from '../../lib/file-model-utils';
+import { useApi } from '../../contexts/api-context';
 import { generateDownloadScript, downloadAsFile } from '../../lib/download-script';
 import type { CartItem } from '../../contexts/cart-context';
 
@@ -57,7 +56,7 @@ function DownloadModal({ items, onClose }: { items: CartItem[]; onClose: () => v
   );
 }
 
-function CreateBedsetModal({ items, onClose }: { items: CartItem[]; onClose: () => void }) {
+function CreateBedsetModal({ items, onClose, api }: { items: CartItem[]; onClose: () => void; api: import('axios').AxiosInstance }) {
   const [copied, setCopied] = useState(false);
   const [registryPath, setRegistryPath] = useState('');
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
@@ -75,7 +74,7 @@ function CreateBedsetModal({ items, onClose }: { items: CartItem[]; onClose: () 
     if (!registryPath.trim()) return;
     setStatus('submitting');
     try {
-      await axios.post(`${API_BASE}/bedset/create`, { registry_path: registryPath.trim() });
+      await api.post('/bedset/create', { registry_path: registryPath.trim() });
       setStatus('success');
       setMessage('BEDset created successfully.');
     } catch (err) {
@@ -173,6 +172,7 @@ function CreateBedsetModal({ items, onClose }: { items: CartItem[]; onClose: () 
 export function CartView() {
   const { openTab } = useTab();
   const { cart, removeFromCart, clearCart, cartCount } = useCart();
+  const { api } = useApi();
   const [countdown, setCountdown] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval>>(undefined);
 
@@ -298,7 +298,7 @@ export function CartView() {
       </div>
 
       {showDownload && <DownloadModal items={items} onClose={() => setShowDownload(false)} />}
-      {showCreateBedset && <CreateBedsetModal items={items} onClose={() => setShowCreateBedset(false)} />}
+      {showCreateBedset && <CreateBedsetModal items={items} onClose={() => setShowCreateBedset(false)} api={api} />}
     </div>
   );
 }

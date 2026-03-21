@@ -3,8 +3,7 @@ import { useCart } from '../../contexts/cart-context';
 import { useTab } from '../../contexts/tab-context';
 import { useMosaicCoordinator } from '../../contexts/mosaic-coordinator-context';
 import type { BedAnalysis } from '../../lib/bed-analysis';
-
-const API_BASE = import.meta.env.VITE_API_BASE ?? 'https://api.bedbase.org/v1';
+import { API_BASE } from '../../lib/file-model-utils';
 
 const linkClass = 'inline-flex items-center gap-1.5 text-xs font-medium text-base-content/60 hover:text-base-content/80 bg-base-200 hover:bg-base-300 px-2.5 py-1.5 rounded-md transition-colors cursor-pointer';
 
