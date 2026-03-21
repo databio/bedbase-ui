@@ -31,7 +31,6 @@ export function UploadedFilesProvider({ children }: { children: ReactNode }) {
   const [files, setFilesState] = useState<File[]>(() => _files);
   const [activeIndex, setActiveIndexState] = useState<number | null>(() => _activeIndex);
 
-  const setFiles = useCallback((f: File[]) => { _files = f; setFilesState(f); }, []);
   const setActiveIdx = useCallback((i: number | null) => { _activeIndex = i; setActiveIndexState(i); }, []);
 
   const addFiles = useCallback((newFiles: File[]) => {
@@ -68,13 +67,12 @@ export function UploadedFilesProvider({ children }: { children: ReactNode }) {
       _files = next;
       return next;
     });
-    setActiveIdx((prev) => {
-      if (prev === null) return null;
-      if (prev === index) return null;
-      if (prev > index) return prev - 1;
-      return prev;
+    setActiveIndexState((prev) => {
+      const next = prev === null ? null : prev === index ? null : prev > index ? prev - 1 : prev;
+      _activeIndex = next;
+      return next;
     });
-  }, [setActiveIdx]);
+  }, []);
 
   const clearAll = useCallback(() => {
     _files = [];

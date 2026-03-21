@@ -1,5 +1,5 @@
 import { useState, useRef, type ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Search, Upload, FileText, X, Forward } from 'lucide-react';
 import { toast } from 'sonner';
 import { useFile } from '../../contexts/file-context';
@@ -20,7 +20,7 @@ function formatBytes(bytes: number): string {
 
 // --- Search / upload input ---
 
-function SearchInput({ onFileSelect }: { onFileSelect: (f: File) => void }) {
+function SearchInput({ onFileSelect }: { onFileSelect: (files: File[]) => void }) {
   const [query, setQuery] = useState('');
   const [searchMode, setSearchMode] = useState<'bed' | 'bedset'>('bed');
   const [isDragOver, setIsDragOver] = useState(false);
@@ -28,25 +28,28 @@ function SearchInput({ onFileSelect }: { onFileSelect: (f: File) => void }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { bedFile, setBedFile } = useFile();
   const { openTab } = useTab();
-  const navigate = useNavigate();
 
-  function tryFileSelect(f: File) {
-    const lower = f.name.toLowerCase();
-    if (!lower.endsWith('.bed') && !lower.endsWith('.bed.gz')) {
-      toast.warning('Only .bed and .bed.gz files are supported.');
-      return;
+
+  function tryFileSelect(files: FileList | File[]) {
+    const valid: File[] = [];
+    for (const f of Array.from(files)) {
+      const lower = f.name.toLowerCase();
+      if (!lower.endsWith('.bed') && !lower.endsWith('.bed.gz')) {
+        toast.warning(`Skipped ${f.name} — only .bed and .bed.gz files are supported.`);
+        continue;
+      }
+      if (f.size > 250 * 1024 * 1024) {
+        toast.warning(`${f.name} is large (${formatBytes(f.size)}). Parsing may be slow in the browser.`);
+      }
+      valid.push(f);
     }
-    if (f.size > 250 * 1024 * 1024) {
-      toast.warning(`Large file (${formatBytes(f.size)}). Parsing may be slow in the browser.`);
-    }
-    onFileSelect(f);
+    if (valid.length > 0) onFileSelect(valid);
   }
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
-    const f = e.dataTransfer.files[0];
-    if (f) tryFileSelect(f);
+    tryFileSelect(e.dataTransfer.files);
   };
 
   const handleSubmit = () => {
@@ -119,17 +122,18 @@ function SearchInput({ onFileSelect }: { onFileSelect: (f: File) => void }) {
                 <Upload size={14} className="text-primary" />
               </div>
             <div className="flex flex-col items-start">
-              <span className="text-sm font-medium text-base-content/70">Upload BED file</span>
+              <span className="text-sm font-medium text-base-content/70">Upload BED files</span>
               <span className="text-[11px] text-base-content/45">.bed, .bed.gz</span>
             </div>
             <input
               ref={fileInputRef}
               type="file"
+              multiple
               accept=".bed,.gz"
               className="hidden"
               onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) tryFileSelect(f);
+                if (e.target.files && e.target.files.length > 0) tryFileSelect(e.target.files);
+                e.target.value = '';
               }}
             />
           </div>
@@ -201,9 +205,9 @@ export function Hub() {
   const { openTab } = useTab();
   const { data: stats, isLoading: statsLoading } = useStats();
 
-  function handleFileSelect(file: File) {
-    addFiles([file]);
-    setBedFile(file);
+  function handleFileSelect(files: File[]) {
+    addFiles(files);
+    setBedFile(files[0]);
     setActiveIndex(0);
     openTab('file');
   }

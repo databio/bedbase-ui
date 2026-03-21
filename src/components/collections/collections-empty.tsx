@@ -12,7 +12,7 @@ function formatNumber(n: number): string {
 export function CollectionsEmpty() {
   const { openTab } = useTab();
   const { bucketCount } = useBucket();
-  const { cached, clearCached } = useFileSet();
+  const { cached } = useFileSet();
   const { files: uploadedFiles } = useUploadedFiles();
   const { setFiles: setCompareFiles } = useFileSet();
   const { data: sampleBedsets } = useBedsetList({ limit: 3 });

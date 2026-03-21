@@ -349,7 +349,7 @@ function FileEmpty() {
 
 export function FilePage() {
   const { bedFile, setBedFile } = useFile();
-  const { regionSet, parsing, parseProgress, parseError, parseTime, analysis, analyzing } = useFile();
+  const { regionSet, parsing, parseProgress, parseError, parseTime, analyzing } = useFile();
   const { files, addFiles, removeFile, setActiveIndex, clearAll } = useUploadedFiles();
   const { setFiles: setCompareFiles } = useFileSet();
   const { openTab } = useTab();

@@ -432,8 +432,6 @@ export function compressedOpenSignalSlot(
           x2: 'upper_whisker',
           stroke: '#999',
           strokeWidth: 0.5,
-          insetTop: 0.2,
-          insetBottom: 0.2,
         }),
         // Hinge boxes
         Plot.rect(sorted, {

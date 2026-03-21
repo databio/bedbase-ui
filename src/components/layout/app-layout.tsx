@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useFile } from '../../contexts/file-context';
+
 import { useTab, TabPanelContext, type TabId } from '../../contexts/tab-context';
 import { useCart } from '../../contexts/cart-context';
 import { tabMeta, tabIds, tabColorClasses } from '../../lib/tab-meta';
@@ -15,7 +15,6 @@ import { Footer } from './footer';
 
 export function AppLayout() {
   const { activeTabs, openTab, openSplit, closeTab } = useTab();
-  const { bedFile } = useFile();
   const { cartCount } = useCart();
   const navigate = useNavigate();
   const location = useLocation();

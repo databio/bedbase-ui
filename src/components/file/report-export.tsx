@@ -141,7 +141,6 @@ type BgPoint = { x: number; y: number; assay: string; color: string };
 
 const TOP_N = 18;
 const OTHER_CATEGORY = 18;
-const UPLOADED_CATEGORY = 19;
 
 let cachedBgData: { points: BgPoint[]; legend: { name: string; color: string }[] } | null = null;
 
@@ -259,7 +258,7 @@ export type ReportOptions = {
  * All plots are rendered programmatically — no DOM container needed.
  */
 export function openReport(opts: ReportOptions) {
-  const { analysis, genome, genomeMatch, umapCoordinates, refPlots, config: cfg } = opts;
+  const { analysis, genomeMatch, umapCoordinates, refPlots, config: cfg } = opts;
   const c = cfg ?? defaultReportConfig;
 
   // Open window immediately (synchronous with click) to avoid popup blocker
@@ -397,7 +396,7 @@ export async function downloadReportAssets(opts: ReportOptions) {
   // Create zip and download
   const zipped = zipSync(files);
   const name = sanitize(analysis.fileName ?? 'bed-report');
-  const blob = new Blob([zipped], { type: 'application/zip' });
+  const blob = new Blob([new Uint8Array(zipped)], { type: 'application/zip' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

@@ -234,7 +234,7 @@ export async function computeMultiFileAnalysis(
     }
 
     try {
-      const widths = rs.calcWidths() as number[];
+      const widths = Array.from(rs.calcWidths() as unknown as ArrayLike<number>);
       widthHist.push(...binWidths(Array.from(widths), fileNames[i]));
     } catch { /* calcWidths not available */ }
 

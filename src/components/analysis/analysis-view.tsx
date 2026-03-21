@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Loader2, FileText, AlertCircle, Search, Copy, Check, Dna, ScatterChart } from 'lucide-react';
+import { Loader2, AlertCircle, Search, Copy, Check, Dna, ScatterChart } from 'lucide-react';
 import { Breadcrumb } from '../shared/breadcrumb';
 import { useFile } from '../../contexts/file-context';
 import { useTab } from '../../contexts/tab-context';

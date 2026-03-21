@@ -166,7 +166,7 @@ export async function loadRefBase(genome: string): Promise<RefBase> {
   // Fetch static TSS data and seqcol chrom sizes in parallel
   const [staticData, seqcolSizes] = await Promise.all([
     fetchGzJson<RefBase>(`/ref/${genome}.json.gz`),
-    loadChromSizes(genome).catch((err) => {
+    loadChromSizes(genome).catch(() => {
       // seqcol API unreachable — use static file chromSizes
       return null;
     }),

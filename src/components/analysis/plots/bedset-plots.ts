@@ -585,8 +585,6 @@ export function bedsetChromosomeBoxplotSlot(
           x2: 'upper_whisker',
           stroke: '#999',
           strokeWidth: 0.5,
-          insetTop: 0.2,
-          insetBottom: 0.2,
         }),
         Plot.rect(rows, {
           y: 'chr',
