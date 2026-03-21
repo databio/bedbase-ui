@@ -29,7 +29,13 @@ export function BedfileTable({ bedfiles }: { bedfiles: BedMetadataBasic[] }) {
                 onClick={() => openTab('analysis', 'bed/' + bed.id)}
                 className="hover:bg-primary/5 cursor-pointer transition-colors"
               >
-                <td className="font-medium max-w-48 truncate">{bed.name || 'Unnamed'}</td>
+                <td className="font-medium max-w-48 truncate">
+                  <a
+                    href={`/analysis/bed/${bed.id}`}
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); openTab('analysis', 'bed/' + bed.id); }}
+                    className="hover:underline"
+                  >{bed.name || 'Unnamed'}</a>
+                </td>
                 <td>
                   {bed.genome_alias ? (
                     <span className="badge badge-xs badge-primary font-semibold">{bed.genome_alias}</span>

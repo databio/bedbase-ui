@@ -24,17 +24,18 @@ export function CollectionsEmpty() {
           <h2 className="text-2xl font-bold text-base-content mb-1 text-center">Collections</h2>
           <p className="text-base-content/50 text-sm max-w-md mx-auto text-center mb-8">
             Browse BEDset collections and manage your saved UMAP selections.
-            Search for BEDsets in the <button onClick={() => openTab('search')} className="text-primary hover:underline cursor-pointer">Search</button> tab.
-            Upload files in the <button onClick={() => openTab('file')} className="text-primary hover:underline cursor-pointer">Upload</button> tab.
+            Search for BEDsets in the <a href="/search" onClick={(e) => { e.preventDefault(); openTab('search'); }} className="text-primary hover:underline cursor-pointer">Search</a> tab.
+            Upload files in the <a href="/upload" onClick={(e) => { e.preventDefault(); openTab('file'); }} className="text-primary hover:underline cursor-pointer">Upload</a> tab.
           </p>
 
           {/* Sample bedsets */}
           <h3 className="text-sm font-semibold text-base-content mb-4 text-center">Browse a BEDset:</h3>
           <div className="grid grid-cols-3 gap-2">
             {sampleBedsets ? sampleBedsets.results.map((bs) => (
-              <button
+              <a
                 key={bs.id}
-                onClick={() => openTab('collections', 'bedset/' + bs.id)}
+                href={`/collections/bedset/${bs.id}`}
+                onClick={(e) => { e.preventDefault(); openTab('collections', 'bedset/' + bs.id); }}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-base-300 hover:border-base-content/20 hover:bg-base-200/30 transition-colors cursor-pointer text-left"
               >
                 <FolderOpen size={14} className="text-base-content/30 shrink-0" />
@@ -44,7 +45,7 @@ export function CollectionsEmpty() {
                     {[bs.bed_ids ? `${bs.bed_ids.length} files` : '', bs.description || ''].filter(Boolean).join(' · ')}
                   </p>
                 </div>
-              </button>
+              </a>
             )) : (
               [0, 1, 2].map((i) => (
                 <div key={i} className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-base-300 animate-pulse">

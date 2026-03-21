@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Loader2, FileText, AlertCircle, Search, Copy, Check, X, Dna, ScatterChart } from 'lucide-react';
+import { Loader2, FileText, AlertCircle, Search, Copy, Check, Dna, ScatterChart } from 'lucide-react';
 import { Breadcrumb } from '../shared/breadcrumb';
 import { useFile } from '../../contexts/file-context';
 import { useTab } from '../../contexts/tab-context';
@@ -62,8 +62,9 @@ function StatsGrid({ analysis }: { analysis: BedAnalysis }) {
 
 // --- Upload header ---
 
+const localLinkClass = 'inline-flex items-center gap-1.5 text-xs font-medium text-base-content/60 hover:text-base-content/80 bg-base-200 hover:bg-base-300 px-2.5 py-1.5 rounded-md transition-colors cursor-pointer';
+
 function LocalHeader({ analysis }: { analysis: BedAnalysis }) {
-  const { setBedFile } = useFile();
   const { openTab } = useTab();
   const [showGenomeModal, setShowGenomeModal] = useState(false);
 
@@ -79,37 +80,29 @@ function LocalHeader({ analysis }: { analysis: BedAnalysis }) {
   const { data: genomeStats, isLoading: genomeLoading } = useAnalyzeGenome(bedFileData);
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-3">
-        <div className="p-2 rounded-lg bg-primary/10 shrink-0">
-          <FileText size={18} className="text-primary" />
-        </div>
+    <div className="space-y-5">
+      <div className="flex flex-col @5xl:flex-row @5xl:items-start @5xl:justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-sm font-medium text-base-content truncate">{analysis.fileName}</p>
-          <p className="text-xs text-base-content/40">
+          <p className="text-lg font-semibold text-base-content">{analysis.fileName}</p>
+          <p className="text-xs text-base-content/40 mt-0.5">
             {analysis.fileSize != null && formatBytes(analysis.fileSize)}
             {analysis.parseTime != null && ` · parsed in ${analysis.parseTime.toFixed(0)} ms`}
           </p>
         </div>
-        <button
-          onClick={() => openTab('umap', '')}
-          title="View on UMAP"
-          className="p-1 rounded hover:bg-base-300 transition-colors cursor-pointer ml-auto"
-        >
-          <ScatterChart size={16} className="text-base-content/40" />
-        </button>
-        <button
-          onClick={() => { setBedFile(null); openTab('analysis'); }}
-          title="Clear file"
-          className="p-1 rounded hover:bg-base-300 transition-colors cursor-pointer"
-        >
-          <X size={16} className="text-base-content/40" />
-        </button>
+        <div className="shrink-0 flex items-center gap-1">
+          <button
+            onClick={() => openTab('umap', '')}
+            className={localLinkClass}
+          >
+            <ScatterChart size={13} />
+            View on UMAP
+          </button>
+        </div>
       </div>
 
       <StatsGrid analysis={analysis} />
 
-      <div className="mt-6">
+      <div>
         {genomeStats ? (
           <GenomeSection
             genomeStats={genomeStats}

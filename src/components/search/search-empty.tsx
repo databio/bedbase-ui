@@ -30,7 +30,7 @@ export function SearchEmpty({ initialMode = 'bed' }: { initialMode?: 'bed' | 'be
       <h2 className="text-2xl font-bold text-base-content mb-1">Search BEDbase</h2>
       <p className="text-base-content/50 text-sm max-w-md mx-auto text-center mb-8">
         {searchMode === 'bed'
-          ? <>Search by text query to find BED files, or upload your own in the <button onClick={() => openTab('file')} className="text-primary hover:underline cursor-pointer">Upload</button> tab to search by similarity.</>
+          ? <>Search by text query to find BED files, or upload your own in the <a href="/upload" onClick={(e) => { e.preventDefault(); openTab('file'); }} className="text-primary hover:underline cursor-pointer">Upload</a> tab to search by similarity.</>
           : 'Search for curated BEDset collections.'}
       </p>
 
@@ -85,13 +85,14 @@ export function SearchEmpty({ initialMode = 'bed' }: { initialMode?: 'bed' | 'be
         <div className="flex items-center gap-1.5 mt-4 flex-wrap justify-center">
           <span className="text-base-content/30 text-xs">Try:</span>
           {examples.map((term) => (
-            <button
+            <a
               key={term}
-              onClick={() => openTab('search', searchMode === 'bedset' ? 'bedset:' + term : term)}
+              href={searchMode === 'bedset' ? `/search?type=bedset&q=${encodeURIComponent(term)}` : `/search?q=${encodeURIComponent(term)}`}
+              onClick={(e) => { e.preventDefault(); openTab('search', searchMode === 'bedset' ? 'bedset:' + term : term); }}
               className="text-xs px-2.5 py-1 rounded-full border border-base-300 text-base-content/50 hover:text-base-content hover:border-base-content/30 transition-colors cursor-pointer"
             >
               {term}
-            </button>
+            </a>
           ))}
         </div>
       </div>

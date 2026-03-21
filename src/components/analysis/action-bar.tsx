@@ -39,13 +39,14 @@ export function ActionBar({ analysis }: { analysis: BedAnalysis }) {
       {analysis.id && (
         <>
           {isInUmap && (
-            <button
-              onClick={() => openTab('umap', analysis.id)}
+            <a
+              href={`/umap?bed=${analysis.id}`}
+              onClick={(e) => { e.preventDefault(); openTab('umap', analysis.id); }}
               className={linkClass}
             >
               <ScatterChart size={13} />
               View on UMAP
-            </button>
+            </a>
           )}
           {downloadUrls?.bed && (
             <a href={downloadUrls.bed} target="_blank" rel="noopener noreferrer" className={linkClass}>

@@ -173,7 +173,13 @@ export function SelectionDetail({ selectionId }: { selectionId: string }) {
                         onClick={() => openTab('analysis', 'bed/' + bedId)}
                         className="hover:bg-primary/5 cursor-pointer transition-colors group"
                       >
-                        <td className="font-mono text-primary">{bedId}</td>
+                        <td className="font-mono text-primary">
+                          <a
+                            href={`/analysis/bed/${bedId}`}
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); openTab('analysis', 'bed/' + bedId); }}
+                            className="hover:underline"
+                          >{bedId}</a>
+                        </td>
                         <td className="w-8">
                           <button
                             onClick={(e) => {

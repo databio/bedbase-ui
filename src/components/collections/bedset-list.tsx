@@ -152,7 +152,13 @@ export function BedsetList() {
                         onClick={() => openTab('collections', 'bedset/' + bs.id)}
                         className="hover:bg-primary/5 cursor-pointer transition-colors"
                       >
-                        <td className="font-medium max-w-48 truncate text-primary">{bs.name}</td>
+                        <td className="font-medium max-w-48 truncate text-primary">
+                          <a
+                            href={`/collections/bedset/${bs.id}`}
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); openTab('collections', 'bedset/' + bs.id); }}
+                            className="hover:underline"
+                          >{bs.name}</a>
+                        </td>
                         <td className="max-w-xs truncate text-base-content/50">
                           {bs.description || <span className="text-base-content/30">—</span>}
                         </td>

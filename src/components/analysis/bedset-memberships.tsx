@@ -28,7 +28,13 @@ export function BedsetMemberships({ bedsets }: { bedsets: Bedset[] }) {
                 onClick={() => openTab('collections', 'bedset/' + bs.id)}
                 className="hover:bg-primary/5 cursor-pointer transition-colors"
               >
-                <td className="font-medium text-primary">{bs.name}</td>
+                <td className="font-medium text-primary">
+                  <a
+                    href={`/collections/bedset/${bs.id}`}
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); openTab('collections', 'bedset/' + bs.id); }}
+                    className="hover:underline"
+                  >{bs.name}</a>
+                </td>
                 <td className="text-base-content/50">{bs.description || '--'}</td>
               </tr>
             ))}

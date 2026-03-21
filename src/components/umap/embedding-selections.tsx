@@ -130,13 +130,14 @@ export function EmbeddingSelections({ currentSelection, pinnedCategories, plotRe
                       >
                         <Trash2 size={12} />
                       </button>
-                      <button
+                      <a
+                        href={`/collections/selection/${bucket.id}`}
                         className="text-base-content/40 hover:text-base-content cursor-pointer p-0.5"
-                        onClick={(e) => { e.stopPropagation(); openTab('collections', 'selection/' + bucket.id); }}
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); openTab('collections', 'selection/' + bucket.id); }}
                         title="View details"
                       >
                         <ArrowRight size={12} />
-                      </button>
+                      </a>
                     </span>
                   </td>
                 </tr>

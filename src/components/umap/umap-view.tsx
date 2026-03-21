@@ -108,6 +108,20 @@ export function UmapView() {
     }
   }, [firstPreselectedId]);
 
+  // Center on custom point when navigating to UMAP with an existing uploaded file
+  const hasCenteredCustomRef = useRef(false);
+  useEffect(() => {
+    if (customCoordinates && !firstPreselectedId && !hasCenteredCustomRef.current) {
+      // Delay to let EmbeddingPlot finish initializing and adding the custom point
+      const timer = setTimeout(() => {
+        plotRef.current?.centerOnBedId('custom_point', 0.2, true);
+      }, 500);
+      hasCenteredCustomRef.current = true;
+      return () => clearTimeout(timer);
+    }
+    if (!customCoordinates) hasCenteredCustomRef.current = false;
+  }, [customCoordinates, firstPreselectedId]);
+
   // All highlighted IDs: preselected + buckets (deduplicated)
   const bedIds = useMemo(() => {
     const ids = new Set([...preselectedIds, ...enabledBedIds]);

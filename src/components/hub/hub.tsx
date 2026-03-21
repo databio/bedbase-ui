@@ -138,13 +138,14 @@ function SearchInput({ onFileSelect }: { onFileSelect: (f: File) => void }) {
       <div className="flex items-center gap-1.5 mt-3 flex-wrap justify-center">
         <span className="text-base-content/30 text-xs">Try:</span>
         {(searchMode === 'bed' ? EXAMPLE_QUERIES : EXAMPLE_BEDSET_QUERIES).map((term) => (
-          <button
+          <a
             key={term}
-            onClick={() => { openTab('search', searchMode === 'bed' ? term : 'bedset:' + term); }}
+            href={searchMode === 'bed' ? `/search?q=${encodeURIComponent(term)}` : `/search?type=bedset&q=${encodeURIComponent(term)}`}
+            onClick={(e) => { e.preventDefault(); openTab('search', searchMode === 'bed' ? term : 'bedset:' + term); }}
             className="text-xs px-2.5 py-1 rounded-full border border-base-300 text-base-content/50 hover:text-base-content hover:border-base-content/30 transition-colors cursor-pointer"
           >
             {term}
-          </button>
+          </a>
         ))}
       </div>
     </div>

@@ -40,7 +40,7 @@ export function AnalysisEmpty() {
 
           <h2 className="text-2xl font-bold text-base-content mb-1 text-center">Analyze a BED file</h2>
           <p className="text-base-content/50 text-sm max-w-md mx-auto text-center mb-8">
-            Find a file in the <button onClick={() => openTab('search')} className="text-primary hover:underline cursor-pointer">Search</button> tab, or upload your own in the <button onClick={() => openTab('file')} className="text-primary hover:underline cursor-pointer">Upload</button> tab.
+            Find a file in the <a href="/search" onClick={(e) => { e.preventDefault(); openTab('search'); }} className="text-primary hover:underline cursor-pointer">Search</a> tab, or upload your own in the <a href="/upload" onClick={(e) => { e.preventDefault(); openTab('file'); }} className="text-primary hover:underline cursor-pointer">Upload</a> tab.
           </p>
 
           {/* What's included */}
@@ -76,8 +76,9 @@ export function AnalysisEmpty() {
               </button>
             )}
             {exampleBed ? (
-              <button
-                onClick={() => openTab('analysis', 'bed/' + EXAMPLE_BED_ID)}
+              <a
+                href={`/analysis/bed/${EXAMPLE_BED_ID}`}
+                onClick={(e) => { e.preventDefault(); openTab('analysis', 'bed/' + EXAMPLE_BED_ID); }}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-base-300 hover:border-base-content/20 hover:bg-base-200/30 transition-colors cursor-pointer text-left"
               >
                 <FileText size={14} className="text-base-content/30 shrink-0" />
@@ -85,7 +86,7 @@ export function AnalysisEmpty() {
                   <p className="text-xs font-medium text-base-content truncate">{exampleBed.name || 'Unnamed'}</p>
                   <p className="text-[11px] text-base-content/40">{[exampleBed.genome_alias, exampleBed.annotation?.assay].filter(Boolean).join(' · ') || EXAMPLE_BED_ID.slice(0, 8)}</p>
                 </div>
-              </button>
+              </a>
             ) : (
               <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-base-300 animate-pulse">
                 <div className="w-3.5 h-3.5 bg-base-300 rounded shrink-0" />
@@ -96,9 +97,10 @@ export function AnalysisEmpty() {
               </div>
             )}
             {sampleBeds ? sampleBeds.filter((bed) => bed.id !== EXAMPLE_BED_ID).slice(0, bedFile ? 1 : 2).map((bed) => (
-              <button
+              <a
                 key={bed.id}
-                onClick={() => openTab('analysis', 'bed/' + bed.id)}
+                href={`/analysis/bed/${bed.id}`}
+                onClick={(e) => { e.preventDefault(); openTab('analysis', 'bed/' + bed.id); }}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-base-300 hover:border-base-content/20 hover:bg-base-200/30 transition-colors cursor-pointer text-left"
               >
                 <FileText size={14} className="text-base-content/30 shrink-0" />
@@ -106,7 +108,7 @@ export function AnalysisEmpty() {
                   <p className="text-xs font-medium text-base-content truncate">{bed.name || 'Unnamed'}</p>
                   <p className="text-[11px] text-base-content/40">{[bed.genome_alias, bed.annotation?.assay].filter(Boolean).join(' · ') || bed.id.slice(0, 8)}</p>
                 </div>
-              </button>
+              </a>
             )) : (
               (bedFile ? [0] : [0, 1]).map((i) => (
                 <div key={i} className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-base-300 animate-pulse">

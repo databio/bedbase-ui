@@ -42,7 +42,11 @@ export function ResultsTable({ results, searchQuery }: { results: QdrantSearchRe
               >
                 <td className="font-medium max-w-48">
                   <span className="flex items-center gap-1">
-                    <span className="truncate">{meta?.name || 'Unnamed'}</span>
+                    <a
+                      href={meta?.id ? `/analysis/bed/${meta.id}` : undefined}
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); meta?.id && openTab('analysis', 'bed/' + meta.id); }}
+                      className="truncate hover:underline"
+                    >{meta?.name || 'Unnamed'}</a>
                     {searchQuery && r.id === searchQuery && (
                       <span className="tooltip tooltip-bottom tooltip-info z-10 shrink-0" data-tip="Exact match">
                         <CheckCheck size={14} className="text-primary" />

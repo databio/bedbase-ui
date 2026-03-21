@@ -114,7 +114,9 @@ export function EmbeddingTable({
                       )}
                       {!isCustom && (
                         <a
+                          href={`/analysis/bed/${point.identifier}`}
                           onClick={(e) => {
+                            e.preventDefault();
                             e.stopPropagation();
                             openTab('analysis', 'bed/' + point.identifier);
                           }}

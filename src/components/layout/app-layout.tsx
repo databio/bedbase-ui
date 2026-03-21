@@ -274,12 +274,13 @@ export function AppLayout() {
   return (
     <div className="flex flex-col min-h-screen bg-base-100">
       <header className="flex items-center px-4 py-2.5 bg-base-100">
-        <button
-          onClick={() => navigate('/')}
+        <a
+          href="/"
+          onClick={(e) => { e.preventDefault(); navigate('/'); }}
           className="shrink-0 mr-4 ml-1 mb-0.5 cursor-pointer"
         >
           <img src="/bedbase_logo.svg" alt="BEDbase" className="h-8" />
-        </button>
+        </a>
         <div className="flex items-center justify-end flex-1 gap-1">
           {renderTab('file', 'file' === primaryId || 'file' === splitId)}
           {tabIds.map((id) =>

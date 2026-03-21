@@ -200,13 +200,14 @@ export function CartView() {
       <div className="flex flex-col items-center justify-center flex-1 gap-3 px-4">
         <ShoppingCart size={32} className="text-base-content/20" />
         <p className="text-base-content/50 text-sm">Your cart is empty</p>
-        <button
-          onClick={() => openTab('search')}
+        <a
+          href="/search"
+          onClick={(e) => { e.preventDefault(); openTab('search'); }}
           className="btn btn-sm btn-primary gap-1.5"
         >
           <Search size={14} />
           Search for BED files
-        </button>
+        </a>
       </div>
     );
   }
@@ -266,7 +267,13 @@ export function CartView() {
                 onClick={() => openTab('analysis', 'bed/' + item.id)}
                 className="hover:bg-primary/5 cursor-pointer transition-colors"
               >
-                <td className="font-medium max-w-48 truncate">{item.name}</td>
+                <td className="font-medium max-w-48 truncate">
+                  <a
+                    href={`/analysis/bed/${item.id}`}
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); openTab('analysis', 'bed/' + item.id); }}
+                    className="hover:underline"
+                  >{item.name}</a>
+                </td>
                 <td>
                   {item.genome ? (
                     <span className="badge badge-xs badge-primary font-semibold">{item.genome}</span>
