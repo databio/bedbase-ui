@@ -1,8 +1,9 @@
-import { useState } from 'react';
-import { Search, FileText, AlertCircle, RefreshCw, X, ScatterChart } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Search, FileText, AlertCircle, RefreshCw, X, ScatterChart, ChevronDown, Plus } from 'lucide-react';
 import { Breadcrumb } from '../shared/breadcrumb';
 import { useTab } from '../../contexts/tab-context';
 import { useFile } from '../../contexts/file-context';
+import { useUploadedFiles } from '../../contexts/uploaded-files-context';
 import { useBucket } from '../../contexts/bucket-context';
 import { useTextSearch } from '../../queries/use-text-search';
 import { useBedSearch } from '../../queries/use-bed-search';
@@ -328,29 +329,104 @@ function TextSearchResults({ query }: { query: string }) {
 function BedSearchResults() {
   const [offset, setOffset] = useState(0);
   const [limit, setLimit] = useState(20);
+  const [showFilePicker, setShowFilePicker] = useState(false);
+  const pickerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { bedFile, setBedFile } = useFile();
-  const { openTab } = useTab();
+  const { files, addFiles, setActiveIndex } = useUploadedFiles();
   const { data, isLoading, error, refetch } = useBedSearch(bedFile ?? undefined, {
     limit,
     offset,
   });
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!showFilePicker) return;
+    function handleClick(e: MouseEvent) {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setShowFilePicker(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showFilePicker]);
 
   // No file in context — redirect to empty state
   if (!bedFile) {
     return <SearchEmpty />;
   }
 
+  function switchToFile(file: File, index: number) {
+    setBedFile(file);
+    setActiveIndex(index);
+    setOffset(0);
+    setShowFilePicker(false);
+  }
+
+  function handleNewFiles(newFiles: File[]) {
+    addFiles(newFiles);
+    const first = newFiles[0];
+    if (first) {
+      setBedFile(first);
+      setActiveIndex(files.length); // will be at end after addFiles
+    }
+    setOffset(0);
+    setShowFilePicker(false);
+  }
+
+  const activeKey = `${bedFile.name}|${bedFile.size}|${bedFile.lastModified}`;
+  const otherFiles = files.filter((f) => `${f.name}|${f.size}|${f.lastModified}` !== activeKey);
+  const hasOptions = otherFiles.length > 0;
+
   const header = (
-    <div className="flex items-center gap-3 border border-base-300 rounded-lg px-3 py-2 bg-base-100">
-      <FileText size={16} className="text-primary shrink-0" />
-      <span className="text-sm font-medium text-base-content truncate">{bedFile.name}</span>
-      <span className="text-xs text-base-content/40">{formatBytes(bedFile.size)}</span>
-      <button
-        onClick={() => { setBedFile(null); openTab('search'); }}
-        className="p-0.5 rounded hover:bg-base-300 transition-colors cursor-pointer ml-auto"
-      >
-        <X size={14} className="text-base-content/40" />
-      </button>
+    <div className="relative" ref={pickerRef}>
+      <div className="flex items-center gap-3 border border-base-300 rounded-lg px-3 py-2 bg-base-100">
+        <FileText size={16} className="text-primary shrink-0" />
+        <span className="text-sm font-medium text-base-content truncate">{bedFile.name}</span>
+        <span className="text-xs text-base-content/40 ml-auto">{formatBytes(bedFile.size)}</span>
+        <button
+          onClick={() => setShowFilePicker(!showFilePicker)}
+          className="p-0.5 cursor-pointer hover:opacity-70 transition-opacity shrink-0"
+        >
+          <ChevronDown size={14} className={`text-base-content/40 transition-transform ${showFilePicker ? 'rotate-180' : ''}`} />
+        </button>
+      </div>
+
+      {showFilePicker && (
+        <div className="absolute top-full left-0 right-0 mt-1 border border-base-300 rounded-lg bg-base-100 shadow-lg z-20 py-1 max-h-52 overflow-y-auto">
+          {hasOptions && otherFiles.map((file) => {
+            const idx = files.indexOf(file);
+            return (
+              <button
+                key={`${file.name}|${file.size}|${file.lastModified}`}
+                onClick={() => switchToFile(file, idx)}
+                className="flex items-center gap-2 w-full px-3 py-1.5 text-left hover:bg-base-200 transition-colors cursor-pointer"
+              >
+                <FileText size={12} className="text-base-content/30 shrink-0" />
+                <span className="text-xs text-base-content truncate flex-1">{file.name}</span>
+                <span className="text-[11px] text-base-content/30 shrink-0">{formatBytes(file.size)}</span>
+              </button>
+            );
+          })}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-2 w-full px-3 py-1.5 text-left hover:bg-base-200 transition-colors cursor-pointer"
+          >
+            <Plus size={12} className="text-secondary shrink-0" />
+            <span className="text-xs text-secondary font-medium">Upload new file</span>
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".bed,.gz"
+            className="hidden"
+            onChange={(e) => {
+              if (e.target.files && e.target.files.length > 0) handleNewFiles(Array.from(e.target.files));
+              e.target.value = '';
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 
