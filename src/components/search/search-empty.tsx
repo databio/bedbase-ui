@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
-import { Search, FileText, ChevronDown, Plus } from 'lucide-react';
+import { ArrowRight, FileText, ChevronDown, Plus, CircleArrowRight } from 'lucide-react';
 import { useTab } from '../../contexts/tab-context';
 import { useFile } from '../../contexts/file-context';
 import { useUploadedFiles } from '../../contexts/uploaded-files-context';
@@ -74,45 +74,49 @@ export function SearchEmpty({ initialMode = 'bed' }: { initialMode?: 'bed' | 'be
               openTab('search', next === 'bedset' ? 'bedset:' : '');
               inputRef.current?.focus();
             }}
-            className="text-xs text-base-content/40 hover:text-base-content/60 transition-colors cursor-pointer shrink-0 select-none"
+            className="flex items-center gap-1 text-xs font-medium text-base-content/50 hover:text-base-content/70 transition-colors cursor-pointer shrink-0 select-none"
           >
-            {searchMode === 'bed' ? 'BED Search' : 'BEDset Search'}
+            {searchMode === 'bed' ? 'BED' : 'BEDset'}
+            <ChevronDown size={12} className="text-base-content/30" />
           </button>
           <button
             type="button"
             onClick={handleSubmit}
-            className="btn btn-primary btn-sm"
+            className="w-7 h-7 rounded-full bg-primary text-primary-content hover:bg-primary/90 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center shrink-0"
             disabled={!query.trim()}
           >
-            <Search size={16} />
+            <ArrowRight size={14} />
           </button>
         </div>
 
         {/* File indicator — if a file is already loaded, show quick link to BED2BED search */}
         {searchMode === 'bed' && (bedFile || files.length > 0) && (
           <div className="relative mt-3" ref={pickerRef}>
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-base-300 w-full">
+            <button
+              type="button"
+              onClick={() => {
+                if (files.length <= 1 && bedFile) {
+                  openTab('search', 'file');
+                } else {
+                  setShowFilePicker(!showFilePicker);
+                }
+              }}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-base-300 w-full text-left cursor-pointer hover:bg-base-200/30 transition-colors"
+            >
               <FileText size={14} className="text-primary shrink-0" />
               {bedFile ? (
-                <button
-                  className="flex items-center gap-2 min-w-0 flex-1 text-left cursor-pointer hover:opacity-70 transition-opacity"
-                  onClick={() => openTab('search', 'file')}
-                >
-                  <span className="text-sm text-base-content/70 truncate">Search by similarity to {bedFile.name}</span>
-                </button>
+                <span className="text-sm text-base-content/70 truncate flex-1">Search by similarity to {bedFile.name}</span>
               ) : (
                 <span className="text-sm text-base-content/40 truncate flex-1">No file selected</span>
               )}
-              <button
-                onClick={() => setShowFilePicker(!showFilePicker)}
-                className="p-0.5 cursor-pointer hover:opacity-70 transition-opacity shrink-0"
-              >
-                <ChevronDown size={14} className={`text-base-content/40 transition-transform ${showFilePicker ? 'rotate-180' : ''}`} />
-              </button>
-            </div>
+              {files.length > 1 && (
+                <ChevronDown size={14} className={`text-base-content/40 transition-transform shrink-0 ${showFilePicker ? 'rotate-180' : ''}`} />
+              )}
+            </button>
 
             {showFilePicker && (
-              <div className="absolute top-full left-0 right-0 mt-1 border border-base-300 rounded-lg bg-base-100 shadow-lg z-20 py-1 max-h-52 overflow-y-auto">
+              <div className="absolute top-full left-0 right-0 mt-1 border border-base-300 rounded-lg bg-base-100 shadow-lg z-20 max-h-52 overflow-hidden">
+              <div className="py-1 max-h-52 overflow-y-auto">
                 {files.map((file, idx) => {
                   const isActive = bedFile && `${file.name}|${file.size}|${file.lastModified}` === `${bedFile.name}|${bedFile.size}|${bedFile.lastModified}`;
                   return (
@@ -124,11 +128,14 @@ export function SearchEmpty({ initialMode = 'bed' }: { initialMode?: 'bed' | 'be
                         setShowFilePicker(false);
                         openTab('search', 'file');
                       }}
-                      className={`flex items-center gap-2 w-full px-3 py-1.5 text-left hover:bg-base-200 transition-colors cursor-pointer ${isActive ? 'bg-primary/5' : ''}`}
+                      className={`group flex items-center gap-2 w-full px-3 py-1.5 text-left hover:bg-base-200 transition-colors cursor-pointer ${isActive ? 'bg-primary/5' : ''}`}
                     >
                       <FileText size={12} className={isActive ? 'text-primary shrink-0' : 'text-base-content/30 shrink-0'} />
                       <span className={`text-xs truncate flex-1 ${isActive ? 'font-medium text-base-content' : 'text-base-content'}`}>{file.name}</span>
-                      <span className="text-[11px] text-base-content/30 shrink-0">{formatBytes(file.size)}</span>
+                      <span className="w-10 h-3.5 shrink-0 flex items-center justify-end">
+                        <span className="text-[11px] text-base-content/30 group-hover:hidden">{formatBytes(file.size)}</span>
+                        <CircleArrowRight size={14} className="text-primary hidden group-hover:block" />
+                      </span>
                     </button>
                   );
                 })}
@@ -159,6 +166,7 @@ export function SearchEmpty({ initialMode = 'bed' }: { initialMode?: 'bed' | 'be
                     e.target.value = '';
                   }}
                 />
+              </div>
               </div>
             )}
           </div>

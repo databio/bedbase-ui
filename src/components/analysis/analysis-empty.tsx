@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from 'react';
 import {
   FileText,
-  ChevronDown, Plus,
+  ChevronDown, Plus, CircleArrowRight,
 } from 'lucide-react';
 import { useFile } from '../../contexts/file-context';
 import { useUploadedFiles } from '../../contexts/uploaded-files-context';
@@ -82,31 +82,36 @@ export function AnalysisEmpty() {
           <div className="grid grid-cols-3 gap-2">
             {(bedFile || files.length > 0) && (
               <div className="relative" ref={pickerRef}>
-                <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-accent/30 bg-accent/5 h-full">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (files.length <= 1 && bedFile) {
+                      openTab('analysis', 'file');
+                    } else {
+                      setShowFilePicker(!showFilePicker);
+                    }
+                  }}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-accent/30 bg-accent/5 h-full w-full text-left cursor-pointer hover:bg-accent/10 transition-colors"
+                >
                   <FileText size={14} className="text-accent shrink-0" />
                   {bedFile ? (
-                    <button
-                      className="min-w-0 flex-1 text-left cursor-pointer hover:opacity-70 transition-opacity"
-                      onClick={() => openTab('analysis', 'file')}
-                    >
+                    <div className="min-w-0 flex-1">
                       <p className="text-xs font-medium text-base-content truncate">{bedFile.name}</p>
                       <p className="text-[11px] text-base-content/40">{formatBytes(bedFile.size)} · uploaded</p>
-                    </button>
+                    </div>
                   ) : (
                     <div className="min-w-0 flex-1">
                       <p className="text-xs text-base-content/40">No file selected</p>
                     </div>
                   )}
-                  <button
-                    onClick={() => setShowFilePicker(!showFilePicker)}
-                    className="p-0.5 cursor-pointer hover:opacity-70 transition-opacity shrink-0"
-                  >
-                    <ChevronDown size={14} className={`text-base-content/40 transition-transform ${showFilePicker ? 'rotate-180' : ''}`} />
-                  </button>
-                </div>
+                  {files.length > 1 && (
+                    <ChevronDown size={14} className={`text-base-content/40 transition-transform shrink-0 ${showFilePicker ? 'rotate-180' : ''}`} />
+                  )}
+                </button>
 
                 {showFilePicker && (
-                  <div className="absolute top-full left-0 min-w-full mt-1 border border-base-300 rounded-lg bg-base-100 shadow-lg z-20 py-1 max-h-52 overflow-y-auto">
+                  <div className="absolute top-full left-0 min-w-full mt-1 border border-base-300 rounded-lg bg-base-100 shadow-lg z-20 max-h-52 overflow-hidden">
+                  <div className="py-1 max-h-52 overflow-y-auto">
                     {files.map((file, idx) => {
                       const isActive = bedFile && `${file.name}|${file.size}|${file.lastModified}` === `${bedFile.name}|${bedFile.size}|${bedFile.lastModified}`;
                       return (
@@ -118,11 +123,14 @@ export function AnalysisEmpty() {
                             setShowFilePicker(false);
                             openTab('analysis', 'file');
                           }}
-                          className={`flex items-center gap-2 w-full px-3 py-1.5 text-left hover:bg-base-200 transition-colors cursor-pointer ${isActive ? 'bg-primary/5' : ''}`}
+                          className={`group flex items-center gap-2 w-full px-3 py-1.5 text-left hover:bg-base-200 transition-colors cursor-pointer ${isActive ? 'bg-primary/5' : ''}`}
                         >
                           <FileText size={12} className={isActive ? 'text-primary shrink-0' : 'text-base-content/30 shrink-0'} />
                           <span className={`text-xs truncate flex-1 ${isActive ? 'font-medium text-base-content' : 'text-base-content'}`}>{file.name}</span>
-                          <span className="text-[11px] text-base-content/30 shrink-0">{formatBytes(file.size)}</span>
+                          <span className="w-10 h-3.5 shrink-0 flex items-center justify-end">
+                            <span className="text-[11px] text-base-content/30 group-hover:hidden">{formatBytes(file.size)}</span>
+                            <CircleArrowRight size={14} className="text-primary hidden group-hover:block" />
+                          </span>
                         </button>
                       );
                     })}
@@ -153,6 +161,7 @@ export function AnalysisEmpty() {
                         e.target.value = '';
                       }}
                     />
+                  </div>
                   </div>
                 )}
               </div>

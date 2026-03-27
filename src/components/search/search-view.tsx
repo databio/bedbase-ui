@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Search, FileText, AlertCircle, RefreshCw, X, ScatterChart, ChevronDown, Plus } from 'lucide-react';
+import { Search, FileText, AlertCircle, RefreshCw, X, ScatterChart, ChevronDown, Plus, ArrowRight } from 'lucide-react';
 import { Breadcrumb } from '../shared/breadcrumb';
 import { useTab } from '../../contexts/tab-context';
 import { useFile } from '../../contexts/file-context';
@@ -266,7 +266,7 @@ function TextSearchResults({ query }: { query: string }) {
   };
 
   const header = (
-    <div className="flex items-center gap-2 border border-base-300 rounded-lg px-3 py-2 bg-base-100">
+    <div className="flex items-center gap-2 border border-base-300 rounded-lg bg-base-100 px-3 py-2">
       <input
         type="text"
         className="flex-1 bg-transparent outline-none text-sm text-base-content placeholder:text-base-content/50"
@@ -288,10 +288,10 @@ function TextSearchResults({ query }: { query: string }) {
       <button
         type="button"
         onClick={handleSubmit}
-        className="btn btn-primary btn-sm"
+        className="w-6 h-6 rounded-full bg-primary text-primary-content hover:bg-primary/90 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center shrink-0"
         disabled={!editQuery.trim()}
       >
-        <Search size={16} />
+        <ArrowRight size={12} />
       </button>
     </div>
   );
@@ -469,16 +469,14 @@ function SearchModeToggle({ mode, query }: { mode: 'bed' | 'bedset'; query: stri
   const { openTab } = useTab();
   return (
     <button
+      type="button"
       onClick={() => {
-        if (mode === 'bed') {
-          openTab('search', BEDSET_PREFIX + query);
-        } else {
-          openTab('search', query);
-        }
+        openTab('search', mode === 'bed' ? BEDSET_PREFIX + query : query);
       }}
-      className="text-xs text-base-content/40 hover:text-base-content/60 transition-colors cursor-pointer shrink-0 select-none"
+      className="flex items-center gap-1 text-xs font-medium text-base-content/50 hover:text-base-content/70 transition-colors cursor-pointer shrink-0 select-none"
     >
-      {mode === 'bed' ? 'BED Search' : 'BEDset Search'}
+      {mode === 'bed' ? 'BED' : 'BEDset'}
+      <ChevronDown size={12} className="text-base-content/30" />
     </button>
   );
 }
@@ -520,7 +518,7 @@ function BedsetSearchResults({ query }: { query: string }) {
         ]} />
       </div>
       <div className="flex flex-col gap-2 mb-4">
-        <div className="flex items-center gap-2 border border-base-300 rounded-lg px-3 py-2 bg-base-100">
+        <div className="flex items-center gap-2 border border-base-300 rounded-lg bg-base-100 px-3 py-2">
           <input
             type="text"
             className="flex-1 bg-transparent outline-none text-sm text-base-content placeholder:text-base-content/50"
@@ -543,10 +541,10 @@ function BedsetSearchResults({ query }: { query: string }) {
           <button
             type="button"
             onClick={handleSubmit}
-            className="btn btn-primary btn-sm"
+            className="w-6 h-6 rounded-full bg-primary text-primary-content hover:bg-primary/90 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center shrink-0"
             disabled={!editQuery.trim()}
           >
-            <Search size={16} />
+            <ArrowRight size={12} />
           </button>
         </div>
         <div className="flex items-center gap-3 flex-wrap text-xs">

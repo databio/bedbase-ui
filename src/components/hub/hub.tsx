@@ -1,6 +1,6 @@
 import { useState, useRef, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Upload, FileText, X, Forward } from 'lucide-react';
+import { Search, Upload, FileText, X, Forward, ChevronDown, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { useFile } from '../../contexts/file-context';
 import { useUploadedFiles } from '../../contexts/uploaded-files-context';
@@ -77,17 +77,18 @@ function SearchInput({ onFileSelect }: { onFileSelect: (files: File[]) => void }
         <button
           type="button"
           onClick={() => { setSearchMode(searchMode === 'bed' ? 'bedset' : 'bed'); searchInputRef.current?.focus(); }}
-          className="text-xs text-base-content/40 hover:text-base-content/60 transition-colors cursor-pointer shrink-0 select-none"
+          className="flex items-center gap-1 text-xs font-medium text-base-content/50 hover:text-base-content/70 transition-colors cursor-pointer shrink-0 select-none"
         >
-          {searchMode === 'bed' ? 'BED Search' : 'BEDset Search'}
+          {searchMode === 'bed' ? 'BED' : 'BEDset'}
+          <ChevronDown size={12} className="text-base-content/30" />
         </button>
         <button
           type="button"
           onClick={handleSubmit}
-          className="btn btn-primary btn-sm"
+          className="w-7 h-7 rounded-full bg-primary text-primary-content hover:bg-primary/90 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center shrink-0"
           disabled={!query}
         >
-          <Search size={16} />
+          <ArrowRight size={14} />
         </button>
       </div>
 

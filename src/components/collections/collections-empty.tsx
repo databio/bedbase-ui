@@ -24,7 +24,7 @@ export function CollectionsEmpty() {
           <h2 className="text-2xl font-bold text-base-content mb-8 text-center">Collections</h2>
 
           <p className="text-base-content/50 text-sm text-center mb-3">
-            Browse BEDset collections, or search for them in the <a href="/search" onClick={(e) => { e.preventDefault(); openTab('search'); }} className="text-primary hover:underline cursor-pointer">Search</a> tab.
+            Browse BEDset collections, or search for them in the <a href="/search?type=bedset" onClick={(e) => { e.preventDefault(); openTab('search', 'bedset:'); }} className="text-primary hover:underline cursor-pointer">Search</a> tab.
           </p>
           <div className="grid grid-cols-3 gap-2">
             {sampleBedsets ? sampleBedsets.results.map((bs) => (
@@ -56,7 +56,7 @@ export function CollectionsEmpty() {
           </div>
 
           {/* Your Selections & File comparison */}
-          <div className="flex flex-col gap-2 mt-6">
+          <div className="flex flex-col gap-2 mt-2">
             <button
               onClick={() => openTab('collections', 'selection')}
               className="flex items-center gap-3 px-4 py-3 rounded-lg border border-base-300 hover:bg-base-200/30 transition-colors cursor-pointer text-left w-full"

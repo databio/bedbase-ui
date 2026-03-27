@@ -559,7 +559,7 @@ export function FilePage() {
                             type="checkbox"
                             checked={reportConfig[key]}
                             onChange={(e) => setReportConfig((prev) => ({ ...prev, [key]: e.target.checked }))}
-                            className="checkbox checkbox-xs checkbox-primary mt-[10px]"
+                            className="checkbox checkbox-xs checkbox-primary mt-2.5"
                           />
                           <div>
                             <span className="text-xs font-medium text-base-content">{label}</span>
