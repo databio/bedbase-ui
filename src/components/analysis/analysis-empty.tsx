@@ -1,7 +1,6 @@
 import { useRef, useState, useEffect } from 'react';
 import {
   FileText,
-  BarChart3, Table2, PieChart, Dna, Ruler,
   ChevronDown, Plus,
 } from 'lucide-react';
 import { useFile } from '../../contexts/file-context';
@@ -17,16 +16,34 @@ function formatBytes(bytes: number): string {
   return `${(bytes / 1024).toFixed(1)} KB`;
 }
 
-// --- Capabilities ---
+// --- Genomic partitions illustration ---
 
-const capabilities = [
-  { icon: BarChart3, label: 'Region distribution', description: 'Per-chromosome region count histograms' },
-  { icon: Table2, label: 'Chromosome statistics', description: 'Count, start, end, min/max/mean/median widths' },
-  { icon: Ruler, label: 'Region widths', description: 'Width distribution and summary statistics' },
-  { icon: Dna, label: 'GC content', description: 'GC percentage across regions' },
-  { icon: PieChart, label: 'Genomic partitions', description: 'Promoter, intron, exon, intergenic breakdown' },
-  { icon: BarChart3, label: 'Neighbor distances', description: 'Distance to nearest neighboring regions' },
+const partitions = [
+  { label: 'Intergenic', pct: 42, color: 'teal', opacity: 0.3 },
+  { label: 'Intron', pct: 28, color: 'teal', opacity: 0.45 },
+  { label: 'Promoter', pct: 14, color: 'teal', opacity: 0.65 },
+  { label: 'Exon', pct: 10, color: 'teal', opacity: 0.8 },
+  { label: "5' UTR", pct: 4, color: 'teal', opacity: 0.55 },
+  { label: "3' UTR", pct: 2, color: 'teal', opacity: 0.4 },
 ];
+
+function GenomicPartitionsGraphic() {
+  const maxPct = Math.max(...partitions.map((p) => p.pct));
+  return (
+    <svg viewBox="0 0 220 100" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
+      {partitions.map((p, i) => {
+        const barWidth = (p.pct / maxPct) * 130;
+        const y = 4 + i * 15.5;
+        return (
+          <g key={p.label}>
+            <text x="62" y={y + 10} fontSize="9" textAnchor="end" fill="currentColor" opacity={0.55} fontFamily="system-ui">{p.label}</text>
+            <rect x="66" y={y + 0.5} width={barWidth} height={13} rx={2} fill={p.color} opacity={p.opacity} />
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
 
 // --- Main component ---
 
@@ -54,33 +71,14 @@ export function AnalysisEmpty() {
 
   return (
     <div className="flex-1 overflow-auto">
-      <div className="px-4 md:px-6 pt-12 pb-10">
+      <div className="px-4 md:px-6 pt-12 pb-20">
         <div className="max-w-3xl mx-auto">
 
-          <h2 className="text-2xl font-bold text-base-content mb-1 text-center">Analyze a BED file</h2>
-          <p className="text-base-content/50 text-sm max-w-md mx-auto text-center mb-8">
+          <h2 className="text-2xl font-bold text-base-content mb-8 text-center">Analyze a BED file</h2>
+
+          <p className="text-base-content/50 text-sm max-w-md mx-auto text-center mb-3">
             Upload a file in the <a href="/upload" onClick={(e) => { e.preventDefault(); openTab('file'); }} className="text-primary hover:underline cursor-pointer">Upload</a> tab, or try one of the examples below.
           </p>
-
-          {/* What's included */}
-          <h3 className="text-sm font-semibold text-base-content mb-4 text-center">What's included in an analysis?</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {capabilities.map((cap) => {
-              const Icon = cap.icon;
-              return (
-                <div key={cap.label} className="flex items-start gap-2.5 p-3 rounded-lg bg-base-200/50">
-                  <Icon size={16} className="text-base-content/30 mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-xs font-medium text-base-content">{cap.label}</p>
-                    <p className="text-xs text-base-content/40 mt-0.5">{cap.description}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Try a file */}
-          <h3 className="text-sm font-semibold text-base-content mb-4 mt-10 text-center">Try a file:</h3>
           <div className="grid grid-cols-3 gap-2">
             {(bedFile || files.length > 0) && (
               <div className="relative" ref={pickerRef}>
@@ -205,6 +203,88 @@ export function AnalysisEmpty() {
               ))
             )}
           </div>
+
+        </div>
+        {/* --- Overview sections (wider) --- */}
+        <div className="max-w-5xl mx-auto mt-16 space-y-12">
+
+            {/* Quality control & statistics */}
+            <div className="flex flex-col md:flex-row gap-6 items-start">
+              <div className="flex-1">
+                <h3 className="text-base font-semibold text-base-content mb-3">Quality control & statistics</h3>
+                <p className="text-sm text-base-content/60 leading-relaxed mb-3">
+                  Every BED file in BEDbase passes through a standardization and quality control pipeline before it is available for analysis. Files are sorted by genomic coordinates, checked for valid formatting, and filtered by thresholds on file size, region count, and mean region width. This ensures consistency and prevents misleading results from malformed data.
+                </p>
+                <p className="text-sm text-base-content/60 leading-relaxed">
+                  Files that pass QC receive comprehensive statistics and diagnostic plots that reveal distribution patterns, enrichments, and potential biological roles, including region distributions across chromosomes, width distributions, GC content, genomic partition breakdowns, TSS distances, and neighbor region distances.
+                </p>
+              </div>
+              <div className="w-full md:w-64 shrink-0 border border-base-300 rounded-lg bg-base-200/30 aspect-[4/3] flex items-center justify-center p-3">
+                <GenomicPartitionsGraphic />
+              </div>
+            </div>
+
+            {/* Reference genome compatibility */}
+            <div className="flex flex-col md:flex-row-reverse gap-6 items-start">
+              <div className="flex-1">
+                <h3 className="text-base font-semibold text-base-content mb-3">Reference genome compatibility</h3>
+                <p className="text-sm text-base-content/60 leading-relaxed mb-3">
+                  BEDbase assesses each file's compatibility against reference genomes using three metrics: chromosome name sensitivity (XS), out-of-bounds region detection (OOBR), and sequence fit specificity (SF). These combine into a tiered ranking from Tier 1 (best match) to Tier 4 (poor match).
+                </p>
+                <p className="text-sm text-base-content/60 leading-relaxed">
+                  This is especially useful when a BED file's original reference genome is unknown or incorrectly annotated — a common problem in public repositories. The compatibility scores help identify the correct genome for downstream analysis.
+                </p>
+              </div>
+              <div className="w-full md:w-64 shrink-0 border border-base-300 rounded-lg bg-base-200/30 aspect-[4/3] flex items-center justify-center">
+                <div className="text-center px-4">
+                  <div className="flex items-center justify-center gap-1.5 mb-2">
+                    {[1, 2, 3, 4].map((tier) => (
+                      <div
+                        key={tier}
+                        className={`w-8 h-8 rounded border text-[10px] font-bold flex items-center justify-center ${
+                          tier === 1 ? 'bg-success/20 border-success/30 text-success' :
+                          tier === 2 ? 'bg-warning/20 border-warning/30 text-warning' :
+                          tier === 3 ? 'bg-warning/30 border-warning/40 text-warning' :
+                          'bg-error/20 border-error/30 text-error'
+                        }`}
+                      >
+                        T{tier}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-base-content/55">Tiered compatibility scoring</p>
+                </div>
+              </div>
+            </div>
+
+            {/* BED classification */}
+            <div className="flex flex-col md:flex-row gap-6 items-start">
+              <div className="flex-1">
+                <h3 className="text-base font-semibold text-base-content mb-3">BED file classification</h3>
+                <p className="text-sm text-base-content/60 leading-relaxed mb-3">
+                  BEDbase automatically classifies each file's format during processing. Files are categorized as UCSC BED, ENCODE narrowPeak, broadPeak, gappedPeak, RNA elements, or generic BED-like formats. Each category also has a "relaxed score" variant for files where the score column doesn't conform to the original 0-1000 specification but all other columns do.
+                </p>
+                <p className="text-sm text-base-content/60 leading-relaxed">
+                  This classification helps researchers understand what kind of data a file contains and what downstream analyses are appropriate, without needing to manually inspect column formats.
+                </p>
+              </div>
+              <div className="w-full md:w-64 shrink-0 border border-base-300 rounded-lg bg-base-200/30 aspect-[4/3] flex items-center justify-center">
+                <div className="text-center px-4 space-y-1.5">
+                  {['narrowPeak', 'broadPeak', 'UCSC BED', 'BED-like'].map((fmt) => (
+                    <div
+                      key={fmt}
+                      className={`text-[10px] font-mono rounded px-2 py-0.5 ${
+                        fmt === 'narrowPeak'
+                          ? 'bg-primary/10 text-primary border border-primary/20'
+                          : 'text-base-content/30 bg-base-300/40'
+                      }`}
+                    >
+                      {fmt}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
 
         </div>
       </div>

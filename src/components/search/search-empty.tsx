@@ -43,14 +43,16 @@ export function SearchEmpty({ initialMode = 'bed' }: { initialMode?: 'bed' | 'be
   const examples = searchMode === 'bed' ? EXAMPLE_QUERIES : EXAMPLE_BEDSET_QUERIES;
 
   return (
-    <div className="flex flex-col items-center justify-center h-full min-h-64 px-4 py-12">
-      <h2 className="text-2xl font-bold text-base-content mb-1">Search BEDbase</h2>
-      <p className="text-base-content/50 text-sm max-w-md mx-auto text-center mb-8">
-        {searchMode === 'bed'
-          ? <>Search by text query to find BED files, or upload your own in the <a href="/upload" onClick={(e) => { e.preventDefault(); openTab('file'); }} className="text-primary hover:underline cursor-pointer">Upload</a> tab to search by similarity.</>
-          : 'Search for curated BEDset collections.'}
-      </p>
+    <div className="flex-1 overflow-auto">
+    <div className="px-4 md:px-6 pt-12 pb-20">
+      <div className="max-w-3xl mx-auto flex flex-col items-center">
+      <h2 className="text-2xl font-bold text-base-content mb-8 text-center">Search BEDbase</h2>
 
+      <p className="text-base-content/50 text-sm text-center mb-3">
+        {searchMode === 'bed'
+          ? <>Search by text, or <a href="/upload" onClick={(e) => { e.preventDefault(); openTab('file'); }} className="text-primary hover:underline cursor-pointer">upload</a> a file to search by similarity.</>
+          : 'Find curated BEDset collections.'}
+      </p>
       <div className="w-full max-w-xl">
         {/* Text search */}
         <div className="flex items-center gap-2 border-[1.5px] border-primary/30 rounded-lg px-3 py-2.5">
@@ -177,6 +179,144 @@ export function SearchEmpty({ initialMode = 'bed' }: { initialMode?: 'bed' | 'be
           ))}
         </div>
       </div>
+      </div>
+
+      {/* --- Overview sections (wider) --- */}
+      <div className="max-w-5xl mx-auto mt-16 space-y-12">
+
+        {/* Text search */}
+        <div className="flex flex-col md:flex-row gap-6 items-start">
+          <div className="flex-1">
+            <h3 className="text-base font-semibold text-base-content mb-3">Text to BED</h3>
+            <p className="text-sm text-base-content/60 leading-relaxed mb-3">
+              BEDbase text search accepts free-form, natural language queries and returns relevant BED files. For each file in the database, biologically relevant metadata annotations — experiment type, biosample, cell type, tissue — are packed into a text summary and embedded as a vector using a sentence-transformer model.
+            </p>
+            <p className="text-sm text-base-content/60 leading-relaxed">
+              This enables meaning-based queries rather than exact keyword matching. Searching for "H3K27ac in liver" will surface relevant ChIP-seq files even if they don't contain those exact words in their metadata.
+            </p>
+          </div>
+          <div className="w-full md:w-64 shrink-0 border border-base-300 rounded-lg bg-base-200/30 aspect-[4/3] flex items-center justify-center">
+            <svg viewBox="0 0 160 130" className="w-full h-full p-3" preserveAspectRatio="xMidYMid meet">
+              {/* Query box */}
+              <rect x="20" y="20" width="120" height="16" rx="3" fill="none" stroke="teal" strokeWidth="1" opacity={0.35} />
+              <text x="80" y="31" fontSize="7" textAnchor="middle" fill="currentColor" opacity={0.55} fontFamily="system-ui">H3K27ac in liver</text>
+              {/* Arrow */}
+              <line x1="80" y1="38" x2="80" y2="44" stroke="teal" strokeWidth="1" opacity={0.35} />
+              <polygon points="76.5,44 83.5,44 80,50" fill="teal" opacity={0.35} />
+              {/* Results label */}
+              <text x="80" y="60" fontSize="6" textAnchor="middle" fill="currentColor" opacity={0.55} fontFamily="system-ui">semantic matches</text>
+              {/* Result rows */}
+              {[0, 1, 2, 3].map((i) => {
+                const y = 66 + i * 11;
+                const w = [110, 95, 80, 65][i];
+                const op = [0.5, 0.4, 0.3, 0.2][i];
+                return (
+                  <rect key={i} x="25" y={y} width={w} height="7" rx="2" fill="teal" opacity={op} />
+                );
+              })}
+            </svg>
+          </div>
+        </div>
+
+        {/* BED-to-BED similarity */}
+        <div className="flex flex-col md:flex-row-reverse gap-6 items-start">
+          <div className="flex-1">
+            <h3 className="text-base font-semibold text-base-content mb-3">BED to BED</h3>
+            <p className="text-sm text-base-content/60 leading-relaxed mb-3">
+              Upload a BED file and find the most similar files in BEDbase based on genomic interval content, not metadata. Each file is embedded into a vector representation of its actual regions, so similarity reflects shared genomic coordinates rather than text annotations.
+            </p>
+            <p className="text-sm text-base-content/60 leading-relaxed">
+              This is useful for identifying functionally similar experiments, validating results against existing data, quality control and outlier detection, and finding related datasets for meta-analysis.
+            </p>
+          </div>
+          <div className="w-full md:w-64 shrink-0 border border-base-300 rounded-lg bg-base-200/30 aspect-[4/3] flex items-center justify-center">
+            <svg viewBox="0 0 160 140" className="w-full h-full p-3" preserveAspectRatio="xMidYMid meet">
+              {/* BED file card (compact) */}
+              <rect x="30" y="4" width="100" height="34" rx="3" fill="none" stroke="teal" strokeWidth="1" opacity={0.3} />
+              {/* Column headers */}
+              <text x="40" y="14" fontSize="6" fill="teal" opacity={0.55} fontFamily="monospace">chr</text>
+              <text x="65" y="14" fontSize="6" fill="teal" opacity={0.55} fontFamily="monospace">start</text>
+              <text x="98" y="14" fontSize="6" fill="teal" opacity={0.55} fontFamily="monospace">end</text>
+              {/* Rows */}
+              {[0, 1, 2].map((i) => {
+                const y = 19 + i * 5.5;
+                return (
+                  <g key={i}>
+                    <rect x="40" y={y} width="14" height="2.5" rx="1" fill="teal" opacity={0.4} />
+                    <rect x="65" y={y} width={[18, 14, 20][i]} height="2.5" rx="1" fill="teal" opacity={0.4} />
+                    <rect x="98" y={y} width={[16, 20, 14][i]} height="2.5" rx="1" fill="teal" opacity={0.4} />
+                  </g>
+                );
+              })}
+              {/* Arrow down to embedding */}
+              <line x1="80" y1="40" x2="80" y2="44" stroke="teal" strokeWidth="1" opacity={0.35} />
+              <polygon points="76.5,44 83.5,44 80,50" fill="teal" opacity={0.35} />
+              {/* Query embedding label */}
+              <text x="80" y="60" fontSize="6" textAnchor="middle" fill="currentColor" opacity={0.55} fontFamily="system-ui">region embedding</text>
+              {/* Query embedding row (matches db row style) */}
+              <rect x="30" y="66" width="100" height="10" rx="2" fill="teal" opacity={0.08} stroke="teal" strokeWidth="0.5" strokeOpacity={0.3} />
+              <text x="80" y="73.5" fontSize="6" textAnchor="middle" fill="teal" opacity={0.55} fontFamily="monospace">.31 .08 .72 .45 .19</text>
+              {/* Arrow down to database */}
+              <line x1="80" y1="78" x2="80" y2="82" stroke="teal" strokeWidth="1" opacity={0.35} />
+              <polygon points="76.5,82 83.5,82 80,88" fill="teal" opacity={0.35} />
+              {/* Embedding database label */}
+              <text x="80" y="98" fontSize="6" textAnchor="middle" fill="currentColor" opacity={0.55} fontFamily="system-ui">embedding database</text>
+              {/* Database rows */}
+              {[
+                { y: 104, vals: '.29 .10 .68 .42 .21', match: true },
+                { y: 116, vals: '.33 .06 .75 .48 .17', match: true },
+                { y: 128, vals: '.82 .44 .15 .61 .37', match: false },
+              ].map((row, i) => (
+                <g key={i}>
+                  <rect x="30" y={row.y} width="100" height="10" rx="2" fill={row.match ? 'teal' : 'currentColor'} opacity={row.match ? 0.08 : 0.03} stroke={row.match ? 'teal' : 'none'} strokeWidth="0.5" strokeOpacity={0.25} />
+                  <text x="80" y={row.y + 7.5} fontSize="6" textAnchor="middle" fill={row.match ? 'teal' : 'currentColor'} opacity={row.match ? 0.45 : 0.18} fontFamily="monospace">{row.vals}</text>
+                </g>
+              ))}
+            </svg>
+          </div>
+        </div>
+
+        {/* BEDset search */}
+        <div className="flex flex-col md:flex-row gap-6 items-start">
+          <div className="flex-1">
+            <h3 className="text-base font-semibold text-base-content mb-3">Text to BEDset</h3>
+            <p className="text-sm text-base-content/60 leading-relaxed mb-3">
+              BEDsets are curated collections of BED files grouped by shared experiment, project, or biological interest. BEDbase automatically generates a BEDset for each GEO project (GSE), so searching for a project identifier retrieves all associated BED files at once.
+            </p>
+            <p className="text-sm text-base-content/60 leading-relaxed">
+              BEDset search currently uses exact text matching on names and identifiers. Users can also create custom BEDsets tailored to their research, grouping files across projects and data sources.
+            </p>
+          </div>
+          <div className="w-full md:w-64 shrink-0 border border-base-300 rounded-lg bg-base-200/30 aspect-[4/3] flex items-center justify-center">
+            <svg viewBox="0 0 160 130" className="w-full h-full p-3" preserveAspectRatio="xMidYMid meet">
+              {/* Search box (matches text-to-bed) */}
+              <rect x="20" y="12" width="120" height="16" rx="3" fill="none" stroke="teal" strokeWidth="1" opacity={0.35} />
+              <text x="80" y="23" fontSize="7" textAnchor="middle" fill="currentColor" opacity={0.55} fontFamily="system-ui">ChIP-seq liver</text>
+              {/* Arrow */}
+              <line x1="80" y1="30" x2="80" y2="36" stroke="teal" strokeWidth="1" opacity={0.35} />
+              <polygon points="76.5,36 83.5,36 80,42" fill="teal" opacity={0.35} />
+              {/* Label */}
+              <text x="80" y="52" fontSize="6" textAnchor="middle" fill="currentColor" opacity={0.55} fontFamily="system-ui">matching collections</text>
+              {/* BEDset result rows with file count badges */}
+              {[
+                { y: 58, name: 'GSE118327', files: 24, op: 0.8 },
+                { y: 74, name: 'GSE104812', files: 16, op: 0.6 },
+                { y: 90, name: 'GSE91928', files: 8, op: 0.4 },
+                { y: 106, name: 'excluderanges', files: 3, op: 0.25 },
+              ].map((row) => (
+                <g key={row.name}>
+                  <rect x="20" y={row.y} width="120" height="12" rx="2" fill="teal" opacity={row.op * 0.15} stroke="teal" strokeWidth="0.5" strokeOpacity={row.op * 0.5} />
+                  <text x="28" y={row.y + 8.5} fontSize="6" fill="teal" opacity={row.op} fontFamily="monospace">{row.name}</text>
+                  <rect x="113" y={row.y + 2.5} width="22" height="7" rx="3.5" fill="teal" opacity={row.op * 0.2} />
+                  <text x="124" y={row.y + 6} fontSize="5" textAnchor="middle" fill="teal" opacity={row.op * 0.8} fontFamily="system-ui" dominantBaseline="central">{row.files}</text>
+                </g>
+              ))}
+            </svg>
+          </div>
+        </div>
+
+      </div>
+    </div>
     </div>
   );
 }
