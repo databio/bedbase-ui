@@ -1,6 +1,6 @@
 import { useState, useRef, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Upload, FileText, X, Forward, ChevronDown, ArrowRight } from 'lucide-react';
+import { Upload, FileText, X, Forward, ChevronDown, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { useFile } from '../../contexts/file-context';
 import { useUploadedFiles } from '../../contexts/uploaded-files-context';

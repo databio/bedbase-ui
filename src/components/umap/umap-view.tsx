@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo, useCallback, useReducer } from 'react';
-import { Upload, X, Crosshair, Loader2, Pin } from 'lucide-react';
+import { Upload, X, Eye, EyeOff, Crosshair, Loader2, Pin, ChevronDown, Info } from 'lucide-react';
+import { useUploadedFiles } from '../../contexts/uploaded-files-context';
 import { useSearchParams } from 'react-router-dom';
 import { useFile } from '../../contexts/file-context';
 import { useBucket } from '../../contexts/bucket-context';
@@ -56,15 +57,21 @@ export function UmapView() {
   const [searchParams, setSearchParams] = useSearchParams();
   const getBedUmap = useBedUmap();
 
+  const { files: uploadedFiles, addFiles, setActiveIndex } = useUploadedFiles();
   const plotRef = useRef<EmbeddingPlotRef>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [fileVisible, setFileVisible] = useState(true);
+  const [showFilePicker, setShowFilePicker] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
+  const filePickerRef = useRef<HTMLDivElement>(null);
 
   // State managed here, not in context
   const [colorGrouping, setColorGrouping] = useState('cell_line_category');
   const [legendItems, setLegendItems] = useState<LegendItem[]>([]);
   const [pinnedCategories, setPinnedCategories] = useState<number[]>([]);
   // umapCoordinates is persisted in FileContext so it survives UmapView remounts (e.g., split view)
-  const customCoordinates = umapCoordinates;
+  // Pass null to the plot when hidden to remove the point without clearing the cache
+  const customCoordinates = fileVisible ? umapCoordinates : null;
   const setCustomCoordinates = setUmapCoordinates;
   const [preselectedMatch, setPreselectedMatch] = useState<{ matched: number; total: number }>({ matched: 0, total: 0 });
 
@@ -139,14 +146,14 @@ export function UmapView() {
 
   useEffect(() => {
     if (!bedFile) {
-      if (customCoordinates) {
+      if (umapCoordinates) {
         setCustomCoordinates(null);
         plotRef.current?.handleFileRemove();
       }
       return;
     }
     // Skip re-projection if coordinates are already cached (e.g., remount from split view)
-    if (customCoordinates) return;
+    if (umapCoordinates) return;
     if (preselectedIds.length > 0) clearPreselection();
     getBedUmap.mutate(bedFile, {
       onSuccess: (coords) => setCustomCoordinates(coords),
@@ -160,14 +167,38 @@ export function UmapView() {
     if (!file) return;
     const name = file.name.toLowerCase();
     if (!name.endsWith('.bed') && !name.endsWith('.bed.gz')) return;
+    addFiles([file]);
     setBedFile(file);
+    setFileVisible(true);
   };
 
-  const handleRemoveFile = () => {
-    setBedFile(null);
-    setCustomCoordinates(null);
-    plotRef.current?.handleFileRemove();
+  const handleToggleVisibility = () => {
+    if (fileVisible) {
+      setFileVisible(false);
+      plotRef.current?.handleFileRemove();
+    } else {
+      setFileVisible(true);
+    }
   };
+
+  const handleSwitchFile = (file: File, idx: number) => {
+    setBedFile(file);
+    setActiveIndex(idx);
+    setFileVisible(true);
+    setShowFilePicker(false);
+  };
+
+  // Close file picker on outside click
+  useEffect(() => {
+    if (!showFilePicker) return;
+    function handleClick(e: MouseEvent) {
+      if (filePickerRef.current && !filePickerRef.current.contains(e.target as Node)) {
+        setShowFilePicker(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showFilePicker]);
 
   const handleTogglePin = useCallback(
     (category: number) => plotRef.current?.handleTogglePin(category),
@@ -248,25 +279,64 @@ export function UmapView() {
               </div>
             )}
             {/* File controls — top right */}
-            <div className="absolute top-2 right-2 z-10 flex items-center gap-1.5">
+            <div className="absolute top-2 right-2 z-10 flex items-center gap-1.5" ref={filePickerRef}>
               {bedFile ? (
-                <div className="inline-flex items-center gap-1.5 text-xs font-medium bg-base-200 rounded-md px-2.5 py-1.5 transition-colors">
+                <>
+                  {/* Action buttons */}
                   {getBedUmap.isPending ? (
-                    <Loader2 size={12} className="animate-spin text-primary" />
-                  ) : (
+                    <div className="w-7 h-7 rounded-md bg-base-200 flex items-center justify-center">
+                      <Loader2 size={12} className="animate-spin text-primary" />
+                    </div>
+                  ) : fileVisible ? (
                     <button
                       onClick={handleLocateCustomPoint}
-                      className="hover:text-primary cursor-pointer transition-colors"
+                      className="w-7 h-7 rounded-md bg-base-200 hover:bg-base-300 flex items-center justify-center text-base-content/40 hover:text-primary cursor-pointer transition-colors"
                       title="Locate on plot"
                     >
-                      <Crosshair size={12} />
+                      <Crosshair size={13} />
                     </button>
-                  )}
-                  <span className="text-base-content/70 truncate max-w-64">{bedFile.name}</span>
-                  <button onClick={handleRemoveFile} className="hover:text-error cursor-pointer transition-colors">
-                    <X size={12} />
+                  ) : null}
+                  <button
+                    onClick={handleToggleVisibility}
+                    className={`w-7 h-7 rounded-md bg-base-200 hover:bg-base-300 flex items-center justify-center cursor-pointer transition-colors ${fileVisible ? 'text-base-content/40 hover:text-base-content/70' : 'text-base-content/30 hover:text-base-content/50'}`}
+                    title={fileVisible ? 'Hide from plot' : 'Show on plot'}
+                  >
+                    {fileVisible ? <Eye size={13} /> : <EyeOff size={13} />}
                   </button>
-                </div>
+                  {/* Filename chip + dropdown */}
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (uploadedFiles.length > 1) setShowFilePicker(!showFilePicker);
+                      }}
+                      className={`inline-flex items-center gap-1 text-xs font-medium bg-base-200 rounded-md px-2.5 py-1.5 transition-colors ${uploadedFiles.length > 1 ? 'cursor-pointer hover:bg-base-300' : ''}`}
+                    >
+                      <span className={`truncate max-w-64 ${fileVisible ? 'text-base-content/70' : 'text-base-content/40'}`}>{bedFile.name}</span>
+                      {uploadedFiles.length > 1 && (
+                        <ChevronDown size={12} className={`text-base-content/30 transition-transform shrink-0 ${showFilePicker ? 'rotate-180' : ''}`} />
+                      )}
+                    </button>
+                    {showFilePicker && (
+                      <div className="absolute top-full right-0 mt-1 border border-base-300 rounded-lg shadow-lg z-20 overflow-hidden">
+                      <div className="bg-base-100 py-1 max-h-52 overflow-y-auto">
+                        {uploadedFiles.map((file, idx) => {
+                          const isActive = bedFile && `${file.name}|${file.size}|${file.lastModified}` === `${bedFile.name}|${bedFile.size}|${bedFile.lastModified}`;
+                          return (
+                            <button
+                              key={`${file.name}|${file.size}|${file.lastModified}`}
+                              onClick={() => handleSwitchFile(file, idx)}
+                              className={`flex items-center gap-2 w-full px-3 py-1.5 text-left text-xs hover:bg-base-200 transition-colors cursor-pointer whitespace-nowrap ${isActive ? 'bg-primary/5 font-medium' : ''}`}
+                            >
+                              <span className={`truncate ${isActive ? 'text-primary' : 'text-base-content'}`}>{file.name}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      </div>
+                    )}
+                  </div>
+                </>
               ) : (
                 <button
                   onClick={() => fileInputRef.current?.click()}
@@ -309,7 +379,46 @@ export function UmapView() {
               showStatus
               className="h-full"
             />
+            {/* Info button — bottom left */}
+            <button
+              onClick={() => setShowInfo(true)}
+              className="absolute bottom-2 left-2 z-10 w-7 h-7 rounded-md bg-base-200 hover:bg-base-300 flex items-center justify-center text-base-content/40 hover:text-base-content/70 cursor-pointer transition-colors"
+              title="About this visualization"
+            >
+              <Info size={13} />
+            </button>
           </div>
+          {/* Info modal */}
+          {showInfo && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40" onClick={() => setShowInfo(false)}>
+              <div className="bg-base-100 rounded-lg shadow-lg w-full max-w-md mx-4 max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center justify-between px-4 py-3 border-b border-base-300 shrink-0">
+                  <h3 className="text-sm font-semibold">BED File Embedding Space</h3>
+                  <button onClick={() => setShowInfo(false)} className="p-1 rounded hover:bg-base-200 transition-colors cursor-pointer">
+                    <X size={16} />
+                  </button>
+                </div>
+                <div className="overflow-auto p-4 space-y-3">
+                  <p className="text-xs text-base-content/60 leading-relaxed">
+                    This UMAP visualizes BEDbase's hg38 BED files as points in a 2D embedding space. Files with similar genomic region content appear closer together, even if they come from different experiments or labs.
+                  </p>
+                  <p className="text-xs text-base-content/60 leading-relaxed">
+                    Each file is embedded using a pre-trained region embedding model, and the resulting vectors are projected via UMAP for visualization.
+                  </p>
+                  <div className="text-xs text-base-content/60 space-y-1">
+                    <p className="font-medium text-base-content">How to interact</p>
+                    <ul className="list-disc pl-4 space-y-0.5">
+                      <li>Click individual points to inspect them in the table</li>
+                      <li>Lasso or range-select to capture groups of points</li>
+                      <li>Save selections to compare across sessions</li>
+                      <li>Upload a BED file to see where it falls in the space</li>
+                      <li>Use the legend to filter and pin categories</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
           <EmbeddingTable
             selectedPoints={allVisiblePoints}
             preselectedIds={new Set(preselectedIds)}

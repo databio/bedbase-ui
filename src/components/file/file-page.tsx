@@ -44,12 +44,11 @@ function FileRow({ file, isActive, onActivate, onRemove }: {
       <FileText size={12} className={isActive ? 'text-primary shrink-0' : 'text-base-content/30 shrink-0'} />
       <span className={`text-xs truncate flex-1 ${isActive ? 'font-medium text-base-content' : 'text-base-content/60'}`}>{file.name}</span>
       <span className="text-[11px] text-base-content/30 shrink-0">{formatBytes(file.size)}</span>
-      <button
+      <X
+        size={10}
+        className="text-base-content/30 hover:text-base-content/60 cursor-pointer shrink-0 transition-colors"
         onClick={(e) => { e.stopPropagation(); onRemove(); }}
-        className="opacity-0 group-hover/row:opacity-100 transition-opacity cursor-pointer shrink-0"
-      >
-        <X size={10} className="text-base-content/30 hover:text-base-content/60" />
-      </button>
+      />
     </div>
   );
 }
@@ -268,78 +267,105 @@ function FileEmpty() {
 
   return (
     <div className="flex-1 overflow-auto">
-      <div className="flex flex-col items-center px-4 md:px-6 pt-12 pb-10">
-        <h2 className="text-2xl font-bold text-base-content mb-1">Upload BED files</h2>
-        <p className="text-base-content/50 text-sm max-w-md text-center mb-8">
-          Analyze, search for similar files, compare multiple files, or view in the embedding space. Up to 15 files.
-        </p>
+      <div className="px-4 md:px-6 pt-12 pb-20">
+        <div className="max-w-3xl mx-auto flex flex-col items-center">
+          <h2 className="text-2xl font-bold text-base-content mb-8 text-center">Upload BED files</h2>
 
-        <div className="w-full max-w-xl">
-          {/* Drop zone (top) */}
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
-            onDragLeave={() => setIsDragOver(false)}
-            onDrop={(e) => {
-              e.preventDefault();
-              setIsDragOver(false);
-              handleFiles(Array.from(e.dataTransfer.files));
-            }}
-            className={`flex flex-col items-center justify-center w-full h-32 rounded-t-lg border-[1.5px] border-dashed border-b-0 transition-colors cursor-pointer gap-2 ${
-              isDragOver ? 'border-secondary bg-secondary/10' : 'border-secondary/30 bg-secondary/5 hover:bg-secondary/10 hover:border-secondary/50'
-            }`}
-          >
-            <Upload size={16} className="text-secondary" />
-            <span className="text-sm font-medium text-base-content">Drop BED files here or click to browse</span>
-            <span className="text-xs text-base-content/40">.bed and .bed.gz files supported</span>
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept=".bed,.gz"
-            className="hidden"
-            onChange={(e) => {
-              if (e.target.files && e.target.files.length > 0) handleFiles(Array.from(e.target.files));
-              e.target.value = '';
-            }}
-          />
+          <p className="text-base-content/50 text-sm text-center mb-3">
+            Drop files, paste a URL, or browse. Up to 15 files at a time.
+          </p>
 
-          {/* URL input (bottom, attached) */}
-          <div className="flex items-center gap-2 border-[1.5px] border-solid border-secondary/30 rounded-b-lg px-3 py-2.5">
-            <input
-              type="text"
-              value={url}
-              onChange={(e) => { setUrl(e.target.value); setUrlError(null); }}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleUrlSubmit(); }}
-              placeholder="Paste a URL to a BED file..."
-              disabled={urlLoading}
-              className="flex-1 bg-transparent outline-none text-sm text-base-content placeholder:text-base-content/40"
-            />
+          <div className="w-full max-w-xl">
+            {/* Drop zone (top) */}
             <button
-              onClick={handleUrlSubmit}
-              disabled={urlLoading || !url.trim()}
-              className="btn btn-secondary btn-sm disabled:opacity-40"
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+              onDragLeave={() => setIsDragOver(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsDragOver(false);
+                handleFiles(Array.from(e.dataTransfer.files));
+              }}
+              className={`flex flex-col items-center justify-center w-full h-32 rounded-t-lg border-[1.5px] border-dashed border-b-0 transition-colors cursor-pointer gap-2 ${
+                isDragOver ? 'border-secondary bg-secondary/10' : 'border-secondary/30 bg-secondary/5 hover:bg-secondary/10 hover:border-secondary/50'
+              }`}
             >
-              {urlLoading ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+              <Upload size={16} className="text-secondary" />
+              <span className="text-sm font-medium text-base-content">Drop BED files here or click to browse</span>
+              <span className="text-xs text-base-content/40">.bed and .bed.gz files supported</span>
             </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept=".bed,.gz"
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.files && e.target.files.length > 0) handleFiles(Array.from(e.target.files));
+                e.target.value = '';
+              }}
+            />
+
+            {/* URL input (bottom, attached) */}
+            <div className="flex items-center gap-2 border-[1.5px] border-solid border-secondary/30 rounded-b-lg px-3 py-2.5">
+              <input
+                type="text"
+                value={url}
+                onChange={(e) => { setUrl(e.target.value); setUrlError(null); }}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleUrlSubmit(); }}
+                placeholder="Paste a URL to a BED file..."
+                disabled={urlLoading}
+                className="flex-1 bg-transparent outline-none text-sm text-base-content placeholder:text-base-content/40"
+              />
+              <button
+                onClick={handleUrlSubmit}
+                disabled={urlLoading || !url.trim()}
+                className="w-7 h-7 rounded-full bg-secondary text-secondary-content hover:bg-secondary/90 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center shrink-0"
+              >
+                {urlLoading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+              </button>
+            </div>
+
+            {urlError && <p className="text-xs text-error mt-1.5 px-1">{urlError}</p>}
+            <p className="text-xs text-base-content/30 mt-1.5 px-1">
+              Paste a direct link to a .bed or .bed.gz file.{' '}
+              Try:{' '}
+              <button
+                onClick={() => {
+                  setUrl('https://api.bedbase.org/v1/files/files/d/c/dcc005e8761ad5599545cc538f6a2a4d.bed.gz');
+                  setUrlError(null);
+                }}
+                className="text-secondary/60 hover:text-secondary hover:underline cursor-pointer"
+              >
+                example BED file
+              </button>
+            </p>
+          </div>
+        </div>
+
+        {/* --- Overview sections (wider) ---
+        <div className="max-w-5xl mx-auto mt-16 space-y-12">
+          <div>
+            <h3 className="text-base font-semibold text-base-content mb-3">Browser-based analysis with WebAssembly</h3>
+            <p className="text-sm text-base-content/60 leading-relaxed mb-3">
+              Uploaded files are parsed and analyzed entirely in your browser using gtars, a genomic interval toolkit compiled to WebAssembly. No data is sent to a server for analysis — statistics, distributions, and genomic annotations are all computed locally, so your files never leave your machine.
+            </p>
+            <p className="text-sm text-base-content/60 leading-relaxed">
+              This means analysis is fast, private, and works offline once the page is loaded. Large files (up to 250 MB) are supported, though parsing time increases with file size.
+            </p>
           </div>
 
-          {urlError && <p className="text-xs text-error mt-1.5 px-1">{urlError}</p>}
-          <p className="text-xs text-base-content/30 mt-1.5 px-1">
-            Paste a direct link to a .bed or .bed.gz file.{' '}
-            Try:{' '}
-            <button
-              onClick={() => {
-                setUrl('https://api.bedbase.org/v1/files/files/d/c/dcc005e8761ad5599545cc538f6a2a4d.bed.gz');
-                setUrlError(null);
-              }}
-              className="text-secondary/60 hover:text-secondary hover:underline cursor-pointer"
-            >
-              example BED file
-            </button>
-          </p>
+          <div>
+            <h3 className="text-base font-semibold text-base-content mb-3">What you can do with uploaded files</h3>
+            <p className="text-sm text-base-content/60 leading-relaxed mb-3">
+              Once uploaded, each file can be analyzed for region statistics and genomic annotations, searched against BEDbase to find similar files by genomic content, or projected onto the UMAP embedding space to see how it relates to existing data.
+            </p>
+            <p className="text-sm text-base-content/60 leading-relaxed">
+              With multiple files uploaded, you can compare them using Jaccard similarity, consensus regions, and set operations. Similarity search and UMAP projection require sending the file to the BEDbase API for embedding, but all other analysis stays client-side.
+            </p>
+          </div>
         </div>
+        */}
       </div>
     </div>
   );
@@ -424,9 +450,10 @@ export function FilePage() {
           <div className="grid gap-6 grid-cols-[minmax(220px,350px)_1fr]">
 
             {/* Left column: file list */}
-            <div className="border border-base-300 rounded-lg p-3 self-start">
+            <div className="self-start space-y-2">
+            <div className="border border-base-300 rounded-lg p-3">
               {/* Header */}
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-semibold text-base-content/50 uppercase tracking-wide">
                   {isMulti ? `${files.length} Files` : 'File'}
                 </span>
@@ -463,17 +490,18 @@ export function FilePage() {
               </button>
 
               {showAddFiles && <AddFilesInline onFiles={handleAddFiles} />}
+            </div>
 
-              {/* Compare action */}
-              {isMulti && (
-                <button
-                  onClick={handleCompare}
-                  className="flex items-center gap-2 mt-2 px-3 py-2 w-full rounded-md border border-success/30 bg-success/5 hover:bg-success/10 hover:border-success/50 transition-colors cursor-pointer"
-                >
-                  <GitCompareArrows size={12} className="text-success shrink-0" />
-                  <span className="text-xs font-medium text-base-content">Compare {files.length} files</span>
-                </button>
-              )}
+            {/* Compare action — below file list */}
+            {isMulti && (
+              <button
+                onClick={handleCompare}
+                className="flex items-center gap-2 px-3 py-2 w-full rounded-lg border border-success/30 bg-success/5 hover:bg-success/10 hover:border-success/50 transition-colors cursor-pointer"
+              >
+                <GitCompareArrows size={12} className="text-success shrink-0" />
+                <span className="text-xs font-medium text-base-content">Compare {files.length} files</span>
+              </button>
+            )}
             </div>
 
             {/* Right column: detail + actions */}

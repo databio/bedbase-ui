@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Search, FileText, AlertCircle, RefreshCw, X, ScatterChart, ChevronDown, Plus, ArrowRight } from 'lucide-react';
+import { FileText, AlertCircle, RefreshCw, X, ScatterChart, ChevronDown, Plus, ArrowRight } from 'lucide-react';
 import { Breadcrumb } from '../shared/breadcrumb';
 import { useTab } from '../../contexts/tab-context';
 import { useFile } from '../../contexts/file-context';
@@ -380,17 +380,16 @@ function BedSearchResults() {
 
   const header = (
     <div className="relative" ref={pickerRef}>
-      <div className="flex items-center gap-3 border border-base-300 rounded-lg px-3 py-2 bg-base-100">
+      <button
+        type="button"
+        onClick={() => setShowFilePicker(!showFilePicker)}
+        className="flex items-center gap-3 border border-base-300 rounded-lg px-3 py-2 bg-base-100 w-full text-left cursor-pointer hover:bg-base-200/30 transition-colors"
+      >
         <FileText size={16} className="text-primary shrink-0" />
         <span className="text-sm font-medium text-base-content truncate">{bedFile.name}</span>
-        <span className="text-xs text-base-content/40 ml-auto">{formatBytes(bedFile.size)}</span>
-        <button
-          onClick={() => setShowFilePicker(!showFilePicker)}
-          className="p-0.5 cursor-pointer hover:opacity-70 transition-opacity shrink-0"
-        >
-          <ChevronDown size={14} className={`text-base-content/40 transition-transform ${showFilePicker ? 'rotate-180' : ''}`} />
-        </button>
-      </div>
+        <span className="text-xs text-base-content/40 ml-auto shrink-0">{formatBytes(bedFile.size)}</span>
+        <ChevronDown size={14} className={`text-base-content/40 transition-transform shrink-0 ${showFilePicker ? 'rotate-180' : ''}`} />
+      </button>
 
       {showFilePicker && (
         <div className="absolute top-full left-0 right-0 mt-1 border border-base-300 rounded-lg bg-base-100 shadow-lg z-20 py-1 max-h-52 overflow-y-auto">
