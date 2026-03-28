@@ -320,9 +320,15 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
   // Track initial customCoordinates to distinguish "new upload" from "remount with existing"
   const initialCoordinatesRef = useRef(customCoordinates);
   useEffect(() => {
+    if (!customCoordinates) {
+      // Reset ref when coordinates are cleared (e.g., visibility toggle off)
+      // so re-showing the same coordinates triggers a re-add
+      initialCoordinatesRef.current = null;
+      return;
+    }
     // Skip if coordinates were already present on mount (init effect handled it)
     if (initialCoordinatesRef.current && customCoordinates === initialCoordinatesRef.current) return;
-    if (isReady && customCoordinates && pendingPoints === null) {
+    if (isReady && pendingPoints === null) {
       handleFileUpload();
     }
   }, [customCoordinates, isReady]);

@@ -328,8 +328,7 @@ function FileEmpty() {
 
             {urlError && <p className="text-xs text-error mt-1.5 px-1">{urlError}</p>}
             <p className="text-xs text-base-content/30 mt-1.5 px-1">
-              Paste a direct link to a .bed or .bed.gz file.{' '}
-              Try:{' '}
+              Paste a direct link to a .bed or .bed.gz file, or try an{' '}
               <button
                 onClick={() => {
                   setUrl('https://api.bedbase.org/v1/files/files/d/c/dcc005e8761ad5599545cc538f6a2a4d.bed.gz');
@@ -337,8 +336,8 @@ function FileEmpty() {
                 }}
                 className="text-secondary/60 hover:text-secondary hover:underline cursor-pointer"
               >
-                example BED file
-              </button>
+                example
+              </button>.
             </p>
           </div>
         </div>

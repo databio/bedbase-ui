@@ -218,7 +218,7 @@ export function AnalysisEmpty() {
         <div className="max-w-5xl mx-auto mt-16 space-y-12">
 
             {/* Quality control & statistics */}
-            <div className="flex flex-col md:flex-row gap-6 items-start">
+            <div className="flex flex-col md:flex-row gap-6 items-center">
               <div className="flex-1">
                 <h3 className="text-base font-semibold text-base-content mb-3">Quality control & statistics</h3>
                 <p className="text-sm text-base-content/60 leading-relaxed mb-3">
@@ -234,7 +234,7 @@ export function AnalysisEmpty() {
             </div>
 
             {/* Reference genome compatibility */}
-            <div className="flex flex-col md:flex-row-reverse gap-6 items-start">
+            <div className="flex flex-col md:flex-row-reverse gap-6 items-center">
               <div className="flex-1">
                 <h3 className="text-base font-semibold text-base-content mb-3">Reference genome compatibility</h3>
                 <p className="text-sm text-base-content/60 leading-relaxed mb-3">
@@ -267,7 +267,7 @@ export function AnalysisEmpty() {
             </div>
 
             {/* BED classification */}
-            <div className="flex flex-col md:flex-row gap-6 items-start">
+            <div className="flex flex-col md:flex-row gap-6 items-center">
               <div className="flex-1">
                 <h3 className="text-base font-semibold text-base-content mb-3">BED file classification</h3>
                 <p className="text-sm text-base-content/60 leading-relaxed mb-3">
