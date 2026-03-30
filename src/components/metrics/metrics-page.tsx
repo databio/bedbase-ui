@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { AlertCircle, RefreshCw, ExternalLink, Code } from 'lucide-react';
+import { AlertCircle, RefreshCw, ExternalLink } from 'lucide-react';
 import { API_BASE } from '../../lib/file-model-utils';
 import { useStats } from '../../queries/use-stats';
 import { useDetailedStats } from '../../queries/use-detailed-stats';
@@ -22,8 +22,8 @@ type ChartInfo = {
 
 const sections: { id: Section; label: string; description: string }[] = [
   { id: 'files', label: 'File Statistics', description: 'Breakdown of BED files by genome, assay, organism, and format.' },
-  { id: 'usage', label: 'Usage', description: 'Most viewed files, popular search terms, and download activity.' },
-  { id: 'geo', label: 'GEO', description: 'BED files sourced from NCBI Gene Expression Omnibus, by year and size.' },
+  { id: 'usage', label: 'Usage Statistics', description: 'Most viewed files, popular search terms, and download activity.' },
+  { id: 'geo', label: 'GEO Statistics', description: 'BED files sourced from NCBI Gene Expression Omnibus, by year and size.' },
 ];
 
 const sectionEndpoints: Record<Section, { label: string; path: string }[]> = {
@@ -60,9 +60,9 @@ function EndpointsDropdown({ section }: { section: Section }) {
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(!open)}
-        className="px-3 py-2 text-sm font-medium gap-1 inline-flex items-center text-base-content/40 hover:text-base-content/70 transition-colors cursor-pointer"
+        className="inline-flex items-center gap-1.5 text-xs font-medium text-base-content/60 hover:text-base-content/80 bg-base-200 hover:bg-base-300 px-2.5 py-1.5 rounded-md transition-colors cursor-pointer"
       >
-        <Code size={13} />
+        <ExternalLink size={13} />
         API
       </button>
       {open && (
@@ -167,20 +167,24 @@ export function MetricsPage() {
 
   return (
     <div className="@container flex-1 overflow-auto flex flex-col">
+      <title>BEDbase | Metrics</title>
       <div className="p-4 @md:p-6 space-y-6">
         {/* Header */}
         <div className="flex items-baseline gap-3">
           <h2 className="text-xl font-bold text-base-content">Metrics</h2>
           {summary && (
             <span className="text-xs text-base-content/50">
-              {summary.bedfiles_number.toLocaleString()} beds · {summary.bedsets_number.toLocaleString()} bedsets · {summary.genomes_number.toLocaleString()} genomes
+              {summary.bedfiles_number.toLocaleString()} BED files · {summary.bedsets_number.toLocaleString()} BEDsets · {summary.genomes_number.toLocaleString()} genomes
             </span>
           )}
+          <div className="ml-auto">
+            <EndpointsDropdown section={activeSection} />
+          </div>
         </div>
 
-        {/* Section tabs + API */}
+        {/* Section tabs */}
         <div className="space-y-1">
-          <div className="flex items-center border-b border-base-300">
+          <div className="flex items-center justify-center border-b border-base-300">
             {sections.map((s) => (
               <button
                 key={s.id}
@@ -194,11 +198,8 @@ export function MetricsPage() {
                 {s.label}
               </button>
             ))}
-            <div className="ml-auto -mb-px">
-              <EndpointsDropdown section={activeSection} />
-            </div>
           </div>
-          <p className="text-sm text-base-content/40 pt-1">{activeMeta.description}</p>
+          <p className="text-sm text-base-content/40 text-center pt-1">{activeMeta.description}</p>
         </div>
 
         {/* Content */}

@@ -4,7 +4,7 @@ import { Upload, FileText, X, Forward, ChevronDown, ArrowRight } from 'lucide-re
 import { toast } from 'sonner';
 import { useFile } from '../../contexts/file-context';
 import { useUploadedFiles } from '../../contexts/uploaded-files-context';
-import { useTab } from '../../contexts/tab-context';
+import { useTab, type TabId } from '../../contexts/tab-context';
 import { EXAMPLE_QUERIES, EXAMPLE_BEDSET_QUERIES } from '../../lib/const';
 import { useStats } from '../../queries/use-stats';
 import { FileSearchGraphic } from '../graphics/file-search-graphic';
@@ -166,6 +166,15 @@ type AboutFeature = {
   links?: { label: string; href: string; icon: string }[];
 };
 
+function ClickableGraphic({ tab, children }: { tab: TabId; children: ReactNode }) {
+  const { openTab } = useTab();
+  return (
+    <div className="relative w-full h-full cursor-pointer" onClick={() => openTab(tab)}>
+      {children}
+    </div>
+  );
+}
+
 const aboutFeatures: AboutFeature[] = [
   {
     title: 'Download and cache your data locally',
@@ -182,13 +191,13 @@ const aboutFeatures: AboutFeature[] = [
     title: 'Search for BED files',
     description:
       'BEDbase indexes genomic intervals directly, enabling similarity-based search grounded in the actual content of BED files rather than unstructured metadata. Search by submitting a query string or uploading a BED file.',
-    graphic: <FileSearchGraphic />,
+    graphic: <ClickableGraphic tab="search"><FileSearchGraphic /></ClickableGraphic>,
   },
   {
     title: 'Analyze your BED files',
     description:
       'Upload a BED file for instant WASM-powered statistics, or explore region counts, length distributions, genome coverage, and more for any file on BEDbase.',
-    graphic: <BedAnalyzerGraphic />,
+    graphic: <ClickableGraphic tab="analysis"><BedAnalyzerGraphic /></ClickableGraphic>,
   },
   {
     title: 'Visualize BED file similarity',

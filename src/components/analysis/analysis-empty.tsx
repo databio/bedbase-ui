@@ -19,12 +19,12 @@ function formatBytes(bytes: number): string {
 // --- Genomic partitions illustration ---
 
 const partitions = [
-  { label: 'Intergenic', pct: 42, color: 'teal', opacity: 0.3 },
-  { label: 'Intron', pct: 28, color: 'teal', opacity: 0.45 },
-  { label: 'Promoter', pct: 14, color: 'teal', opacity: 0.65 },
-  { label: 'Exon', pct: 10, color: 'teal', opacity: 0.8 },
-  { label: "5' UTR", pct: 4, color: 'teal', opacity: 0.55 },
-  { label: "3' UTR", pct: 2, color: 'teal', opacity: 0.4 },
+  { label: 'Intergenic', pct: 42, color: 'teal', opacity: 0.7 },
+  { label: 'Intron', pct: 28, color: 'teal', opacity: 0.7 },
+  { label: 'Promoter', pct: 14, color: 'teal', opacity: 0.7 },
+  { label: 'Exon', pct: 10, color: 'teal', opacity: 0.7 },
+  { label: "5' UTR", pct: 4, color: 'teal', opacity: 0.7 },
+  { label: "3' UTR", pct: 2, color: 'teal', opacity: 0.7 },
 ];
 
 function GenomicPartitionsGraphic() {
@@ -279,7 +279,7 @@ export function AnalysisEmpty() {
               </div>
               <div className="w-full md:w-64 shrink-0 border border-base-300 rounded-lg bg-base-200/30 aspect-[4/3] flex items-center justify-center">
                 <div className="text-center px-4 space-y-1.5">
-                  {['narrowPeak', 'broadPeak', 'UCSC BED', 'BED-like'].map((fmt) => (
+                  {['narrowPeak', 'broadPeak', 'gappedPeak', 'UCSC BED', 'BED-like'].map((fmt) => (
                     <div
                       key={fmt}
                       className={`text-[10px] font-mono rounded px-2 py-0.5 ${
