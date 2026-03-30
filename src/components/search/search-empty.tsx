@@ -91,7 +91,7 @@ export function SearchEmpty({ initialMode = 'bed' }: { initialMode?: 'bed' | 'be
 
         {/* File indicator — if a file is already loaded, show quick link to BED2BED search */}
         {searchMode === 'bed' && (bedFile || files.length > 0) && (
-          <div className="relative mt-3" ref={pickerRef}>
+          <div className="relative mt-2" ref={pickerRef}>
             <button
               type="button"
               onClick={() => {

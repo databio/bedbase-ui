@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { X } from 'lucide-react';
+import { X, PanelLeft, PanelRight } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 import { useTab, TabPanelContext, type TabId } from '../../contexts/tab-context';
@@ -13,6 +13,17 @@ import { DebugPage } from '../debug/debug-page';
 import { UmapView } from '../umap/umap-view';
 import { Footer } from './footer';
 
+const splitBtnClass = 'flex items-center justify-center w-7 h-7 rounded hover:bg-base-300 transition-colors cursor-pointer text-base-content/50 hover:text-base-content';
+
+const tabBasePaths: Record<TabId, string> = {
+  file: '/upload',
+  search: '/search',
+  analysis: '/analysis',
+  umap: '/umap',
+  collections: '/collections',
+  cart: '/cart',
+};
+
 export function AppLayout() {
   const { activeTabs, openTab, openSplit, closeTab } = useTab();
   const { cartCount } = useCart();
@@ -20,6 +31,7 @@ export function AppLayout() {
   const location = useLocation();
   const [dragOverSide, setDragOverSide] = useState<'left' | 'right' | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [hoveredTab, setHoveredTab] = useState<string | null>(null);
 
   const primaryId = activeTabs[0]?.id;
   const splitId = activeTabs[1]?.id;
@@ -49,6 +61,7 @@ export function AppLayout() {
   }, []);
 
   function handleDragStart(e: React.DragEvent, tabId: string) {
+    setHoveredTab(null);
     e.dataTransfer.setData('text/plain', tabId);
     e.dataTransfer.effectAllowed = 'move';
 
@@ -95,14 +108,10 @@ export function AppLayout() {
     setDragOverSide(null);
   }
 
-  const tabBasePaths: Record<TabId, string> = {
-    file: '/upload',
-    search: '/search',
-    analysis: '/analysis',
-    umap: '/umap',
-    collections: '/collections',
-    cart: '/cart',
-  };
+  function handleSplitAction(tabId: TabId, side: 'left' | 'right') {
+    setHoveredTab(null);
+    openSplit(tabId, side);
+  }
 
   function renderTab(id: string, isActive: boolean) {
     const meta = tabMeta[id as keyof typeof tabMeta];
@@ -117,50 +126,78 @@ export function AppLayout() {
       </span>
     ) : null;
 
+    const canSplit = !!primaryId && primaryId !== id;
+    const showTooltip = hoveredTab === id && !isDragging && canSplit;
+    const tooltip = showTooltip && (
+      <div className="absolute top-full left-1/2 -translate-x-1/2 pt-1 z-50">
+        <div className="bg-base-100 border border-base-300 rounded-lg shadow-lg px-1.5 py-1.5 flex items-center gap-1">
+          <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleSplitAction(id as TabId, 'left'); }} className={splitBtnClass} title={`${meta.label} on left`}>
+            <PanelLeft size={14} />
+          </button>
+          <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleSplitAction(id as TabId, 'right'); }} className={splitBtnClass} title={`${meta.label} on right`}>
+            <PanelRight size={14} />
+          </button>
+        </div>
+      </div>
+    );
+
     if (isActive) {
       return (
         <div
           key={id}
-          draggable
-          onDragStart={(e) => handleDragStart(e, id)}
-          onDragEnd={handleDragEnd}
-          onClick={(e) => {
-            if (e.metaKey || e.ctrlKey || e.shiftKey) return;
-            openTab(id as TabId);
-          }}
-          className={`flex items-center gap-1.5 ${showLabel ? 'px-4' : 'px-3'} py-3 text-sm font-semibold rounded-lg ${colors.bgFaint} text-base-content cursor-grab active:cursor-grabbing hover:opacity-70 transition-opacity`}
-          title={`Back to ${meta.label}`}
+          className="relative cursor-grab active:cursor-grabbing"
+          onMouseEnter={() => setHoveredTab(id)}
+          onMouseLeave={() => setHoveredTab(null)}
         >
-          <span className="relative flex items-center h-5"><Icon size={14} />{badge}</span>
-          {showLabel && <span>{meta.label}</span>}
-          <button
-            onClick={(e) => { e.stopPropagation(); closeTab(id as TabId); }}
-            className="ml-1 p-0.5 rounded hover:bg-base-300 transition-colors cursor-pointer hover:opacity-100"
-            aria-label={`Close ${meta.label}`}
+          <div
+            draggable
+            onDragStart={(e) => handleDragStart(e, id)}
+            onDragEnd={handleDragEnd}
+            onClick={(e) => {
+              if (e.metaKey || e.ctrlKey || e.shiftKey) return;
+              openTab(id as TabId);
+            }}
+            className={`flex items-center gap-1.5 ${showLabel ? 'px-4' : 'px-3'} py-3 text-sm font-semibold rounded-lg ${colors.bgFaint} text-base-content cursor-grab active:cursor-grabbing hover:opacity-70 transition-opacity`}
           >
-            <X size={12} />
-          </button>
+            <span className="relative flex items-center h-5"><Icon size={14} />{badge}</span>
+            {showLabel && <span>{meta.label}</span>}
+            <button
+              onClick={(e) => { e.stopPropagation(); closeTab(id as TabId); }}
+              className="ml-1 p-0.5 rounded hover:bg-base-300 transition-colors cursor-pointer hover:opacity-100"
+              aria-label={`Close ${meta.label}`}
+            >
+              <X size={12} />
+            </button>
+          </div>
+          {tooltip}
         </div>
       );
     }
 
     return (
-      <a
+      <div
         key={id}
-        href={href}
-        draggable
-        onDragStart={(e) => handleDragStart(e, id)}
-        onDragEnd={handleDragEnd}
-        onClick={(e) => {
-          if (e.metaKey || e.ctrlKey || e.shiftKey) return;
-          e.preventDefault();
-          openTab(id as TabId);
-        }}
-        className={`flex items-center gap-1.5 ${showLabel ? 'px-4' : 'px-3'} py-3 text-sm font-medium transition-colors cursor-grab active:cursor-grabbing rounded-lg text-base-content/60 hover:text-base-content hover:bg-base-200 no-underline`}
+        className="relative cursor-grab active:cursor-grabbing"
+        onMouseEnter={() => setHoveredTab(id)}
+        onMouseLeave={() => setHoveredTab(null)}
       >
-        <span className="relative flex items-center h-5"><Icon size={14} />{badge}</span>
-        {showLabel && <span>{meta.label}</span>}
-      </a>
+        <a
+          href={href}
+          draggable
+          onDragStart={(e) => handleDragStart(e, id)}
+          onDragEnd={handleDragEnd}
+          onClick={(e) => {
+            if (e.metaKey || e.ctrlKey || e.shiftKey) return;
+            e.preventDefault();
+            openTab(id as TabId);
+          }}
+          className={`flex items-center gap-1.5 ${showLabel ? 'px-4' : 'px-3'} py-3 text-sm font-medium transition-colors cursor-grab active:cursor-grabbing rounded-lg text-base-content/60 hover:text-base-content hover:bg-base-200 no-underline`}
+        >
+          <span className="relative flex items-center h-5"><Icon size={14} />{badge}</span>
+          {showLabel && <span>{meta.label}</span>}
+        </a>
+        {tooltip}
+      </div>
     );
   }
 
@@ -182,20 +219,24 @@ export function AppLayout() {
         <main className="flex-1 flex flex-col relative">
           {isDragging && (
             <div className="absolute inset-0 z-10 grid grid-cols-2">
+              {/* Full-area background when no side is hovered */}
+              <div className={`absolute inset-0 pointer-events-none transition-all duration-150 border-2 border-dashed ${
+                dragOverSide === null ? 'bg-primary/5 border-primary/15 opacity-100' : 'bg-transparent border-transparent opacity-0'
+              }`} />
               <div
                 onDragOver={(e) => handleDragOver(e, 'left')}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, 'left')}
-                className={`transition-colors ${
-                  dragOverSide === 'left' ? 'bg-primary/10 border-2 border-dashed border-primary/30' : ''
+                className={`transition-all duration-150 border-2 border-dashed ${
+                  dragOverSide === 'left' ? 'bg-primary/10 border-primary/30' : 'bg-transparent border-transparent'
                 }`}
               />
               <div
                 onDragOver={(e) => handleDragOver(e, 'right')}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, 'right')}
-                className={`transition-colors ${
-                  dragOverSide === 'right' ? 'bg-primary/10 border-2 border-dashed border-primary/30' : ''
+                className={`transition-all duration-150 border-2 border-dashed ${
+                  dragOverSide === 'right' ? 'bg-primary/10 border-primary/30' : 'bg-transparent border-transparent'
                 }`}
               />
             </div>
@@ -224,7 +265,7 @@ export function AppLayout() {
         >
           {isDragging && (
             <div
-              className={`absolute inset-0 z-[9999] transition-colors ${dragOverSide === 'left' ? 'bg-primary/10 border-2 border-dashed border-primary/30' : ''}`}
+              className={`absolute inset-0 z-[9999] transition-all duration-150 border-2 border-dashed ${dragOverSide === 'left' ? 'bg-primary/10 border-primary/30' : 'bg-transparent border-transparent'}`}
               onDragOver={(e) => handleDragOver(e, 'left')}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, 'left')}
@@ -249,7 +290,7 @@ export function AppLayout() {
         >
           {isDragging && (
             <div
-              className={`absolute inset-0 z-[9999] transition-colors ${dragOverSide === 'right' ? 'bg-primary/10 border-2 border-dashed border-primary/30' : ''}`}
+              className={`absolute inset-0 z-[9999] transition-all duration-150 border-2 border-dashed ${dragOverSide === 'right' ? 'bg-primary/10 border-primary/30' : 'bg-transparent border-transparent'}`}
               onDragOver={(e) => handleDragOver(e, 'right')}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, 'right')}
