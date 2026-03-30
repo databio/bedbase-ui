@@ -76,8 +76,8 @@ export function AnalysisEmpty() {
 
           <h2 className="text-2xl font-bold text-base-content mb-8 text-center">Analyze a BED file</h2>
 
-          <p className="text-base-content/50 text-sm max-w-md mx-auto text-center mb-3">
-            Upload a file in the <a href="/upload" onClick={(e) => { e.preventDefault(); openTab('file'); }} className="text-primary hover:underline cursor-pointer">Upload</a> tab, or try one of the examples below.
+          <p className="text-base-content/50 text-sm text-center mb-3">
+            Try an example below, use the <a href="/search" onClick={(e) => { e.preventDefault(); openTab('search'); }} className="text-primary hover:underline cursor-pointer">Search</a> tab to find a file, or <a href="/upload" onClick={(e) => { e.preventDefault(); openTab('file'); }} className="text-primary hover:underline cursor-pointer">upload</a> your own.
           </p>
           <div className="grid grid-cols-3 gap-2">
             {(bedFile || files.length > 0) && (

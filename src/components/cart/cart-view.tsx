@@ -199,11 +199,11 @@ export function CartView() {
     return (
       <div className="flex flex-col items-center justify-center flex-1 gap-3 px-4">
         <ShoppingCart size={32} className="text-base-content/20" />
-        <p className="text-base-content/50 text-sm">Your cart is empty</p>
+        <h1 className="text-xl font-light text-base-content">Your cart is empty.</h1>
         <a
           href="/search"
           onClick={(e) => { e.preventDefault(); openTab('search'); }}
-          className="btn btn-sm btn-primary gap-1.5"
+          className="btn btn-sm btn-primary gap-1.5 rounded-full"
         >
           <Search size={14} />
           Search for BED files
