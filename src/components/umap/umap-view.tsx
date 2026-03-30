@@ -52,7 +52,7 @@ function dedup(...arrays: UmapPoint[][]): UmapPoint[] {
 }
 
 export function UmapView() {
-  const { bedFile, setBedFile, umapCoordinates, setUmapCoordinates } = useFile();
+  const { bedFile, setBedFile, umapCoordinates, setUmapCoordinates, lockFileSwitch, unlockFileSwitch } = useFile();
   const { enabledBedIds, removeBedFromEnabled, resetBucketsOnMount } = useBucket();
   const [searchParams, setSearchParams] = useSearchParams();
   const getBedUmap = useBedUmap();
@@ -144,22 +144,35 @@ export function UmapView() {
     }, { replace: true });
   };
 
+  // Remove old point from plot when coordinates are cleared (file switch from any source)
+  const prevCoordsRef = useRef(umapCoordinates);
+  useEffect(() => {
+    if (prevCoordsRef.current && !umapCoordinates) {
+      plotRef.current?.handleFileRemove();
+    }
+    prevCoordsRef.current = umapCoordinates;
+  }, [umapCoordinates]);
+
   useEffect(() => {
     if (!bedFile) {
       if (umapCoordinates) {
         setCustomCoordinates(null);
-        plotRef.current?.handleFileRemove();
       }
+      unlockFileSwitch('umap');
       return;
     }
     // Skip re-projection if coordinates are already cached (e.g., remount from split view)
     if (umapCoordinates) return;
     if (preselectedIds.length > 0) clearPreselection();
+    lockFileSwitch('umap');
     getBedUmap.mutate(bedFile, {
-      onSuccess: (coords) => setCustomCoordinates(coords),
-      onError: () => console.error('Failed to project file onto UMAP'),
+      onSuccess: (coords) => { setCustomCoordinates(coords); unlockFileSwitch('umap'); },
+      onError: () => { console.error('Failed to project file onto UMAP'); unlockFileSwitch('umap'); },
     });
   }, [bedFile]);
+
+  // Release lock on unmount so it doesn't stay locked if UMAP tab is closed
+  useEffect(() => () => unlockFileSwitch('umap'), [unlockFileSwitch]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -299,7 +312,8 @@ export function UmapView() {
                   ) : null}
                   <button
                     onClick={handleToggleVisibility}
-                    className={`w-7 h-7 rounded-md bg-base-200 hover:bg-base-300 flex items-center justify-center cursor-pointer transition-colors ${fileVisible ? 'text-base-content/40 hover:text-base-content/70' : 'text-base-content/30 hover:text-base-content/50'}`}
+                    disabled={getBedUmap.isPending}
+                    className={`w-7 h-7 rounded-md bg-base-200 flex items-center justify-center transition-colors ${getBedUmap.isPending ? 'opacity-40 cursor-not-allowed' : `cursor-pointer hover:bg-base-300 ${fileVisible ? 'text-base-content/40 hover:text-base-content/70' : 'text-base-content/30 hover:text-base-content/50'}`}`}
                     title={fileVisible ? 'Hide from plot' : 'Show on plot'}
                   >
                     {fileVisible ? <Eye size={13} /> : <EyeOff size={13} />}
@@ -309,9 +323,9 @@ export function UmapView() {
                     <button
                       type="button"
                       onClick={() => {
-                        if (uploadedFiles.length > 1) setShowFilePicker(!showFilePicker);
+                        if (!getBedUmap.isPending && uploadedFiles.length > 1) setShowFilePicker(!showFilePicker);
                       }}
-                      className={`inline-flex items-center gap-1 text-xs font-medium bg-base-200 rounded-md px-2.5 py-1.5 transition-colors ${uploadedFiles.length > 1 ? 'cursor-pointer hover:bg-base-300' : ''}`}
+                      className={`inline-flex items-center gap-1 text-xs font-medium bg-base-200 rounded-md px-2.5 py-1.5 transition-colors ${getBedUmap.isPending ? 'opacity-40 cursor-not-allowed' : uploadedFiles.length > 1 ? 'cursor-pointer hover:bg-base-300' : ''}`}
                     >
                       <span className={`truncate max-w-64 ${fileVisible ? 'text-base-content/70' : 'text-base-content/40'}`}>{bedFile.name}</span>
                       {uploadedFiles.length > 1 && (
@@ -352,6 +366,7 @@ export function UmapView() {
                 type="file"
                 accept=".bed,.gz"
                 className="hidden"
+                disabled={getBedUmap.isPending}
                 onChange={handleFileUpload}
               />
             </div>

@@ -92,27 +92,29 @@ export function SearchEmpty({ initialMode = 'bed' }: { initialMode?: 'bed' | 'be
         {/* File indicator — if a file is already loaded, show quick link to BED2BED search */}
         {searchMode === 'bed' && (bedFile || files.length > 0) && (
           <div className="relative mt-2" ref={pickerRef}>
-            <button
-              type="button"
-              onClick={() => {
-                if (files.length <= 1 && bedFile) {
-                  openTab('search', 'file');
-                } else {
-                  setShowFilePicker(!showFilePicker);
-                }
-              }}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-base-300 w-full text-left cursor-pointer hover:bg-base-200/30 transition-colors"
-            >
-              <FileText size={14} className="text-primary shrink-0" />
-              {bedFile ? (
-                <span className="text-sm text-base-content/70 truncate flex-1">Search by similarity to {bedFile.name}</span>
-              ) : (
-                <span className="text-sm text-base-content/40 truncate flex-1">No file selected</span>
-              )}
+            <div className="flex rounded-lg border border-base-300 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => bedFile && openTab('search', 'file')}
+                className="flex items-center gap-2 px-3 py-2 flex-1 min-w-0 text-left cursor-pointer hover:bg-base-200/30 transition-colors"
+              >
+                <FileText size={14} className="text-primary shrink-0" />
+                {bedFile ? (
+                  <span className="text-sm text-base-content/70 truncate flex-1">Search by similarity to {bedFile.name}</span>
+                ) : (
+                  <span className="text-sm text-base-content/40 truncate flex-1">No file selected</span>
+                )}
+              </button>
               {files.length > 1 && (
-                <ChevronDown size={14} className={`text-base-content/40 transition-transform shrink-0 ${showFilePicker ? 'rotate-180' : ''}`} />
+                <button
+                  type="button"
+                  onClick={() => setShowFilePicker(!showFilePicker)}
+                  className="flex items-center justify-center px-2.5 border-l border-base-300 hover:bg-base-200/30 transition-colors cursor-pointer"
+                >
+                  <ChevronDown size={14} className={`text-base-content/40 transition-transform shrink-0 ${showFilePicker ? 'rotate-180' : ''}`} />
+                </button>
               )}
-            </button>
+            </div>
 
             {showFilePicker && (
               <div className="absolute top-full left-0 right-0 mt-1 border border-base-300 rounded-lg bg-base-100 shadow-lg z-20 max-h-52 overflow-hidden">

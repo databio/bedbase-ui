@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { FileText, AlertCircle, RefreshCw, X, ScatterChart, ChevronDown, Plus, ArrowRight } from 'lucide-react';
 import { Breadcrumb } from '../shared/breadcrumb';
 import { useTab } from '../../contexts/tab-context';
@@ -48,6 +49,40 @@ const SEARCH_SKELETON_COLUMNS = [
   'h-3 w-12 rounded',
 ];
 
+// --- Pagination URL params ---
+
+const DEFAULT_LIMIT = 20;
+
+function usePaginationParams(defaultLimit = DEFAULT_LIMIT) {
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const limit = Number(searchParams.get('limit')) || defaultLimit;
+  const page = Math.max(1, Number(searchParams.get('page')) || 1);
+  const offset = (page - 1) * limit;
+
+  const setOffset = (newOffset: number) => {
+    const newPage = Math.floor(newOffset / limit) + 1;
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (newPage <= 1) next.delete('page');
+      else next.set('page', String(newPage));
+      return next;
+    }, { replace: true });
+  };
+
+  const setLimit = (newLimit: number) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (newLimit === defaultLimit) next.delete('limit');
+      else next.set('limit', String(newLimit));
+      next.delete('page');
+      return next;
+    }, { replace: true });
+  };
+
+  return { offset, limit, setOffset, setLimit };
+}
+
 // --- Pagination ---
 
 function Pagination({
@@ -61,6 +96,8 @@ function Pagination({
   limit: number;
   onOffsetChange: (offset: number) => void;
 }) {
+  const currentPage = Math.floor(offset / limit) + 1;
+  const totalPages = Math.ceil(count / limit);
   const start = offset + 1;
   const end = Math.min(offset + limit, count);
 
@@ -69,7 +106,7 @@ function Pagination({
       <span>
         Showing {start}–{end} of {count.toLocaleString()} results
       </span>
-      <div className="flex gap-2">
+      <div className="flex items-center gap-2">
         <button
           className="btn btn-sm btn-ghost"
           disabled={offset === 0}
@@ -77,6 +114,9 @@ function Pagination({
         >
           Previous
         </button>
+        <span className="text-xs">
+          Page {currentPage} of {totalPages}
+        </span>
         <button
           className="btn btn-sm btn-ghost"
           disabled={offset + limit >= count}
@@ -244,8 +284,7 @@ function SearchResults({
 // --- Text search mode ---
 
 function TextSearchResults({ query }: { query: string }) {
-  const [offset, setOffset] = useState(0);
-  const [limit, setLimit] = useState(20);
+  const { offset, limit, setOffset, setLimit } = usePaginationParams();
   const [genome, setGenome] = useState('');
   const [assay, setAssay] = useState('');
   const [editQuery, setEditQuery] = useState(query);
@@ -327,17 +366,23 @@ function TextSearchResults({ query }: { query: string }) {
 // --- Bed-to-bed search mode ---
 
 function BedSearchResults() {
-  const [offset, setOffset] = useState(0);
-  const [limit, setLimit] = useState(20);
+  const { offset, limit, setOffset, setLimit } = usePaginationParams();
   const [showFilePicker, setShowFilePicker] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { bedFile, setBedFile } = useFile();
+  const { bedFile, setBedFile, lockFileSwitch, unlockFileSwitch } = useFile();
   const { files, addFiles, setActiveIndex } = useUploadedFiles();
   const { data, isLoading, error, refetch } = useBedSearch(bedFile ?? undefined, {
     limit,
     offset,
   });
+
+  // Lock file switching while bed-to-bed search is loading
+  useEffect(() => {
+    if (isLoading) lockFileSwitch('search');
+    else unlockFileSwitch('search');
+  }, [isLoading, lockFileSwitch, unlockFileSwitch]);
+  useEffect(() => () => unlockFileSwitch('search'), [unlockFileSwitch]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -490,8 +535,7 @@ const BEDSET_SKELETON_COLUMNS = [
 ];
 
 function BedsetSearchResults({ query }: { query: string }) {
-  const [offset, setOffset] = useState(0);
-  const [limit, setLimit] = useState(20);
+  const { offset, limit, setOffset, setLimit } = usePaginationParams();
   const [editQuery, setEditQuery] = useState(query);
   const { openTab } = useTab();
   const { data, isLoading, error, refetch } = useBedsetList({

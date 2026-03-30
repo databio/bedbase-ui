@@ -26,29 +26,34 @@ function fileKey(f: File): string {
 
 // --- File list row ---
 
-function FileRow({ file, isActive, onActivate, onRemove }: {
+function FileRow({ file, isActive, disabled, onActivate, onRemove }: {
   file: File;
   isActive: boolean;
+  disabled?: boolean;
   onActivate: () => void;
   onRemove: () => void;
 }) {
   return (
     <div
-      onClick={onActivate}
-      className={`group/row flex items-center gap-2 px-3 py-1.5 rounded-md transition-colors cursor-pointer ${
-        isActive
-          ? 'bg-primary/10'
-          : 'hover:bg-base-200/50'
+      onClick={disabled ? undefined : onActivate}
+      className={`group/row flex items-center gap-2 px-3 py-1.5 rounded-md transition-colors ${
+        disabled
+          ? 'opacity-40 cursor-not-allowed'
+          : isActive
+            ? 'bg-primary/10 cursor-pointer'
+            : 'hover:bg-base-200/50 cursor-pointer'
       }`}
     >
       <FileText size={12} className={isActive ? 'text-primary shrink-0' : 'text-base-content/30 shrink-0'} />
       <span className={`text-xs truncate flex-1 ${isActive ? 'font-medium text-base-content' : 'text-base-content/60'}`}>{file.name}</span>
       <span className="text-[11px] text-base-content/30 shrink-0">{formatBytes(file.size)}</span>
-      <X
-        size={10}
-        className="text-base-content/30 hover:text-base-content/60 cursor-pointer shrink-0 transition-colors"
-        onClick={(e) => { e.stopPropagation(); onRemove(); }}
-      />
+      {!disabled && (
+        <X
+          size={10}
+          className="text-base-content/30 hover:text-base-content/60 cursor-pointer shrink-0 transition-colors"
+          onClick={(e) => { e.stopPropagation(); onRemove(); }}
+        />
+      )}
     </div>
   );
 }
@@ -373,7 +378,7 @@ function FileEmpty() {
 // --- File page ---
 
 export function FilePage() {
-  const { bedFile, setBedFile } = useFile();
+  const { bedFile, setBedFile, fileLocked } = useFile();
   const { regionSet, parsing, parseProgress, parseError, parseTime, analyzing } = useFile();
   const { files, addFiles, removeFile, setActiveIndex, clearAll } = useUploadedFiles();
   const { setFiles: setCompareFiles } = useFileSet();
@@ -471,6 +476,7 @@ export function FilePage() {
                     key={fileKey(file)}
                     file={file}
                     isActive={isMulti ? activeKey === fileKey(file) : true}
+                    disabled={fileLocked && activeKey !== fileKey(file)}
                     onActivate={() => activateFile(file, i)}
                     onRemove={() => handleRemove(i)}
                   />
@@ -479,16 +485,16 @@ export function FilePage() {
 
               {/* Add more */}
               <button
-                onClick={() => setShowAddFiles(!showAddFiles)}
-                className={`flex items-center gap-1.5 mt-2 px-3 py-1.5 w-full rounded-md text-xs transition-colors cursor-pointer ${
-                  showAddFiles ? 'text-secondary bg-secondary/5' : 'text-secondary/70 hover:text-secondary hover:bg-secondary/5'
+                onClick={() => !fileLocked && setShowAddFiles(!showAddFiles)}
+                className={`flex items-center gap-1.5 mt-2 px-3 py-1.5 w-full rounded-md text-xs transition-colors ${
+                  fileLocked ? 'opacity-40 cursor-not-allowed' : `cursor-pointer ${showAddFiles ? 'text-secondary bg-secondary/5' : 'text-secondary/70 hover:text-secondary hover:bg-secondary/5'}`
                 }`}
               >
                 <Plus size={12} className={`transition-transform ${showAddFiles ? 'rotate-45' : ''}`} />
                 <span>Add files</span>
               </button>
 
-              {showAddFiles && <AddFilesInline onFiles={handleAddFiles} />}
+              {showAddFiles && !fileLocked && <AddFilesInline onFiles={handleAddFiles} />}
             </div>
 
             {/* Compare action — below file list */}

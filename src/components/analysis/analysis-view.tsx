@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Loader2, AlertCircle, Search, Copy, Check, Dna, ScatterChart } from 'lucide-react';
 import { Breadcrumb } from '../shared/breadcrumb';
 import { useFile } from '../../contexts/file-context';
@@ -385,7 +385,15 @@ function buildPlotSlots(analysis: BedAnalysis): PlotSlot[] {
 // --- Upload analysis view ---
 
 function LocalAnalysis() {
-  const { bedFile, parsing, parseError, parseProgress, analysis, analyzing, analysisProgress } = useFile();
+  const { bedFile, parsing, parseError, parseProgress, analysis, analyzing, analysisProgress, lockFileSwitch, unlockFileSwitch } = useFile();
+
+  // Lock file switching while parsing or analyzing the uploaded file
+  const busy = parsing || analyzing;
+  useEffect(() => {
+    if (busy) lockFileSwitch('analysis');
+    else unlockFileSwitch('analysis');
+  }, [busy, lockFileSwitch, unlockFileSwitch]);
+  useEffect(() => () => unlockFileSwitch('analysis'), [unlockFileSwitch]);
 
   if (!bedFile) return <AnalysisEmpty />;
 

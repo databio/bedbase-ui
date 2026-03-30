@@ -82,32 +82,34 @@ export function AnalysisEmpty() {
           <div className="grid grid-cols-3 gap-2">
             {(bedFile || files.length > 0) && (
               <div className="relative" ref={pickerRef}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (files.length <= 1 && bedFile) {
-                      openTab('analysis', 'file');
-                    } else {
-                      setShowFilePicker(!showFilePicker);
-                    }
-                  }}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-accent/30 bg-accent/5 h-full w-full text-left cursor-pointer hover:bg-accent/10 transition-colors"
-                >
-                  <FileText size={14} className="text-accent shrink-0" />
-                  {bedFile ? (
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-medium text-base-content truncate">{bedFile.name}</p>
-                      <p className="text-[11px] text-base-content/40">{formatBytes(bedFile.size)} · uploaded</p>
-                    </div>
-                  ) : (
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs text-base-content/40">No file selected</p>
-                    </div>
-                  )}
+                <div className="flex rounded-lg border border-accent/30 bg-accent/5 h-full overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => bedFile && openTab('analysis', 'file')}
+                    className="flex items-center gap-2 px-4 py-2.5 flex-1 min-w-0 text-left cursor-pointer hover:bg-accent/10 transition-colors"
+                  >
+                    <FileText size={14} className="text-accent shrink-0" />
+                    {bedFile ? (
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium text-base-content truncate">{bedFile.name}</p>
+                        <p className="text-[11px] text-base-content/40">{formatBytes(bedFile.size)} · uploaded</p>
+                      </div>
+                    ) : (
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs text-base-content/40">No file selected</p>
+                      </div>
+                    )}
+                  </button>
                   {files.length > 1 && (
-                    <ChevronDown size={14} className={`text-base-content/40 transition-transform shrink-0 ${showFilePicker ? 'rotate-180' : ''}`} />
+                    <button
+                      type="button"
+                      onClick={() => setShowFilePicker(!showFilePicker)}
+                      className="flex items-center justify-center px-2 border-l border-accent/20 hover:bg-accent/10 transition-colors cursor-pointer"
+                    >
+                      <ChevronDown size={14} className={`text-base-content/40 transition-transform shrink-0 ${showFilePicker ? 'rotate-180' : ''}`} />
+                    </button>
                   )}
-                </button>
+                </div>
 
                 {showFilePicker && (
                   <div className="absolute top-full left-0 min-w-full mt-1 border border-base-300 rounded-lg bg-base-100 shadow-lg z-20 max-h-52 overflow-hidden">

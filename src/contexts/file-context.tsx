@@ -2,6 +2,7 @@ import {
   createContext,
   useContext,
   useState,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -26,6 +27,10 @@ type FileContextValue = {
   analysisProgress: number;
   umapCoordinates: number[] | null;
   setUmapCoordinates: (coords: number[] | null) => void;
+  /** True when any tab holds a file-switch lock (UMAP projecting, search fetching, etc.) */
+  fileLocked: boolean;
+  lockFileSwitch: (key: string) => void;
+  unlockFileSwitch: (key: string) => void;
   genome: string | null;
   genomeTier: number | null;
 };
@@ -33,7 +38,7 @@ type FileContextValue = {
 const FileContext = createContext<FileContextValue | null>(null);
 
 export function FileProvider({ children }: { children: ReactNode }) {
-  const [bedFile, setBedFile] = useState<File | null>(null);
+  const [bedFile, setBedFileRaw] = useState<File | null>(null);
   const [regionSet, setRegionSet] = useState<RegionSet | null>(null);
   const [parsing, setParsing] = useState(false);
   const [parseProgress, setParseProgress] = useState(0);
@@ -43,7 +48,28 @@ export function FileProvider({ children }: { children: ReactNode }) {
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [umapCoordinates, setUmapCoordinates] = useState<number[] | null>(null);
+  const fileLockRef = useRef(new Set<string>());
+  const [fileLocked, setFileLocked] = useState(false);
+  const lockFileSwitch = useCallback((key: string) => {
+    fileLockRef.current.add(key);
+    setFileLocked(true);
+  }, []);
+  const unlockFileSwitch = useCallback((key: string) => {
+    fileLockRef.current.delete(key);
+    setFileLocked(fileLockRef.current.size > 0);
+  }, []);
   const rsRef = useRef<RegionSet | null>(null);
+  const bedFileRef = useRef<File | null>(null);
+
+  // Clear stale UMAP coordinates when switching to a different file so
+  // the projection + auto-center cycle re-runs for the new file.
+  const setBedFile = useCallback((file: File | null) => {
+    if (file !== bedFileRef.current) {
+      setUmapCoordinates(null);
+    }
+    bedFileRef.current = file;
+    setBedFileRaw(file);
+  }, []);
 
   // --- Genome detection (runs after analysis completes) ---
   const bedFileData = useMemo(() => {
@@ -208,7 +234,7 @@ export function FileProvider({ children }: { children: ReactNode }) {
 
   return (
     <FileContext.Provider
-      value={{ bedFile, setBedFile, regionSet, parsing, parseProgress, parseError, parseTime, analysis, analyzing, analysisProgress, umapCoordinates, setUmapCoordinates, genome, genomeTier }}
+      value={{ bedFile, setBedFile, regionSet, parsing, parseProgress, parseError, parseTime, analysis, analyzing, analysisProgress, umapCoordinates, setUmapCoordinates, fileLocked, lockFileSwitch, unlockFileSwitch, genome, genomeTier }}
     >
       {children}
     </FileContext.Provider>

@@ -80,8 +80,12 @@ function tabToPath(tab: ActiveTab): string {
   return tab.param ? `${base}/${tab.param}` : base;
 }
 
-/** Builds a full URL with path + query params (?q= for search, ?split= for split tab) */
-function buildUrl(primary: ActiveTab, split?: ActiveTab | null): string {
+/** Params that buildUrl manages directly — everything else is carried forward */
+const MANAGED_PARAMS = new Set(['q', 'type', 'split', 'bed']);
+
+/** Builds a full URL with path + query params (?q= for search, ?split= for split tab).
+ *  When carrySearch is provided, unmanaged params (e.g. page, limit) are preserved. */
+function buildUrl(primary: ActiveTab, split?: ActiveTab | null, carrySearch?: string): string {
   const path = tabToPath(primary);
   const params = new URLSearchParams();
 
@@ -104,6 +108,17 @@ function buildUrl(primary: ActiveTab, split?: ActiveTab | null): string {
 
   if (split) {
     params.set('split', encodeSplitParam(split));
+  }
+
+  // Carry forward unmanaged params (pagination, etc.) only when a search tab is visible
+  const hasSearchTab = primary.id === 'search' || split?.id === 'search';
+  if (carrySearch && hasSearchTab) {
+    const current = new URLSearchParams(carrySearch);
+    for (const [key, value] of current) {
+      if (!MANAGED_PARAMS.has(key) && !params.has(key)) {
+        params.set(key, value);
+      }
+    }
   }
 
   const qs = params.toString();
@@ -170,44 +185,51 @@ export function TabProvider({ children }: { children: ReactNode }) {
 
     if (existing && existing.param === resolvedParam) return;
 
+    // Carry forward unmanaged URL params (pagination etc.) unless the search
+    // query itself is changing — in that case pagination should reset.
+    const searchTab = activeTabs.find((t) => t.id === 'search');
+    const searchParamChanging = id === 'search' && resolvedParam !== searchTab?.param;
+    const carry = searchParamChanging ? undefined : location.search;
+
     if (splitTab) {
       if (id === primaryTab?.id) {
         // Updating param of the primary tab — keep split
-        navigate(buildUrl(target, splitTab));
+        navigate(buildUrl(target, splitTab, carry));
       } else if (id === splitTab.id) {
         // Updating param of the split tab — keep primary
-        navigate(buildUrl(primaryTab!, target));
+        navigate(buildUrl(primaryTab!, target, carry));
       } else if (param) {
         // Replace the panel that didn't originate the navigation, keep the one that did
         if (source === splitTab.id) {
-          navigate(buildUrl(target, splitTab));
+          navigate(buildUrl(target, splitTab, carry));
         } else {
-          navigate(buildUrl(primaryTab!, target));
+          navigate(buildUrl(primaryTab!, target, carry));
         }
       } else {
         // Navbar click (no param) — go fullscreen, drop the split
-        navigate(buildUrl(target));
+        navigate(buildUrl(target, undefined, carry));
       }
     } else {
-      navigate(buildUrl(target));
+      navigate(buildUrl(target, undefined, carry));
     }
   };
 
   const openSplit = (id: TabId, side: 'left' | 'right', param?: string) => {
     const resolvedParam = param ?? lastParams.current[id];
     const target: ActiveTab = { id, param: resolvedParam };
+    const carry = location.search; // Always preserve pagination on position changes
     if (!primaryTab) {
-      navigate(buildUrl(target));
+      navigate(buildUrl(target, undefined, carry));
       return;
     }
 
     // Swap: dragging an active tab to the other side
     if (splitTab && target.id === splitTab.id && side === 'left') {
-      navigate(buildUrl(splitTab, primaryTab));
+      navigate(buildUrl(splitTab, primaryTab, carry));
       return;
     }
     if (splitTab && target.id === primaryTab.id && side === 'right') {
-      navigate(buildUrl(splitTab, primaryTab));
+      navigate(buildUrl(splitTab, primaryTab, carry));
       return;
     }
 
@@ -216,21 +238,22 @@ export function TabProvider({ children }: { children: ReactNode }) {
 
     if (side === 'right') {
       // Keep primary (left), dragged replaces split (right)
-      navigate(buildUrl(primaryTab, target));
+      navigate(buildUrl(primaryTab, target, carry));
     } else {
       // Dragged replaces primary (left), keep split or current primary as split (right)
       const keepRight = splitTab || primaryTab;
-      navigate(buildUrl(target, keepRight));
+      navigate(buildUrl(target, keepRight, carry));
     }
   };
 
   const closeTab = (id: TabId) => {
+    const carry = location.search;
     if (id === primaryTab?.id && splitTab) {
       // Closing primary — promote split to primary
-      navigate(buildUrl(splitTab));
+      navigate(buildUrl(splitTab, undefined, carry));
     } else if (id === splitTab?.id) {
       // Closing split — keep primary
-      navigate(buildUrl(primaryTab!));
+      navigate(buildUrl(primaryTab!, undefined, carry));
     } else {
       // Closing only tab — back to hub
       navigate('/');
