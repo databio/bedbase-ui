@@ -225,6 +225,7 @@ export function Hub() {
   return (
     <div className="flex-1 overflow-auto flex flex-col">
       <title>BEDbase</title>
+      <meta name="description" content="Open-access platform for accessing, aggregating, and analyzing genomic region (BED file) data." />
       <div className="flex flex-col items-center justify-center text-center px-4 pt-28 pb-40">
         <h1 className="font-thin text-primary text-7xl mb-5">BEDbase</h1>
         <p className="text-base font-normal text-base-content/50 max-w-2xl mb-16">

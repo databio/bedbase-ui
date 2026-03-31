@@ -501,8 +501,16 @@ function AnalysisPanels({ analysis }: { analysis: BedAnalysis }) {
     return [...basePlots, ...refPlots];
   }, [basePlots, refPlots, isLocal]);
 
+  const pageTitle = analysis.fileName
+    ? `${analysis.fileName} — BEDbase`
+    : 'Analysis — BEDbase';
+  const pageDescription = analysis.metadata?.description
+    || `BED file with ${analysis.summary.regions.toLocaleString()} regions, mean width ${Math.round(analysis.summary.meanRegionWidth).toLocaleString()} bp${analysis.genomeAlias ? ` (${analysis.genomeAlias})` : ''}`;
+
   return (
     <div className="flex flex-col h-full overflow-auto p-4 @md:p-6">
+      <title>{pageTitle}</title>
+      <meta name="description" content={pageDescription} />
       <Breadcrumb crumbs={[
         { label: 'Analysis', onClick: () => openTab('analysis') },
         { label: analysis.fileName || (isLocal ? 'Uploaded file' : analysis.id || 'BED') },

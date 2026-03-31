@@ -168,8 +168,14 @@ export function CollectionDetail({ bedsetId }: { bedsetId: string }) {
     }
   };
 
+  const pageTitle = meta.name ? `${meta.name} — BEDbase` : 'BEDset — BEDbase';
+  const pageDescription = meta.description
+    || `BEDset with ${meta.bed_ids?.length ?? 0} BED files${meta.author ? ` by ${meta.author}` : ''}`;
+
   return (
     <div className="flex flex-col h-full overflow-auto p-4 @md:p-6">
+      <title>{pageTitle}</title>
+      <meta name="description" content={pageDescription} />
       <Breadcrumb crumbs={[
         { label: 'Collections', onClick: () => openTab('collections') },
         { label: meta.name || bedsetId },

@@ -223,6 +223,8 @@ export function CartView() {
 
   return (
     <div className="flex flex-col h-full overflow-auto p-4 @md:p-6">
+      <title>Cart — BEDbase</title>
+      <meta name="description" content={`${cartCount} BED ${cartCount === 1 ? 'file' : 'files'} in cart for download.`} />
       <div className="flex items-center justify-between pb-4">
         <h2 className="text-lg font-semibold text-base-content">
           Cart ({cartCount} {cartCount === 1 ? 'file' : 'files'})

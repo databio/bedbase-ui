@@ -346,20 +346,29 @@ function TextSearchResults({ query }: { query: string }) {
     />
   );
 
+  const searchTitle = `Search: ${query} — BEDbase`;
+  const searchDescription = data?.count != null
+    ? `${data.count.toLocaleString()} BED files matching "${query}"`
+    : `Searching BEDbase for "${query}"`;
+
   return (
-    <SearchResults
-      header={header}
-      filters={filters}
-      data={data}
-      isLoading={isLoading}
-      error={error}
-      refetch={refetch}
-      offset={offset}
-      limit={limit}
-      onOffsetChange={setOffset}
-      bucketLabel={`Search: ${query}`}
-      searchQuery={query}
-    />
+    <>
+      <title>{searchTitle}</title>
+      <meta name="description" content={searchDescription} />
+      <SearchResults
+        header={header}
+        filters={filters}
+        data={data}
+        isLoading={isLoading}
+        error={error}
+        refetch={refetch}
+        offset={offset}
+        limit={limit}
+        onOffsetChange={setOffset}
+        bucketLabel={`Search: ${query}`}
+        searchQuery={query}
+      />
+    </>
   );
 }
 
@@ -552,8 +561,15 @@ function BedsetSearchResults({ query }: { query: string }) {
     }
   };
 
+  const bedsetSearchTitle = `BEDsets: ${query} — BEDbase`;
+  const bedsetSearchDescription = data?.count != null
+    ? `${data.count.toLocaleString()} BEDsets matching "${query}"`
+    : `Searching BEDbase BEDsets for "${query}"`;
+
   return (
     <div className="flex flex-col h-full overflow-auto p-4 @md:p-6">
+      <title>{bedsetSearchTitle}</title>
+      <meta name="description" content={bedsetSearchDescription} />
       <div className="flex items-center justify-between mb-4">
         <Breadcrumb className="" crumbs={[
           { label: 'Search', onClick: () => openTab('search') },

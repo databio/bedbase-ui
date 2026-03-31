@@ -240,6 +240,7 @@ export function UmapView() {
   return (
     <div className="flex flex-col overflow-hidden p-4 @md:p-6 gap-2" style={{ height: 'calc(100vh - 52px)' }}>
       <title>BEDbase | UMAP</title>
+      <meta name="description" content="Interactive UMAP visualization of BED file embeddings. Explore similarity across genomic region datasets." />
       {/* Main: plot + sidebar */}
       <div className="flex flex-1 gap-2 overflow-hidden min-h-0">
         <div className="flex-[77.5] flex flex-col gap-2 min-w-0 overflow-hidden">
