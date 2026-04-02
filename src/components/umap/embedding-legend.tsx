@@ -1,10 +1,10 @@
-import { Dna, FlaskConical, Pin } from 'lucide-react';
+import { Pin } from 'lucide-react';
 import { tableau20 } from '../../lib/tableau20';
+import { sequentialPalette } from '../../lib/sequential-palette';
 import type { LegendItem } from '../../lib/umap-utils';
+import { ColorByManager } from './color-by-manager';
 
-function getCategoryColor(category: number): string {
-  return tableau20[category] ?? '#888888';
-}
+const CONTINUOUS_FIELDS = ['number_of_regions', 'mean_region_width', 'gc_content', 'median_tss_dist'];
 
 type Props = {
   legendItems: LegendItem[];
@@ -14,6 +14,9 @@ type Props = {
   onUnpinAll: () => void;
   colorGrouping: string;
   setColorGrouping: (grouping: string) => void;
+  tier2Loaded: boolean;
+  onLoadTier2: () => void;
+  tier2Loading: boolean;
 };
 
 export function EmbeddingLegend({
@@ -24,11 +27,17 @@ export function EmbeddingLegend({
   onUnpinAll,
   colorGrouping,
   setColorGrouping,
+  tier2Loaded,
+  onLoadTier2,
+  tier2Loading,
 }: Props) {
   const pinnedSet = new Set(pinnedCategories);
+  const isContinuous = CONTINUOUS_FIELDS.includes(colorGrouping.replace('_category', ''));
+  const palette = isContinuous ? sequentialPalette : tableau20;
+  const getCategoryColor = (category: number) => palette[category] ?? '#888888';
 
   return (
-    <div className="border border-base-300 rounded-lg overflow-clip bg-base-100 flex flex-col min-h-0 flex-1">
+    <div className="border border-base-300 rounded-lg bg-base-100 flex flex-col min-h-0 flex-1 max-h-fit">
       <div className="px-3 py-2 border-b border-base-300 bg-base-200 flex items-center justify-between">
         <span className="flex items-center gap-1.5">
           <span className="text-xs font-bold">Legend</span>
@@ -50,38 +59,16 @@ export function EmbeddingLegend({
             </button>
           )}
         </span>
-        {/* Narrow: icon toggle */}
-        <button
-          className="@2xs:hidden btn btn-xs btn-ghost h-[18px] min-h-0 px-1 -my-0.5"
-          onClick={() => setColorGrouping(colorGrouping === 'cell_line_category' ? 'assay_category' : 'cell_line_category')}
-          title={colorGrouping === 'cell_line_category' ? 'Cell Line' : 'Assay'}
-        >
-          {colorGrouping === 'cell_line_category' ? <Dna size={12} /> : <FlaskConical size={12} />}
-        </button>
-        {/* Wide: radio group */}
-        <div className="join -my-0.5 hidden @2xs:flex">
-          <input
-            type="radio"
-            name="color_legend"
-            className="join-item btn btn-xs h-[18px] min-h-0 text-[10px] px-1.5"
-            aria-label="Cell Line"
-            value="cell_line_category"
-            checked={colorGrouping === 'cell_line_category'}
-            onChange={(e) => setColorGrouping(e.target.value)}
-          />
-          <input
-            type="radio"
-            name="color_legend"
-            className="join-item btn btn-xs h-[18px] min-h-0 text-[10px] px-1.5"
-            aria-label="Assay"
-            value="assay_category"
-            checked={colorGrouping === 'assay_category'}
-            onChange={(e) => setColorGrouping(e.target.value)}
-          />
-        </div>
+        <ColorByManager
+          colorGrouping={colorGrouping}
+          setColorGrouping={setColorGrouping}
+          tier2Loaded={tier2Loaded}
+          onLoadTier2={onLoadTier2}
+          tier2Loading={tier2Loading}
+        />
       </div>
       <div className="overflow-y-auto overscroll-contain flex-1 min-h-0">
-        <table className="table table-sm text-xs w-full">
+        <table className="table table-sm table-fixed text-xs w-full">
           <tbody>
             {legendItems.length === 0
               ? [72, 56, 88, 64, 80, 48, 68, 92, 60, 76].map((w, i) => (
@@ -105,21 +92,23 @@ export function EmbeddingLegend({
                         isPinned ? 'bg-primary/10' : 'hover:bg-base-200'
                       }`}
                     >
-                      <td className="flex items-center justify-between" style={{ height: 30 }}>
-                        <span className="flex items-center gap-2 whitespace-nowrap">
-                          <span
-                            className="inline-block w-3 h-3 rounded-sm shrink-0"
-                            style={{ backgroundColor: getCategoryColor(item.category) }}
+                      <td className="!p-0">
+                        <div className="flex items-center justify-between gap-1 px-3 py-1" style={{ height: 30 }}>
+                          <span className="flex items-center gap-2 min-w-0 overflow-hidden">
+                            <span
+                              className="inline-block w-3 h-3 rounded-sm shrink-0"
+                              style={{ backgroundColor: getCategoryColor(item.category) }}
+                            />
+                            <span className="truncate">{item.name}</span>
+                          </span>
+                          <Pin
+                            size={12}
+                            className={`shrink-0 transition-colors ${
+                              isPinned ? 'text-primary' : 'text-base-content/20'
+                            }`}
+                            fill={isPinned ? 'currentColor' : 'none'}
                           />
-                          {item.name}
-                        </span>
-                        <Pin
-                          size={12}
-                          className={`shrink-0 transition-colors ${
-                            isPinned ? 'text-primary' : 'text-base-content/20'
-                          }`}
-                          fill={isPinned ? 'currentColor' : 'none'}
-                        />
+                        </div>
                       </td>
                     </tr>
                   );

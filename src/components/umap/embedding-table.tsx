@@ -90,7 +90,7 @@ export function EmbeddingTable({
                 <tr
                   key={`${point.identifier}_${index}`}
                   className={`cursor-pointer transition-colors ${kindRowClass[kind]}`}
-                  onClick={() => centerOnBedId?.(point.identifier, 0.2)}
+                  onClick={() => centerOnBedId?.(point.identifier)}
                 >
                   <td className="whitespace-nowrap max-w-40 truncate text-base-content/70">
                     {isCustom ? (point.text || 'Your uploaded file') : (point.text || point.identifier)}

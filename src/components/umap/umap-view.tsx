@@ -10,6 +10,8 @@ import { EmbeddingLegend } from './embedding-legend';
 import { EmbeddingTable } from './embedding-table';
 import { EmbeddingSelections } from './embedding-selections';
 import { EmbeddingStats } from './embedding-stats';
+import { ColorByManager } from './color-by-manager';
+import { useMosaicCoordinator } from '../../contexts/mosaic-coordinator-context';
 import type { UmapPoint, LegendItem } from '../../lib/umap-utils';
 
 type SelectionState = {
@@ -65,8 +67,14 @@ export function UmapView() {
   const [showInfo, setShowInfo] = useState(false);
   const filePickerRef = useRef<HTMLDivElement>(null);
 
+  const { ensureGrouping, loadTier2, tier2Loaded, tier2Loading } = useMosaicCoordinator();
+
   // State managed here, not in context
-  const [colorGrouping, setColorGrouping] = useState('cell_line_category');
+  const [colorGrouping, setColorGroupingRaw] = useState('cell_line_category');
+  const setColorGrouping = useCallback(async (key: string) => {
+    await ensureGrouping(key);
+    setColorGroupingRaw(key);
+  }, [ensureGrouping]);
   const [legendItems, setLegendItems] = useState<LegendItem[]>([]);
   const [pinnedCategories, setPinnedCategories] = useState<number[]>([]);
   // umapCoordinates is persisted in FileContext so it survives UmapView remounts (e.g., split view)
@@ -305,7 +313,7 @@ export function UmapView() {
                   ) : fileVisible ? (
                     <button
                       onClick={handleLocateCustomPoint}
-                      className="w-7 h-7 rounded-md bg-base-200 hover:bg-base-300 flex items-center justify-center text-base-content/40 hover:text-primary cursor-pointer transition-colors"
+                      className="w-7 h-7 rounded-md bg-base-200 hover:bg-base-300 flex items-center justify-center text-base-content/65 hover:text-primary cursor-pointer transition-colors"
                       title="Locate on plot"
                     >
                       <Crosshair size={13} />
@@ -314,7 +322,7 @@ export function UmapView() {
                   <button
                     onClick={handleToggleVisibility}
                     disabled={getBedUmap.isPending}
-                    className={`w-7 h-7 rounded-md bg-base-200 flex items-center justify-center transition-colors ${getBedUmap.isPending ? 'opacity-40 cursor-not-allowed' : `cursor-pointer hover:bg-base-300 ${fileVisible ? 'text-base-content/40 hover:text-base-content/70' : 'text-base-content/30 hover:text-base-content/50'}`}`}
+                    className={`w-7 h-7 rounded-md bg-base-200 flex items-center justify-center transition-colors ${getBedUmap.isPending ? 'opacity-40 cursor-not-allowed' : `cursor-pointer hover:bg-base-300 ${fileVisible ? 'text-base-content/65 hover:text-base-content/80' : 'text-base-content/30 hover:text-base-content/50'}`}`}
                     title={fileVisible ? 'Hide from plot' : 'Show on plot'}
                   >
                     {fileVisible ? <Eye size={13} /> : <EyeOff size={13} />}
@@ -356,7 +364,7 @@ export function UmapView() {
               ) : (
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="inline-flex items-center gap-1.5 text-xs font-medium text-base-content/60 hover:text-base-content/80 bg-base-200 hover:bg-base-300 px-2.5 py-1.5 rounded-md transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-base-content/65 hover:text-base-content/80 bg-base-200 hover:bg-base-300 px-2.5 py-1.5 rounded-md transition-colors cursor-pointer"
                 >
                   <Upload size={12} />
                   Upload BED
@@ -396,14 +404,24 @@ export function UmapView() {
               showStatus
               className="h-full"
             />
-            {/* Info button — bottom left */}
-            <button
-              onClick={() => setShowInfo(true)}
-              className="absolute bottom-2 left-2 z-10 w-7 h-7 rounded-md bg-base-200 hover:bg-base-300 flex items-center justify-center text-base-content/40 hover:text-base-content/70 cursor-pointer transition-colors"
-              title="About this visualization"
-            >
-              <Info size={13} />
-            </button>
+            {/* Bottom left controls */}
+            <div className="absolute bottom-2 left-2 z-10 flex items-center gap-1.5">
+              <button
+                onClick={() => setShowInfo(true)}
+                className="w-7 h-7 rounded-md bg-base-200 hover:bg-base-300 flex items-center justify-center text-base-content/65 hover:text-base-content/80 cursor-pointer transition-colors"
+                title="About this visualization"
+              >
+                <Info size={13} />
+              </button>
+              <ColorByManager
+                colorGrouping={colorGrouping}
+                setColorGrouping={setColorGrouping}
+                tier2Loaded={tier2Loaded}
+                onLoadTier2={loadTier2}
+                tier2Loading={tier2Loading}
+                variant="chip"
+              />
+            </div>
           </div>
           {/* Info modal */}
           {showInfo && (
@@ -454,6 +472,9 @@ export function UmapView() {
             onUnpinAll={handleUnpinAll}
             colorGrouping={colorGrouping}
             setColorGrouping={setColorGrouping}
+            tier2Loaded={tier2Loaded}
+            onLoadTier2={loadTier2}
+            tier2Loading={tier2Loading}
           />
           <EmbeddingSelections currentSelection={allVisiblePoints} pinnedCategories={pinnedCategories} plotRef={plotRef} />
           <EmbeddingStats

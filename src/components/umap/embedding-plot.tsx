@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useState, useRef, useMemo, forwardRef, useI
 import * as vg from '@uwdata/vgplot';
 
 import { tableau20 } from '../../lib/tableau20';
+import { sequentialPalette } from '../../lib/sequential-palette';
 import { isIn } from '@uwdata/mosaic-sql';
 import { umapSelectParams, pointInPolygonPredicate, boundingRect, type UmapPoint } from '../../lib/umap-utils';
 import { AtlasTooltip, tooltipGate } from './atlas-tooltip';
@@ -79,6 +80,9 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
     useMosaicCoordinator();
   const { openTab } = useTab();
 
+  const CONTINUOUS_FIELDS = ['number_of_regions', 'mean_region_width', 'gc_content', 'median_tss_dist'];
+  const isContinuous = CONTINUOUS_FIELDS.includes(colorGrouping.replace('_category', ''));
+
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [containerWidth, setContainerWidth] = useState(900);
@@ -120,12 +124,16 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
     tooltipGate.enabled = visualSelection.length > 0;
   }, [visualSelection.length]);
 
-  const centerOnPoint = (point: any, scale = 0.2, tooltip = true) => {
+  const centerOnPoint = (point: any, scale?: number, tooltip = true) => {
     if (tooltip) {
       setTooltipPoint(null);
       setTimeout(() => setTooltipPoint(point), 300);
     }
-    setViewportState({ x: point.x, y: point.y, scale });
+    if (scale != null) {
+      setViewportState({ x: point.x, y: point.y, scale });
+    } else {
+      setViewportState((prev: any) => ({ ...prev, x: point.x, y: point.y }));
+    }
   };
 
   const queryPoints = async (ids: string[]): Promise<UmapPoint[]> => {
@@ -137,7 +145,7 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
     return result || [];
   };
 
-  const centerOnBedId = async (bedId: string, scale = 0.2, reselect = false) => {
+  const centerOnBedId = async (bedId: string, scale?: number, reselect = false) => {
     if (!isReady) return;
     const points = await queryPoints([bedId]);
     if (points.length > 0) {
@@ -190,17 +198,38 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
 
   const fetchLegendItems = async (coord: any) => {
     const colName = colorGrouping.replace('_category', '');
-    const q = vg.Query.from('data')
-      .select({
-        name: vg.sql`CASE
-          WHEN ${vg.column(colorGrouping)} = ${UPLOADED_CATEGORY} THEN 'Uploaded BED'
-          WHEN ${vg.column(colorGrouping)} = ${OTHER_CATEGORY} THEN 'Other'
-          ELSE MIN(${vg.column(colName)})
-        END`,
-        category: vg.column(colorGrouping),
-      })
-      .groupby(vg.column(colorGrouping))
-      .orderby(vg.column(colorGrouping));
+
+    // Check if this is a continuous (binned) field by seeing if the source column is numeric
+    const isContinuous = ['number_of_regions', 'mean_region_width', 'gc_content', 'median_tss_dist'].includes(colName);
+
+    let q;
+    if (isContinuous) {
+      // For binned continuous fields, show "min - max" range labels per bin
+      q = vg.Query.from('data')
+        .select({
+          name: vg.sql`CASE
+            WHEN ${vg.column(colorGrouping)} = ${UPLOADED_CATEGORY} THEN 'Uploaded BED'
+            WHEN ${vg.column(colorGrouping)} = ${OTHER_CATEGORY} THEN 'N/A'
+            ELSE CONCAT(CAST(ROUND(MIN(${vg.column(colName)}), 1) AS VARCHAR), ' - ', CAST(ROUND(MAX(${vg.column(colName)}), 1) AS VARCHAR))
+          END`,
+          category: vg.column(colorGrouping),
+        })
+        .groupby(vg.column(colorGrouping))
+        .orderby(vg.column(colorGrouping));
+    } else {
+      q = vg.Query.from('data')
+        .select({
+          name: vg.sql`CASE
+            WHEN ${vg.column(colorGrouping)} = ${UPLOADED_CATEGORY} THEN 'Uploaded BED'
+            WHEN ${vg.column(colorGrouping)} = ${OTHER_CATEGORY} THEN 'Other'
+            ELSE MIN(${vg.column(colName)})
+          END`,
+          category: vg.column(colorGrouping),
+        })
+        .groupby(vg.column(colorGrouping))
+        .orderby(vg.column(colorGrouping));
+    }
+
     return (await coord.query(q, { type: 'json' })) as any[];
   };
 
@@ -453,11 +482,16 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
           identifier="id"
           text="name"
           category={colorGrouping}
-          categoryColors={tableau20}
+          categoryColors={isContinuous ? sequentialPalette : tableau20}
           additionalFields={{
             Description: 'description',
             Assay: 'assay',
+            Target: 'target',
             'Cell Line': 'cell_line',
+            'Cell Type': 'cell_type',
+            Tissue: 'tissue',
+            Regions: 'number_of_regions',
+            'Mean Width': 'mean_region_width',
           }}
           height={height || containerHeight}
           width={containerWidth}

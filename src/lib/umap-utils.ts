@@ -2,6 +2,9 @@ import * as vg from '@uwdata/vgplot';
 import { add, sub, mul, mod } from '@uwdata/mosaic-sql';
 
 export const UMAP_URL = 'https://huggingface.co/databio/bedbase-umap/resolve/main/hg38_umap_3_13.json';
+export const GEOMETRY_URL = 'https://huggingface.co/databio/bedbase-umap/resolve/main/hg38_geometry.parquet';
+export const META_T1_URL = 'https://huggingface.co/databio/bedbase-umap/resolve/main/hg38_meta_t1.parquet';
+export const META_T2_URL = 'https://huggingface.co/databio/bedbase-umap/resolve/main/hg38_meta_t2.parquet';
 
 export type UmapPoint = {
   identifier: string;
@@ -26,12 +29,10 @@ export function umapSelectParams(colorGrouping: string) {
   return {
     x: vg.column('x'),
     y: vg.column('y'),
-    cell_line_category: vg.column('cell_line_category'),
-    assay_category: vg.column('assay_category'),
     category: vg.column(colorGrouping),
     text: vg.column('name'),
     identifier: vg.column('id'),
-    fields: vg.sql`{'Description': description, 'Assay': assay, 'Cell Line': cell_line}`,
+    fields: vg.sql`{'Description': description, 'Assay': assay, 'Target': target, 'Cell Line': cell_line, 'Cell Type': cell_type, 'Tissue': tissue, 'Regions': number_of_regions, 'Mean Width': mean_region_width}`,
   };
 }
 
