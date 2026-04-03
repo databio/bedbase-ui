@@ -1,23 +1,37 @@
-import { Trash2, Save, ShoppingCart, Pin, ArrowRight } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Trash2, Save, ShoppingCart, Pin, ArrowRight, Pencil, Check, X } from 'lucide-react';
 import { useBucket } from '../../contexts/bucket-context';
 import { useCart } from '../../contexts/cart-context';
 import { useTab } from '../../contexts/tab-context';
-import type { UmapPoint } from '../../lib/umap-utils';
+import type { UmapPoint, LegendItem } from '../../lib/umap-utils';
 import type { EmbeddingPlotRef } from './embedding-plot';
 
 type Props = {
   currentSelection: UmapPoint[];
   pinnedCategories: number[];
   plotRef: React.RefObject<EmbeddingPlotRef | null>;
+  legendItems: LegendItem[];
 };
 
-export function EmbeddingSelections({ currentSelection, pinnedCategories, plotRef }: Props) {
-  const { buckets, createBucket, deleteBucket, toggleBucket } = useBucket();
+export function EmbeddingSelections({ currentSelection, pinnedCategories, plotRef, legendItems }: Props) {
+  const { buckets, createBucket, deleteBucket, toggleBucket, renameBucket } = useBucket();
   const { addToCart } = useCart();
   const { openTab } = useTab();
 
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const editInputRef = useRef<HTMLInputElement>(null);
+
   const validPoints = currentSelection.filter((p) => p.identifier !== 'custom_point');
   const hasSelection = validPoints.length > 0 || pinnedCategories.length > 0;
+
+  // Focus input when entering edit mode
+  useEffect(() => {
+    if (editingId && editInputRef.current) {
+      editInputRef.current.focus();
+      editInputRef.current.select();
+    }
+  }, [editingId]);
 
   const handleSave = async () => {
     if (validPoints.length > 0) {
@@ -29,7 +43,11 @@ export function EmbeddingSelections({ currentSelection, pinnedCategories, plotRe
       );
       const ids = results.flat().map((p) => p.identifier).filter((id) => id !== 'custom_point');
       if (ids.length > 0) {
-        createBucket(`Selection ${buckets.length + 1}`, ids);
+        // Use legend item name when exactly one category is pinned and no manual points
+        const name = pinnedCategories.length === 1
+          ? legendItems.find((i) => i.category === pinnedCategories[0])?.name ?? `Selection ${buckets.length + 1}`
+          : `Selection ${buckets.length + 1}`;
+        createBucket(name, ids);
       }
     }
   };
@@ -54,6 +72,22 @@ export function EmbeddingSelections({ currentSelection, pinnedCategories, plotRe
         assay: '',
       });
     }
+  };
+
+  const handleStartEdit = (id: string, currentName: string) => {
+    setEditingId(id);
+    setEditName(currentName);
+  };
+
+  const handleConfirmEdit = () => {
+    if (editingId && editName.trim()) {
+      renameBucket(editingId, editName.trim());
+    }
+    setEditingId(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
   };
 
   return (
@@ -108,7 +142,7 @@ export function EmbeddingSelections({ currentSelection, pinnedCategories, plotRe
               {buckets.map((bucket) => (
                 <tr
                   key={bucket.id}
-                  onClick={() => toggleBucket(bucket.id)}
+                  onClick={() => { if (editingId !== bucket.id) toggleBucket(bucket.id); }}
                   className={`group cursor-pointer transition-colors ${bucket.enabled ? 'bg-primary/10' : 'hover:bg-base-200'}`}
                 >
                   <td className="flex items-center justify-between" style={{ height: 30 }}>
@@ -118,27 +152,71 @@ export function EmbeddingSelections({ currentSelection, pinnedCategories, plotRe
                         className={`shrink-0 transition-colors ${bucket.enabled ? 'text-primary' : 'text-base-content/20'}`}
                         fill={bucket.enabled ? 'currentColor' : 'none'}
                       />
-                      <span className="truncate max-w-20 @2xs:max-w-32 @xs:max-w-48 @sm:max-w-64" title={bucket.name}>
-                        {bucket.name}
+                      {editingId === bucket.id ? (
+                        <>
+                          <input
+                            ref={editInputRef}
+                            type="text"
+                            className="input input-xs h-5 text-xs w-24 @2xs:w-32 @xs:w-48"
+                            value={editName}
+                            onChange={(e) => setEditName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleConfirmEdit();
+                              if (e.key === 'Escape') handleCancelEdit();
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <span className="flex items-center gap-0.5 shrink-0">
+                            <button
+                              className="text-success/70 hover:text-success cursor-pointer p-0.5"
+                              onClick={(e) => { e.stopPropagation(); handleConfirmEdit(); }}
+                              title="Confirm"
+                            >
+                              <Check size={12} />
+                            </button>
+                            <button
+                              className="text-error/70 hover:text-error cursor-pointer p-0.5"
+                              onClick={(e) => { e.stopPropagation(); handleCancelEdit(); }}
+                              title="Cancel"
+                            >
+                              <X size={12} />
+                            </button>
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="truncate max-w-20 @2xs:max-w-32 @xs:max-w-48 @sm:max-w-64" title={bucket.name}>
+                            {bucket.name}
+                          </span>
+                          <span className="hidden @2xs:inline text-base-content/40 shrink-0">({bucket.bedIds.length})</span>
+                        </>
+                      )}
+                    </span>
+                    {editingId !== bucket.id && (
+                      <span className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          className="text-base-content/40 hover:text-base-content cursor-pointer p-0.5"
+                          onClick={(e) => { e.stopPropagation(); handleStartEdit(bucket.id, bucket.name); }}
+                          title="Rename"
+                        >
+                          <Pencil size={12} />
+                        </button>
+                        <button
+                          className="text-error/60 hover:text-error cursor-pointer p-0.5"
+                          onClick={(e) => { e.stopPropagation(); deleteBucket(bucket.id); }}
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                        <a
+                          href={`/collections/selection/${bucket.id}`}
+                          className="text-base-content/40 hover:text-base-content cursor-pointer p-0.5"
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); openTab('collections', 'selection/' + bucket.id); }}
+                          title="View details"
+                        >
+                          <ArrowRight size={12} />
+                        </a>
                       </span>
-                      <span className="hidden @2xs:inline text-base-content/40 shrink-0">({bucket.bedIds.length})</span>
-                    </span>
-                    <span className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        className="text-error/60 hover:text-error cursor-pointer p-0.5"
-                        onClick={(e) => { e.stopPropagation(); deleteBucket(bucket.id); }}
-                      >
-                        <Trash2 size={12} />
-                      </button>
-                      <a
-                        href={`/collections/selection/${bucket.id}`}
-                        className="text-base-content/40 hover:text-base-content cursor-pointer p-0.5"
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); openTab('collections', 'selection/' + bucket.id); }}
-                        title="View details"
-                      >
-                        <ArrowRight size={12} />
-                      </a>
-                    </span>
+                    )}
                   </td>
                 </tr>
               ))}

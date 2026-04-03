@@ -24,7 +24,7 @@ export function EmbeddingPreview() {
         onSetPending={() => {}}
         onApplyPending={() => {}}
         pinnedCategories={[]}
-        onPinnedCategoriesChange={() => {}}
+        activeFilters={[]}
       />
     </div>
   );

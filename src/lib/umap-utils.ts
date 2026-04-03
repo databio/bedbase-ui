@@ -24,6 +24,14 @@ export type LegendItem = {
   name: string;
 };
 
+export type ActiveFilter = {
+  id: string;
+  variable: string;        // e.g. 'assay_category'
+  variableLabel: string;   // e.g. 'Assay'
+  categoryValue: number;   // category index in that variable
+  label: string;           // human-readable, e.g. 'ChIP-seq'
+};
+
 /** Shared SELECT params for UMAP queries */
 export function umapSelectParams(colorGrouping: string) {
   return {

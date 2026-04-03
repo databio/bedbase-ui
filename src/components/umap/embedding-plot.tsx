@@ -5,7 +5,7 @@ import * as vg from '@uwdata/vgplot';
 import { tableau20 } from '../../lib/tableau20';
 import { sequentialPalette } from '../../lib/sequential-palette';
 import { isIn } from '@uwdata/mosaic-sql';
-import { umapSelectParams, pointInPolygonPredicate, boundingRect, type UmapPoint } from '../../lib/umap-utils';
+import { umapSelectParams, pointInPolygonPredicate, boundingRect, type UmapPoint, type ActiveFilter } from '../../lib/umap-utils';
 import { AtlasTooltip, tooltipGate } from './atlas-tooltip';
 import { useMosaicCoordinator } from '../../contexts/mosaic-coordinator-context';
 import { useTab } from '../../contexts/tab-context';
@@ -21,7 +21,7 @@ type Props = {
   colorGrouping?: string;
   onLegendItemsChange?: (items: any[]) => void;
   pinnedCategories: number[];
-  onPinnedCategoriesChange: (categories: number[]) => void;
+  activeFilters: ActiveFilter[];
   // Selection state from parent reducer
   persistentPoints: UmapPoint[];
   interactivePoints: UmapPoint[];
@@ -42,9 +42,6 @@ export type EmbeddingPlotRef = {
   centerOnBedId: (bedId: string, scale?: number, reselect?: boolean) => Promise<void>;
   handleFileUpload: () => Promise<void>;
   handleFileRemove: () => Promise<void>;
-  handleTogglePin: (category: number) => void;
-  handlePinAll: (categories: number[]) => void;
-  handleUnpinAll: () => void;
   queryByCategory: (category: string) => Promise<UmapPoint[]>;
   clearRangeSelection: () => void;
 };
@@ -61,7 +58,7 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
     colorGrouping = 'cell_line_category',
     onLegendItemsChange,
     pinnedCategories,
-    onPinnedCategoriesChange,
+    activeFilters,
     persistentPoints,
     interactivePoints,
     pendingPoints,
@@ -92,13 +89,15 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
   const [viewportState, setViewportState] = useState<any>(null);
   const [dataVersion, setDataVersion] = useState(0);
   const [rangeSelectionValue, setRangeSelectionValue] = useState<any>(undefined);
+  const [filterTable, setFilterTable] = useState('data');
   // Track whether interactive points came from a range/lasso (large) vs point click (small).
   // Range-selected points are excluded from the selection prop to avoid embedding-atlas
   // rebuilding a massive SQL predicate and rendering 1000+ SVG circles.
   const [isRangeInteraction, setIsRangeInteraction] = useState(false);
 
   const filter = useMemo(() => vg.Selection.intersect(), []);
-  const legendFilterSource = useMemo(() => ({}), []);
+  // Single source object for all active filters — predicates are AND'd in JS before updating.
+  const filterSourceRef = useRef({});
 
   // visualSelection: merge persistent + (non-range) interactive + highlight
   // Range-selected points are excluded — they still flow to table/stats via onInteractiveChange
@@ -138,7 +137,7 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
 
   const queryPoints = async (ids: string[]): Promise<UmapPoint[]> => {
     if (ids.length === 0) return [];
-    const q = vg.Query.from('data')
+    const q = vg.Query.from(filterTable)
       .select(umapSelectParams(colorGrouping))
       .where(isIn(vg.column('id'), ids.map((id) => vg.literal(id))));
     const result: any = await coordinator.query(q, { type: 'json' });
@@ -204,18 +203,44 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
 
     let q;
     if (isContinuous) {
-      // For binned continuous fields, show "min - max" range labels per bin
+      // Always query from `data` (not filtered view) so legend shows all categories
       q = vg.Query.from('data')
         .select({
-          name: vg.sql`CASE
-            WHEN ${vg.column(colorGrouping)} = ${UPLOADED_CATEGORY} THEN 'Uploaded BED'
-            WHEN ${vg.column(colorGrouping)} = ${OTHER_CATEGORY} THEN 'N/A'
-            ELSE CONCAT(CAST(ROUND(MIN(${vg.column(colName)}), 1) AS VARCHAR), ' - ', CAST(ROUND(MAX(${vg.column(colName)}), 1) AS VARCHAR))
-          END`,
+          min_val: vg.sql`MIN(${vg.column(colName)})`,
+          max_val: vg.sql`MAX(${vg.column(colName)})`,
           category: vg.column(colorGrouping),
         })
         .groupby(vg.column(colorGrouping))
         .orderby(vg.column(colorGrouping));
+
+      const rawItems = (await coord.query(q, { type: 'json' })) as any[];
+
+      // Determine label precision from the overall data range and bin count
+      const dataBins = rawItems.filter(
+        (r) => r.category !== OTHER_CATEGORY && r.category !== UPLOADED_CATEGORY && r.min_val != null,
+      );
+      let precision = 1;
+      if (dataBins.length > 1) {
+        const overallMin = Math.min(...dataBins.map((r) => r.min_val));
+        const overallMax = Math.max(...dataBins.map((r) => r.max_val));
+        const range = overallMax - overallMin;
+        precision = range > 0
+          ? Math.max(0, Math.ceil(-Math.log10(range / dataBins.length)))
+          : 1;
+      }
+      const fmt = (v: number) => {
+        const s = v.toFixed(precision);
+        // Strip unnecessary trailing zeros after decimal point but keep at least one
+        return precision > 0 ? s.replace(/0+$/, '0').replace(/\.0$/, '') : s;
+      };
+
+      return rawItems.map((r) => ({
+        category: r.category,
+        name:
+          r.category === UPLOADED_CATEGORY ? 'Uploaded BED'
+          : r.category === OTHER_CATEGORY ? 'N/A'
+          : `${fmt(r.min_val)} - ${fmt(r.max_val)}`,
+      }));
     } else {
       q = vg.Query.from('data')
         .select({
@@ -234,55 +259,82 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
   };
 
   const queryByCategory = async (category: string): Promise<UmapPoint[]> => {
-    const q = vg.Query.from('data')
+    const q = vg.Query.from(filterTable)
       .select(umapSelectParams(colorGrouping))
       .where(vg.eq(vg.column(colorGrouping), vg.literal(Number(category))));
     const result: any = await coordinator.query(q, { type: 'json' });
     return result || [];
   };
 
-  const handleTogglePin = (category: number) => {
-    setRangeSelectionValue(null);
-    onInteractiveChange([]);
-    const isPinned = pinnedCategories.includes(category);
-    const next = isPinned
-      ? pinnedCategories.filter((c) => c !== category)
-      : [...pinnedCategories, category];
-    onPinnedCategoriesChange(next);
-    if (next.length === 0) {
-      filter.update({ source: legendFilterSource, value: null, predicate: null });
-    } else if (next.length === 1) {
-      filter.update({
-        source: legendFilterSource,
-        value: next[0],
-        predicate: vg.eq(colorGrouping, next[0]),
-      });
+  // Rebuild Mosaic filter whenever activeFilters change.
+  // Uses the same single-source pattern as the original legend pin filter.
+  // Only filters for the CURRENT variable go through the Mosaic filter (embedding-atlas
+  // doesn't support multi-column predicates). Cross-variable filters are applied by
+  // physically filtering the DuckDB table and remounting the component.
+  const prevFiltersRef = useRef<string>('');
+  useEffect(() => {
+    const source = filterSourceRef.current;
+
+    // Current variable's filters → Mosaic filter predicate (immediate, no remount)
+    const currentCats = activeFilters
+      .filter((f) => f.variable === colorGrouping)
+      .map((f) => f.categoryValue);
+
+    if (currentCats.length === 0) {
+      filter.update({ source, value: null, predicate: null });
+    } else if (currentCats.length === 1) {
+      filter.update({ source, value: currentCats[0], predicate: vg.eq(colorGrouping, currentCats[0]) });
     } else {
       filter.update({
-        source: legendFilterSource,
-        value: next,
-        predicate: isIn(vg.column(colorGrouping), next.map((c) => vg.literal(c))),
+        source,
+        value: currentCats,
+        predicate: isIn(vg.column(colorGrouping), currentCats.map((c) => vg.literal(c))),
       });
     }
-  };
 
-  const handlePinAll = (categories: number[]) => {
+    // Cross-variable filters → DuckDB VIEW + remount.
+    // The `data` table is NEVER modified. A view `_data_filtered` is created on top
+    // of it, and the EmbeddingViewMosaic table prop switches between them.
+    const crossFilters = activeFilters.filter((f) => f.variable !== colorGrouping);
+    const crossKey = crossFilters.map((f) => `${f.variable}:${f.categoryValue}`).sort().join(',');
+
+    if (crossKey !== prevFiltersRef.current) {
+      prevFiltersRef.current = crossKey;
+
+      const applyCross = async () => {
+        try {
+          if (crossFilters.length > 0) {
+            const byVariable = new Map<string, number[]>();
+            for (const f of crossFilters) {
+              const arr = byVariable.get(f.variable) || [];
+              arr.push(f.categoryValue);
+              byVariable.set(f.variable, arr);
+            }
+            const conditions = [...byVariable.entries()].map(([variable, cats]) =>
+              cats.length === 1
+                ? `"${variable}" = ${cats[0]}`
+                : `"${variable}" IN (${cats.join(', ')})`,
+            );
+            const where = conditions.join(' AND ');
+            await coordinator.exec([
+              `CREATE OR REPLACE VIEW _data_filtered AS SELECT * FROM data WHERE ${where}`,
+            ]);
+            setFilterTable('_data_filtered');
+          } else {
+            setFilterTable('data');
+          }
+          setDataVersion((v) => v + 1);
+        } catch (e) {
+          console.error('Cross-variable filter failed:', e);
+        }
+      };
+
+      applyCross();
+    }
+
     setRangeSelectionValue(null);
     onInteractiveChange([]);
-    onPinnedCategoriesChange(categories);
-    filter.update({
-      source: legendFilterSource,
-      value: categories,
-      predicate: isIn(vg.column(colorGrouping), categories.map((c) => vg.literal(c))),
-    });
-  };
-
-  const handleUnpinAll = () => {
-    setRangeSelectionValue(null);
-    onInteractiveChange([]);
-    onPinnedCategoriesChange([]);
-    filter.update({ source: legendFilterSource, value: null, predicate: null });
-  };
+  }, [activeFilters, colorGrouping]);
 
   const handlePointSelection = (dataPoints: any[] | null) => {
     setIsRangeInteraction(false);
@@ -297,11 +349,18 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
     if (!value) return;
 
     let predicate: any;
-    const filterPredicates = pinnedCategories.length > 0
-      ? [pinnedCategories.length === 1
-          ? vg.eq(vg.column(colorGrouping), vg.literal(pinnedCategories[0]))
-          : isIn(vg.column(colorGrouping), pinnedCategories.map((c) => vg.literal(c)))]
-      : [];
+    // Build filter predicates from all active filters (not just current variable)
+    const byVariable = new Map<string, number[]>();
+    for (const f of activeFilters) {
+      const arr = byVariable.get(f.variable) || [];
+      arr.push(f.categoryValue);
+      byVariable.set(f.variable, arr);
+    }
+    const filterPredicates = [...byVariable.entries()].map(([variable, cats]) =>
+      cats.length === 1
+        ? vg.eq(vg.column(variable), vg.literal(cats[0]))
+        : isIn(vg.column(variable), cats.map((c) => vg.literal(c))),
+    );
 
     if (typeof value === 'object' && 'xMin' in value) {
       // Rectangle selection
@@ -326,7 +385,7 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
     const selectParams = highlightRangeSelection
       ? umapSelectParams(colorGrouping)
       : { identifier: vg.column('id'), category: vg.column(colorGrouping) };
-    const q = vg.Query.from('data').select(selectParams).where(predicate);
+    const q = vg.Query.from(filterTable).select(selectParams).where(predicate);
     const result = (await coord.query(q, { type: 'json' })) as any[];
 
     setIsRangeInteraction(true);
@@ -362,10 +421,8 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
     }
   }, [customCoordinates, isReady]);
 
-  useEffect(() => {
-    onPinnedCategoriesChange([]);
-    filter.update({ source: legendFilterSource, value: null, predicate: null });
-  }, [colorGrouping]);
+  // No need to clear pins on colorGrouping change — pinnedCategories is now derived
+  // from activeFilters, and the filter rebuild effect handles predicate updates.
 
   useEffect(() => {
     if (isReady) {
@@ -449,13 +506,10 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
       centerOnBedId,
       handleFileUpload,
       handleFileRemove,
-      handleTogglePin,
-      handlePinAll,
-      handleUnpinAll,
       queryByCategory,
       clearRangeSelection: () => setRangeSelectionValue(null),
     }),
-    [pinnedCategories, colorGrouping, interactivePoints],
+    [colorGrouping, interactivePoints],
   );
 
   if (webglStatus.error) {
@@ -476,7 +530,7 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
         <EmbeddingViewMosaic
           key={`embedding-${dataVersion}`}
           coordinator={coordinator}
-          table="data"
+          table={filterTable}
           x="x"
           y="y"
           identifier="id"

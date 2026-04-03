@@ -164,3 +164,8 @@ export function isContinuousGrouping(key: string): boolean {
     (f) => f.key === key && f.continuous,
   );
 }
+
+/** Get the human-readable label for a color grouping key */
+export function getGroupingLabel(key: string): string {
+  return [...CORE_FIELDS, ...EXTENDED_FIELDS].find((f) => f.key === key)?.label ?? key;
+}

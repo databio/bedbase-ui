@@ -119,13 +119,13 @@ export function MosaicCoordinatorProvider({ children }: { children: ReactNode })
 
     const coordinator = getCoordinator();
 
-    // Continuous: quantile binning
+    // Continuous: quantile binning with adaptive bin count
     const sourceCol = CONTINUOUS_SOURCES[key];
     if (sourceCol) {
       // Compute quantile boundaries individually to avoid DuckDB list type issues
       const percentiles = Array.from({ length: NUM_BINS - 1 }, (_, i) => (i + 1) / NUM_BINS);
       const selectCols = percentiles.map(
-        (p, i) => `quantile_cont(${sourceCol}, ${p.toFixed(2)}) AS q${i}`,
+        (p, i) => `quantile_cont(${sourceCol}, ${p.toFixed(6)}) AS q${i}`,
       ).join(', ');
       const boundaries: any = await coordinator.query(
         `SELECT ${selectCols} FROM data WHERE ${sourceCol} IS NOT NULL`,
@@ -139,8 +139,8 @@ export function MosaicCoordinatorProvider({ children }: { children: ReactNode })
         createdGroupings.current.add(key);
         return;
       }
-      const quantiles: number[] = percentiles.map((_, i) => row[`q${i}`]).filter((v) => v != null);
-      if (quantiles.length === 0) {
+      const rawQuantiles: number[] = percentiles.map((_, i) => row[`q${i}`]).filter((v) => v != null);
+      if (rawQuantiles.length === 0) {
         await coordinator.exec([
           `ALTER TABLE data ADD COLUMN IF NOT EXISTS "${key}" INTEGER DEFAULT ${OTHER_CATEGORY}`,
         ]);
@@ -148,16 +148,40 @@ export function MosaicCoordinatorProvider({ children }: { children: ReactNode })
         return;
       }
 
-      // Build CASE expression for bin assignment
-      const cases: string[] = quantiles.map(
-        (q, i) => `WHEN ${sourceCol} <= ${q} THEN ${i}`,
+      // Deduplicate boundaries that are too close together (e.g., GC content
+      // where quantile values are technically distinct but represent the same region).
+      // Tolerance: 1/10 of the ideal bin width across the data range.
+      const qRange = rawQuantiles[rawQuantiles.length - 1] - rawQuantiles[0];
+      const tolerance = qRange > 0 ? qRange / (NUM_BINS * 10) : 0;
+      const deduped: number[] = [rawQuantiles[0]];
+      for (let i = 1; i < rawQuantiles.length; i++) {
+        if (rawQuantiles[i] - deduped[deduped.length - 1] > tolerance) {
+          deduped.push(rawQuantiles[i]);
+        }
+      }
+
+      // Map reduced bin indices to spread across the 18-slot palette for visual continuity.
+      // actualBins = deduped.length + 1 (one bin per boundary gap, plus one beyond the last).
+      const actualBins = deduped.length + 1;
+      const mapIndex = (bin: number) =>
+        actualBins >= NUM_BINS
+          ? bin
+          : actualBins <= 1
+            ? 0
+            : Math.round((bin / (actualBins - 1)) * (NUM_BINS - 1));
+
+      // Build CASE expression for bin assignment using palette-mapped indices
+      const cases: string[] = deduped.map(
+        (q, i) => `WHEN ${sourceCol} <= ${q} THEN ${mapIndex(i)}`,
       );
-      cases.push(`ELSE ${quantiles.length}`);
+      cases.push(`ELSE ${mapIndex(actualBins - 1)}`);
       const caseExpr = `CASE WHEN ${sourceCol} IS NULL THEN ${OTHER_CATEGORY} ${cases.join(' ')} END`;
 
       await coordinator.exec([
         `ALTER TABLE data ADD COLUMN IF NOT EXISTS "${key}" INTEGER`,
         `UPDATE data SET "${key}" = (${caseExpr})`,
+        // Ensure uploaded file always gets the dedicated indicator
+        `UPDATE data SET "${key}" = ${UPLOADED_CATEGORY} WHERE id = 'custom_point'`,
       ]);
 
       createdGroupings.current.add(key);
@@ -176,6 +200,8 @@ export function MosaicCoordinatorProvider({ children }: { children: ReactNode })
         `UPDATE data SET "${key}" = CASE
           WHEN _r.rank < ${TOP_N} THEN _r.rank ELSE ${OTHER_CATEGORY}
           END FROM _ranks _r WHERE data."${catCol}" = _r."${catCol}"`,
+        // Ensure uploaded file always gets the dedicated indicator
+        `UPDATE data SET "${key}" = ${UPLOADED_CATEGORY} WHERE id = 'custom_point'`,
         `DROP TABLE IF EXISTS _ranks`,
       ]);
       createdGroupings.current.add(key);
@@ -234,6 +260,14 @@ export function MosaicCoordinatorProvider({ children }: { children: ReactNode })
         ${UPLOADED_CATEGORY}, ${UPLOADED_CATEGORY}
       )` as any,
     ]);
+
+    // Set UPLOADED_CATEGORY for all lazily-created grouping columns
+    for (const groupKey of createdGroupings.current) {
+      if (groupKey === 'assay_category' || groupKey === 'cell_line_category') continue;
+      await coordinator.exec([
+        `UPDATE data SET "${groupKey}" = ${UPLOADED_CATEGORY} WHERE id = 'custom_point'`,
+      ]);
+    }
   };
 
   // Eagerly initialize data in the background so ID lookups work before UMAP tab opens

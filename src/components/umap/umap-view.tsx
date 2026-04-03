@@ -9,10 +9,12 @@ import { EmbeddingPlot, type EmbeddingPlotRef } from './embedding-plot';
 import { EmbeddingLegend } from './embedding-legend';
 import { EmbeddingTable } from './embedding-table';
 import { EmbeddingSelections } from './embedding-selections';
+import { ActiveFiltersPanel } from './active-filters';
 import { EmbeddingStats } from './embedding-stats';
 import { ColorByManager } from './color-by-manager';
 import { useMosaicCoordinator } from '../../contexts/mosaic-coordinator-context';
-import type { UmapPoint, LegendItem } from '../../lib/umap-utils';
+import type { UmapPoint, LegendItem, ActiveFilter } from '../../lib/umap-utils';
+import { getGroupingLabel } from './color-by-manager';
 
 type SelectionState = {
   preselected: UmapPoint[];
@@ -76,7 +78,13 @@ export function UmapView() {
     setColorGroupingRaw(key);
   }, [ensureGrouping]);
   const [legendItems, setLegendItems] = useState<LegendItem[]>([]);
-  const [pinnedCategories, setPinnedCategories] = useState<number[]>([]);
+  const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([]);
+
+  // Derive pinnedCategories from activeFilters for the current variable
+  const pinnedCategories = useMemo(
+    () => activeFilters.filter((f) => f.variable === colorGrouping).map((f) => f.categoryValue),
+    [activeFilters, colorGrouping],
+  );
   // umapCoordinates is persisted in FileContext so it survives UmapView remounts (e.g., split view)
   // Pass null to the plot when hidden to remove the point without clearing the cache
   const customCoordinates = fileVisible ? umapCoordinates : null;
@@ -221,20 +229,48 @@ export function UmapView() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, [showFilePicker]);
 
-  const handleTogglePin = useCallback(
-    (category: number) => plotRef.current?.handleTogglePin(category),
-    [],
+  const handleToggleFilter = useCallback(
+    (category: number) => {
+      const exists = activeFilters.some(
+        (f) => f.variable === colorGrouping && f.categoryValue === category,
+      );
+      if (exists) {
+        setActiveFilters((prev) =>
+          prev.filter((f) => !(f.variable === colorGrouping && f.categoryValue === category)),
+        );
+      } else {
+        const legendItem = legendItems.find((i) => i.category === category);
+        setActiveFilters((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            variable: colorGrouping,
+            variableLabel: getGroupingLabel(colorGrouping),
+            categoryValue: category,
+            label: legendItem?.name ?? String(category),
+          },
+        ]);
+      }
+    },
+    [activeFilters, colorGrouping, legendItems],
   );
 
-  const handlePinAll = useCallback(
-    () => plotRef.current?.handlePinAll(legendItems.map((item) => item.category)),
-    [legendItems],
-  );
+  const handlePinAll = useCallback(() => {
+    // Remove existing filters for current variable, then add all legend items
+    const otherFilters = activeFilters.filter((f) => f.variable !== colorGrouping);
+    const newFilters = legendItems.map((item) => ({
+      id: crypto.randomUUID(),
+      variable: colorGrouping,
+      variableLabel: getGroupingLabel(colorGrouping),
+      categoryValue: item.category,
+      label: item.name,
+    }));
+    setActiveFilters([...otherFilters, ...newFilters]);
+  }, [activeFilters, colorGrouping, legendItems]);
 
-  const handleUnpinAll = useCallback(
-    () => plotRef.current?.handleUnpinAll(),
-    [],
-  );
+  const handleUnpinAll = useCallback(() => {
+    setActiveFilters((prev) => prev.filter((f) => f.variable !== colorGrouping));
+  }, [colorGrouping]);
 
   const handleLocateCustomPoint = () => {
     plotRef.current?.centerOnBedId('custom_point', 0.2, true);
@@ -386,7 +422,7 @@ export function UmapView() {
               height={undefined}
               colorGrouping={colorGrouping}
               pinnedCategories={pinnedCategories}
-              onPinnedCategoriesChange={setPinnedCategories}
+              activeFilters={activeFilters}
               persistentPoints={persistentPoints}
               interactivePoints={selection.interactive}
               pendingPoints={selection.pending}
@@ -467,7 +503,7 @@ export function UmapView() {
           <EmbeddingLegend
             legendItems={legendItems}
             pinnedCategories={pinnedCategories}
-            onTogglePin={handleTogglePin}
+            onTogglePin={handleToggleFilter}
             onPinAll={handlePinAll}
             onUnpinAll={handleUnpinAll}
             colorGrouping={colorGrouping}
@@ -476,7 +512,15 @@ export function UmapView() {
             onLoadTier2={loadTier2}
             tier2Loading={tier2Loading}
           />
-          <EmbeddingSelections currentSelection={allVisiblePoints} pinnedCategories={pinnedCategories} plotRef={plotRef} />
+          {activeFilters.length > 0 && (
+            <ActiveFiltersPanel
+              activeFilters={activeFilters}
+              currentVariable={colorGrouping}
+              onRemoveFilter={(id) => setActiveFilters((prev) => prev.filter((f) => f.id !== id))}
+              onClearAll={() => setActiveFilters([])}
+            />
+          )}
+          <EmbeddingSelections currentSelection={allVisiblePoints} pinnedCategories={pinnedCategories} plotRef={plotRef} legendItems={legendItems} />
           <EmbeddingStats
             selectedPoints={allVisiblePoints}
             colorGrouping={colorGrouping}
