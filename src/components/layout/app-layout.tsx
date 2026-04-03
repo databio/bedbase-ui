@@ -16,7 +16,7 @@ import { Footer } from './footer';
 const splitBtnClass = 'flex items-center justify-center w-7 h-7 rounded hover:bg-base-300 transition-colors cursor-pointer text-base-content/50 hover:text-base-content';
 
 const tabBasePaths: Record<TabId, string> = {
-  file: '/upload',
+  file: '/workbench',
   search: '/search',
   analysis: '/analysis',
   umap: '/umap',

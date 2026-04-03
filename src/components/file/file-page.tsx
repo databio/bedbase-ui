@@ -274,10 +274,10 @@ function FileEmpty() {
     <div className="flex-1 overflow-auto">
       <div className="px-4 md:px-6 pt-12 pb-20">
         <div className="max-w-3xl mx-auto flex flex-col items-center">
-          <h2 className="text-2xl font-bold text-base-content mb-8 text-center">Upload BED files</h2>
+          <h2 className="text-2xl font-bold text-base-content mb-8 text-center">Your BED files</h2>
 
           <p className="text-base-content/50 text-sm text-center mb-3">
-            Drop files, paste a URL, or browse. Up to 15 files at a time.
+            Drop a file or paste a URL. Analysis runs locally in your browser.
           </p>
 
           <div className="w-full max-w-xl">

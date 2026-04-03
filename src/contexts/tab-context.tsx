@@ -9,7 +9,7 @@ export const TabPanelContext = createContext<TabId | null>(null);
 const TAB_IDS = new Set<string>(['file', 'search', 'analysis', 'umap', 'collections', 'cart']);
 
 const tabBasePaths: Record<TabId, string> = {
-  file: '/upload',
+  file: '/workbench',
   search: '/search',
   analysis: '/analysis',
   umap: '/umap',
@@ -23,7 +23,7 @@ export type ActiveTab = {
 };
 
 function pathToActiveTab(pathname: string, search: string): ActiveTab | null {
-  if (pathname.startsWith('/upload')) return { id: 'file' };
+  if (pathname.startsWith('/workbench')) return { id: 'file' };
   if (pathname.startsWith('/search')) {
     // 'file' stays as a path segment: /search/file
     const match = pathname.match(/^\/search\/(.+)/);

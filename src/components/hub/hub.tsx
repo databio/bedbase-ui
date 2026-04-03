@@ -123,7 +123,7 @@ function SearchInput({ onFileSelect }: { onFileSelect: (files: File[]) => void }
                 <Upload size={14} className="text-primary" />
               </div>
             <div className="flex flex-col items-start">
-              <span className="text-sm font-medium text-base-content/70">Upload BED files</span>
+              <span className="text-sm font-medium text-base-content/70">Load BED files</span>
               <span className="text-[11px] text-base-content/45">.bed, .bed.gz</span>
             </div>
             <input

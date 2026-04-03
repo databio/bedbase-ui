@@ -99,7 +99,7 @@ export function CollectionsEmpty() {
               >
                 <GitCompareArrows size={16} className="text-success shrink-0" />
                 <div className="flex-1 text-left min-w-0">
-                  <p className="text-sm font-medium text-base-content">Compare {uploadedFiles.length} uploaded files</p>
+                  <p className="text-sm font-medium text-base-content">Compare {uploadedFiles.length} loaded files</p>
                   <p className="text-xs text-base-content/40">Run Jaccard similarity, consensus regions, and set operations</p>
                 </div>
                 <ChevronRight size={14} className="text-base-content/30 shrink-0" />
@@ -123,10 +123,10 @@ export function CollectionsEmpty() {
           <div>
             <h3 className="text-base font-semibold text-base-content mb-3">Local collections</h3>
             <p className="text-sm text-base-content/60 leading-relaxed mb-3">
-              You can also build collections locally from your own data. Select groups of files on the UMAP to save them as named selections, or upload multiple BED files and compare them side by side with Jaccard similarity, consensus regions, and set operations.
+              You can also build collections locally from your own data. Select groups of files on the UMAP to save them as named selections, or load multiple BED files and compare them side by side with Jaccard similarity, consensus regions, and set operations.
             </p>
             <p className="text-sm text-base-content/60 leading-relaxed">
-              Local collections are stored in your browser session and don't require an account. Use them to explore relationships between your files or to compare uploaded data against BEDbase.
+              Local collections are stored in your browser session and don't require an account. Use them to explore relationships between your files or to compare your data against BEDbase.
             </p>
           </div>
         </div>

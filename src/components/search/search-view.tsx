@@ -466,7 +466,7 @@ function BedSearchResults() {
             className="flex items-center gap-2 w-full px-3 py-1.5 text-left hover:bg-base-200 transition-colors cursor-pointer"
           >
             <Plus size={12} className="text-secondary shrink-0" />
-            <span className="text-xs text-secondary font-medium">Upload new file</span>
+            <span className="text-xs text-secondary font-medium">Load new file</span>
           </button>
           <input
             ref={fileInputRef}

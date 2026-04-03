@@ -50,7 +50,7 @@ export function SearchEmpty({ initialMode = 'bed' }: { initialMode?: 'bed' | 'be
 
       <p className="text-base-content/50 text-sm text-center mb-3">
         {searchMode === 'bed'
-          ? <>Search by text, or <a href="/upload" onClick={(e) => { e.preventDefault(); openTab('file'); }} className="text-primary hover:underline cursor-pointer">upload</a> a file to search by similarity.</>
+          ? <>Search by text, or <a href="/workbench" onClick={(e) => { e.preventDefault(); openTab('file'); }} className="text-primary hover:underline cursor-pointer">load</a> a file to search by similarity.</>
           : 'Find curated BEDset collections.'}
       </p>
       <div className="w-full max-w-xl">
@@ -146,7 +146,7 @@ export function SearchEmpty({ initialMode = 'bed' }: { initialMode?: 'bed' | 'be
                   className="flex items-center gap-2 w-full px-3 py-1.5 text-left hover:bg-base-200 transition-colors cursor-pointer"
                 >
                   <Plus size={12} className="text-secondary shrink-0" />
-                  <span className="text-xs text-secondary font-medium">Upload new file</span>
+                  <span className="text-xs text-secondary font-medium">Load new file</span>
                 </button>
                 <input
                   ref={fileInputRef}
@@ -233,7 +233,7 @@ export function SearchEmpty({ initialMode = 'bed' }: { initialMode?: 'bed' | 'be
           <div className="flex-1">
             <h3 className="text-base font-semibold text-base-content mb-3">BED to BED</h3>
             <p className="text-sm text-base-content/60 leading-relaxed mb-3">
-              Upload a BED file and find the most similar files in BEDbase based on genomic interval content, not metadata. Each file is embedded into a vector representation of its actual regions, so similarity reflects shared genomic coordinates rather than text annotations.
+              Load a BED file and find the most similar files in BEDbase based on genomic interval content, not metadata. Each file is embedded into a vector representation of its actual regions, so similarity reflects shared genomic coordinates rather than text annotations.
             </p>
             <p className="text-sm text-base-content/60 leading-relaxed">
               This is useful for identifying functionally similar experiments, validating results against existing data, quality control and outlier detection, and finding related datasets for meta-analysis.

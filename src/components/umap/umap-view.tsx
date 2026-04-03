@@ -403,7 +403,7 @@ export function UmapView() {
                   className="inline-flex items-center gap-1.5 text-xs font-medium text-base-content/65 hover:text-base-content/80 bg-base-200 hover:bg-base-300 px-2.5 py-1.5 rounded-md transition-colors cursor-pointer"
                 >
                   <Upload size={12} />
-                  Upload BED
+                  Load BED
                 </button>
               )}
               <input

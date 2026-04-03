@@ -77,7 +77,7 @@ export function AnalysisEmpty() {
           <h2 className="text-2xl font-bold text-base-content mb-8 text-center">Analyze a BED file</h2>
 
           <p className="text-base-content/50 text-sm text-center mb-3">
-            Try an example below, use the <a href="/search" onClick={(e) => { e.preventDefault(); openTab('search'); }} className="text-primary hover:underline cursor-pointer">Search</a> tab to find a file, or <a href="/upload" onClick={(e) => { e.preventDefault(); openTab('file'); }} className="text-primary hover:underline cursor-pointer">upload</a> your own.
+            Try an example below, use the <a href="/search" onClick={(e) => { e.preventDefault(); openTab('search'); }} className="text-primary hover:underline cursor-pointer">Search</a> tab to find a file, or <a href="/workbench" onClick={(e) => { e.preventDefault(); openTab('file'); }} className="text-primary hover:underline cursor-pointer">load</a> your own.
           </p>
           <div className="grid grid-cols-3 gap-2">
             {(bedFile || files.length > 0) && (
@@ -141,7 +141,7 @@ export function AnalysisEmpty() {
                       className="flex items-center gap-2 w-full px-3 py-1.5 text-left hover:bg-base-200 transition-colors cursor-pointer"
                     >
                       <Plus size={12} className="text-secondary shrink-0" />
-                      <span className="text-xs text-secondary font-medium">Upload new file</span>
+                      <span className="text-xs text-secondary font-medium">Load new file</span>
                     </button>
                     <input
                       ref={fileInputRef}
