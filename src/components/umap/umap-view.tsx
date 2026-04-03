@@ -421,7 +421,6 @@ export function UmapView() {
               preselectedIds={preselectedIds.length > 0 ? preselectedIds : undefined}
               height={undefined}
               colorGrouping={colorGrouping}
-              pinnedCategories={pinnedCategories}
               activeFilters={activeFilters}
               persistentPoints={persistentPoints}
               interactivePoints={selection.interactive}

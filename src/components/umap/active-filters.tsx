@@ -18,8 +18,8 @@ export function ActiveFiltersPanel({ activeFilters, currentVariable, onRemoveFil
   }
 
   return (
-    <div className="border border-base-300 rounded-lg overflow-clip bg-base-100 shrink-0">
-      <div className="px-3 py-2 border-b border-base-300 bg-base-200 flex items-center justify-between">
+    <div className="border border-base-300 rounded-lg overflow-clip bg-base-100">
+      <div className="px-3 py-2 border-b border-base-300 bg-base-200 flex items-center justify-between sticky top-0 z-10">
         <span className="flex items-center gap-1.5">
           <span className="text-xs font-bold">Filters</span>
           <span className="text-xs text-base-content/40">({activeFilters.length})</span>

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Trash2, Save, ShoppingCart, Pin, ArrowRight, Pencil, Check, X } from 'lucide-react';
+import { Trash2, Save, ShoppingCart, Pin, ArrowRight, Pencil, Check, X, ChevronDown } from 'lucide-react';
 import { useBucket } from '../../contexts/bucket-context';
 import { useCart } from '../../contexts/cart-context';
 import { useTab } from '../../contexts/tab-context';
@@ -90,15 +90,23 @@ export function EmbeddingSelections({ currentSelection, pinnedCategories, plotRe
     setEditingId(null);
   };
 
+  const [collapsed, setCollapsed] = useState(false);
+
   return (
-    <div className="border border-base-300 rounded-lg overflow-clip bg-base-100 shrink-0 max-h-[33%] overflow-y-auto overscroll-contain">
-      <div className="px-3 py-2 border-b border-base-300 bg-base-200 flex items-center justify-between">
-        <span className="text-xs font-bold">Selections{validPoints.length > 0
+    <div className={`border border-base-300 rounded-lg overflow-clip bg-base-100 flex flex-col ${collapsed ? 'shrink-0' : 'shrink-0 max-h-[33%]'}`}>
+      <div
+        className={`px-3 py-2 ${collapsed ? '' : 'border-b border-base-300'} bg-base-200 flex items-center justify-between shrink-0 cursor-pointer select-none`}
+        onClick={() => setCollapsed(!collapsed)}
+      >
+        <span className="flex items-center gap-1.5">
+          <ChevronDown size={12} className={`text-base-content/40 transition-transform ${collapsed ? '-rotate-90' : ''}`} />
+          <span className="text-xs font-bold">Selections{validPoints.length > 0
           ? <span className="hidden @2xs:inline font-normal text-base-content/50 ml-1">({validPoints.length})</span>
           : pinnedCategories.length > 0
             ? <span className="hidden @2xs:inline font-normal text-base-content/50 ml-1">(pinned)</span>
             : null}</span>
-        <span className="flex items-center gap-1 -my-0.5">
+        </span>
+        <span className="flex items-center gap-1 -my-0.5" onClick={(e) => e.stopPropagation()}>
           {/* Narrow: plain colored icons */}
           <button
             className="@2xs:hidden p-1 text-secondary disabled:opacity-30 cursor-pointer disabled:cursor-default"
@@ -133,7 +141,7 @@ export function EmbeddingSelections({ currentSelection, pinnedCategories, plotRe
           </button>
         </span>
       </div>
-      <div className="p-0">
+      {!collapsed && <div className="overflow-y-auto overscroll-contain">
         {buckets.length === 0 ? (
           <p className="text-base-content/40 text-center text-xs py-3">No saved selections</p>
         ) : (
@@ -223,7 +231,7 @@ export function EmbeddingSelections({ currentSelection, pinnedCategories, plotRe
             </tbody>
           </table>
         )}
-      </div>
+      </div>}
     </div>
   );
 }

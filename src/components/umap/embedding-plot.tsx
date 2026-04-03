@@ -20,7 +20,6 @@ type Props = {
   simpleTooltip?: boolean;
   colorGrouping?: string;
   onLegendItemsChange?: (items: any[]) => void;
-  pinnedCategories: number[];
   activeFilters: ActiveFilter[];
   // Selection state from parent reducer
   persistentPoints: UmapPoint[];
@@ -57,7 +56,6 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
     simpleTooltip,
     colorGrouping = 'cell_line_category',
     onLegendItemsChange,
-    pinnedCategories,
     activeFilters,
     persistentPoints,
     interactivePoints,

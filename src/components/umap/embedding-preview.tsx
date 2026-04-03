@@ -23,7 +23,6 @@ export function EmbeddingPreview() {
         onInteractiveChange={() => {}}
         onSetPending={() => {}}
         onApplyPending={() => {}}
-        pinnedCategories={[]}
         activeFilters={[]}
       />
     </div>
