@@ -79,10 +79,11 @@ export function EmbeddingStats({ selectedPoints, colorGrouping, legendItems, pin
   return (
     <div className={`border border-base-300 rounded-lg bg-base-100 flex flex-col ${collapsed ? 'shrink-0' : 'flex-1 min-h-0'}`} style={collapsed ? undefined : { maxHeight }}>
       <div
-        className={`px-3 py-2 ${collapsed ? '' : 'border-b border-base-300'} bg-base-200 flex items-center gap-1.5 shrink-0 cursor-pointer select-none`}
-        onClick={() => setCollapsed(!collapsed)}
+        className={`px-3 py-2 ${collapsed ? '' : 'border-b border-base-300'} bg-base-200 flex items-center gap-1.5 shrink-0`}
       >
-        <ChevronDown size={12} className={`text-base-content/40 transition-transform ${collapsed ? '-rotate-90' : ''}`} />
+        <button onClick={() => setCollapsed(!collapsed)} className="cursor-pointer">
+          <ChevronDown size={12} className={`text-base-content/40 transition-transform ${collapsed ? '-rotate-90' : ''}`} />
+        </button>
         <span className="text-xs font-bold">Selection Count</span>
       </div>
       {!collapsed && (

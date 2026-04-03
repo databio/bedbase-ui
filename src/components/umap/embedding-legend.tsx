@@ -39,17 +39,18 @@ export function EmbeddingLegend({
   const getCategoryColor = (category: number) => palette[category] ?? '#888888';
 
   return (
-    <div className={`border border-base-300 rounded-lg bg-base-100 flex flex-col overflow-hidden ${collapsed ? 'shrink-0' : 'flex-1 min-h-0'}`}>
+    <div className={`border border-base-300 rounded-lg bg-base-100 flex flex-col ${collapsed ? 'shrink-0' : 'flex-1 min-h-0'}`}>
       <div
-        className={`px-3 py-2 ${collapsed ? '' : 'border-b border-base-300'} bg-base-200 flex items-center justify-between shrink-0 cursor-pointer select-none`}
-        onClick={() => setCollapsed(!collapsed)}
+        className={`px-3 py-2 ${collapsed ? '' : 'border-b border-base-300'} bg-base-200 flex items-center justify-between shrink-0`}
       >
         <span className="flex items-center gap-1.5">
-          <ChevronDown size={12} className={`text-base-content/40 transition-transform ${collapsed ? '-rotate-90' : ''}`} />
+          <button onClick={() => setCollapsed(!collapsed)} className="cursor-pointer">
+            <ChevronDown size={12} className={`text-base-content/40 transition-transform ${collapsed ? '-rotate-90' : ''}`} />
+          </button>
           <span className="text-xs font-bold">Legend</span>
           {pinnedCategories.length > 0 ? (
             <button
-              onClick={(e) => { e.stopPropagation(); onUnpinAll(); }}
+              onClick={onUnpinAll}
               className="text-primary hover:text-primary/70 cursor-pointer transition-colors"
               title="Unpin all"
             >
@@ -57,7 +58,7 @@ export function EmbeddingLegend({
             </button>
           ) : (
             <button
-              onClick={(e) => { e.stopPropagation(); onPinAll(); }}
+              onClick={onPinAll}
               className="text-base-content/20 hover:text-base-content/50 cursor-pointer transition-colors"
               title="Pin all"
             >
@@ -65,7 +66,7 @@ export function EmbeddingLegend({
             </button>
           )}
         </span>
-        <span onClick={(e) => e.stopPropagation()}>
+        <span>
           <ColorByManager
             colorGrouping={colorGrouping}
             setColorGrouping={setColorGrouping}

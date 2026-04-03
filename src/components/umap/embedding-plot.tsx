@@ -419,8 +419,17 @@ export const EmbeddingPlot = forwardRef<EmbeddingPlotRef, Props>((props, ref) =>
     }
   }, [customCoordinates, isReady]);
 
-  // No need to clear pins on colorGrouping change — pinnedCategories is now derived
-  // from activeFilters, and the filter rebuild effect handles predicate updates.
+  // Re-query interactive points when colorGrouping changes so their category values
+  // (and thus colors) reflect the new variable.
+  useEffect(() => {
+    if (!isReady || interactivePoints.length === 0) return;
+    let cancelled = false;
+    const ids = interactivePoints.map((p) => p.identifier);
+    queryPoints(ids).then((updated) => {
+      if (!cancelled && updated.length > 0) onInteractiveChange(updated);
+    });
+    return () => { cancelled = true; };
+  }, [colorGrouping]);
 
   useEffect(() => {
     if (isReady) {

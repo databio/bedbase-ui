@@ -95,18 +95,19 @@ export function EmbeddingSelections({ currentSelection, pinnedCategories, plotRe
   return (
     <div className={`border border-base-300 rounded-lg overflow-clip bg-base-100 flex flex-col ${collapsed ? 'shrink-0' : 'shrink-0 max-h-[33%]'}`}>
       <div
-        className={`px-3 py-2 ${collapsed ? '' : 'border-b border-base-300'} bg-base-200 flex items-center justify-between shrink-0 cursor-pointer select-none`}
-        onClick={() => setCollapsed(!collapsed)}
+        className={`px-3 py-2 ${collapsed ? '' : 'border-b border-base-300'} bg-base-200 flex items-center justify-between shrink-0`}
       >
         <span className="flex items-center gap-1.5">
-          <ChevronDown size={12} className={`text-base-content/40 transition-transform ${collapsed ? '-rotate-90' : ''}`} />
+          <button onClick={() => setCollapsed(!collapsed)} className="cursor-pointer">
+            <ChevronDown size={12} className={`text-base-content/40 transition-transform ${collapsed ? '-rotate-90' : ''}`} />
+          </button>
           <span className="text-xs font-bold">Selections{validPoints.length > 0
           ? <span className="hidden @2xs:inline font-normal text-base-content/50 ml-1">({validPoints.length})</span>
           : pinnedCategories.length > 0
             ? <span className="hidden @2xs:inline font-normal text-base-content/50 ml-1">(pinned)</span>
             : null}</span>
         </span>
-        <span className="flex items-center gap-1 -my-0.5" onClick={(e) => e.stopPropagation()}>
+        <span className="flex items-center gap-1 -my-0.5">
           {/* Narrow: plain colored icons */}
           <button
             className="@2xs:hidden p-1 text-secondary disabled:opacity-30 cursor-pointer disabled:cursor-default"
