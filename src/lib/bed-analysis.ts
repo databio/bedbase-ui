@@ -2,6 +2,7 @@ import type { RegionSet, ChromosomeStatistics } from '@databio/gtars';
 import type { components } from '../bedbase-types';
 import type { PlotSlot } from './plot-specs';
 import { fileModelToUrl, fileModelToPlotSlot } from './file-model-utils';
+import { compressedDistributionSlots, type CompressedDistributions } from '../components/analysis/plots/compressed-plots';
 
 type BedMetadataAll = components['schemas']['BedMetadataAll'];
 
@@ -136,9 +137,12 @@ function nonEmpty(s: string | null | undefined): string | undefined {
 export function fromApiResponse(data: BedMetadataAll): BedAnalysis {
   const { stats, plots, files, annotation } = data;
 
-  // Build server plot slots
+  // Build server plot slots — prefer compressed distributions over image plots
   const serverPlots: PlotSlot[] = [];
-  if (plots) {
+  const distributions = stats?.distributions as CompressedDistributions | undefined;
+  if (distributions?.distributions || distributions?.partitions) {
+    serverPlots.push(...compressedDistributionSlots(distributions));
+  } else if (plots) {
     const plotEntries: [string, string][] = [
       ['chrombins', 'Chromosome bins'],
       ['gccontent', 'GC content'],
@@ -286,6 +290,11 @@ export async function fromRegionSet(
   await yieldToMain();
 
   // Step 3: region distribution (~heavy)
+  // TODO: pass chromSizes here once genome detection is wired into the single-file
+  // upload flow. Without chrom_sizes, bin width is derived from the BED file's max
+  // observed coordinate — outputs won't align with server-stored distributions.
+  // The updated WASM signature is regionDistribution(n_bins, chrom_sizes) and will
+  // take effect once @databio/gtars is republished with the new types.
   const regionDistribution = (rs.regionDistribution(REGION_DIST_BINS) as DistributionPoint[]) ?? [];
   onProgress?.(0.85);
   await yieldToMain();

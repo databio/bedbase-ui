@@ -326,6 +326,7 @@ export function compressedGcContentSlot(kde: CompressedKde): PlotSlot | null {
         x: { label: null, tickSize: 0 },
         y: { label: null, tickSize: 0 },
         marks: [
+          Plot.ruleY([0]),
           Plot.lineY(points, { x: 'x', y: 'density', stroke: 'teal', strokeWidth: 1.5 }),
           ...meanRule,
         ],
