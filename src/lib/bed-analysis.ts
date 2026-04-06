@@ -139,7 +139,7 @@ export function fromApiResponse(data: BedMetadataAll): BedAnalysis {
 
   // Build server plot slots — prefer compressed distributions over image plots
   const serverPlots: PlotSlot[] = [];
-  const distributions = stats?.distributions as CompressedDistributions | undefined;
+  const distributions = (stats as Record<string, unknown> | undefined)?.distributions as CompressedDistributions | undefined;
   if (distributions?.distributions || distributions?.partitions) {
     serverPlots.push(...compressedDistributionSlots(distributions));
   } else if (plots) {

@@ -2,12 +2,30 @@ import { Plus, Check } from 'lucide-react';
 import type { components } from '../../bedbase-types';
 import { useTab } from '../../contexts/tab-context';
 import { useCart } from '../../contexts/cart-context';
+import type { BatchBedResult } from '../../queries/use-bed-batch';
 
 type BedMetadataBasic = components['schemas']['BedMetadataBasic'];
 
-export function BedfileTable({ bedfiles }: { bedfiles: BedMetadataBasic[] }) {
+function fmtNum(n: number | null | undefined): string {
+  if (n == null) return '—';
+  return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+}
+
+export function BedfileTable({
+  bedfiles,
+  batchStats,
+}: {
+  bedfiles: BedMetadataBasic[];
+  batchStats?: BatchBedResult[];
+}) {
   const { openTab } = useTab();
   const { addToCart, removeFromCart, isInCart } = useCart();
+
+  const statsMap = new Map<string, BatchBedResult>();
+  if (batchStats) {
+    for (const b of batchStats) statsMap.set(b.id, b);
+  }
+  const hasStats = statsMap.size > 0;
 
   return (
     <div className="overflow-x-auto border border-base-300 rounded-lg bg-base-100">
@@ -16,6 +34,12 @@ export function BedfileTable({ bedfiles }: { bedfiles: BedMetadataBasic[] }) {
           <tr>
             <th>Name</th>
             <th>Genome</th>
+            <th>Tissue</th>
+            <th>Cell type</th>
+            <th>Assay</th>
+            {hasStats && <th className="text-right">Regions</th>}
+            {hasStats && <th className="text-right">Mean width</th>}
+            {hasStats && <th className="text-right">GC</th>}
             <th>Description</th>
             <th className="w-20">Cart</th>
           </tr>
@@ -23,6 +47,7 @@ export function BedfileTable({ bedfiles }: { bedfiles: BedMetadataBasic[] }) {
         <tbody>
           {bedfiles.map((bed) => {
             const inCart = isInCart(bed.id);
+            const stats = statsMap.get(bed.id)?.stats;
             return (
               <tr
                 key={bed.id}
@@ -43,6 +68,12 @@ export function BedfileTable({ bedfiles }: { bedfiles: BedMetadataBasic[] }) {
                     <span className="text-base-content/30">—</span>
                   )}
                 </td>
+                <td className="max-w-24 truncate text-base-content/50">{bed.annotation?.tissue || '—'}</td>
+                <td className="max-w-24 truncate text-base-content/50">{bed.annotation?.cell_type || '—'}</td>
+                <td className="max-w-24 truncate text-base-content/50">{bed.annotation?.assay || '—'}</td>
+                {hasStats && <td className="text-right tabular-nums">{fmtNum(stats?.number_of_regions)}</td>}
+                {hasStats && <td className="text-right tabular-nums">{fmtNum(stats?.mean_region_width)}</td>}
+                {hasStats && <td className="text-right tabular-nums">{fmtNum(stats?.gc_content)}</td>}
                 <td className="max-w-xs truncate text-base-content/50">{bed.description || ''}</td>
                 <td>
                   <button

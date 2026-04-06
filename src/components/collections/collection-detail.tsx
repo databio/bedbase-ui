@@ -6,9 +6,12 @@ import { useCart } from '../../contexts/cart-context';
 import { useBucket } from '../../contexts/bucket-context';
 import { useBedsetMetadata } from '../../queries/use-bedset-metadata';
 import { useBedsetBedfiles } from '../../queries/use-bedset-bedfiles';
+import { useBedBatch } from '../../queries/use-bed-batch';
 import { API_BASE, fileModelToPlotSlot } from '../../lib/file-model-utils';
 import { BedfileTable } from './bedfile-table';
 import { KvTable } from '../shared/kv-table';
+import { PlotGallery } from '../analysis/plot-gallery';
+import { collectionDistributionSlots, type BedSetDistributions } from './plots/collection-distributions';
 
 const linkClass = 'inline-flex items-center gap-1.5 text-xs font-medium text-base-content/60 hover:text-base-content/80 bg-base-200 hover:bg-base-300 px-2.5 py-1.5 rounded-md transition-colors cursor-pointer';
 
@@ -77,6 +80,7 @@ export function CollectionDetail({ bedsetId }: { bedsetId: string }) {
   const [showCode, setShowCode] = useState(false);
   const { data: meta, isLoading: metaLoading, error: metaError, refetch } = useBedsetMetadata(bedsetId);
   const { data: bedfiles } = useBedsetBedfiles(bedsetId);
+  const { data: batchStats } = useBedBatch(meta?.bed_ids);
 
   if (metaLoading) {
     return (
@@ -141,6 +145,11 @@ export function CollectionDetail({ bedsetId }: { bedsetId: string }) {
     statsRows.push({ label: 'Median TSS distance', value: fmtSd(meanStats.median_tss_dist, sdStats?.median_tss_dist) });
 
   const regionPlot = fileModelToPlotSlot(meta.plots?.region_commonality, 'region_commonality', 'Region commonality');
+
+  // Forward-compatible: render collection distribution plots when available
+  // (requires bedhost modular-backend-api deployment)
+  const distributions = (meta as Record<string, unknown>).distributions as BedSetDistributions | undefined;
+  const distSlots = distributions ? collectionDistributionSlots(distributions) : [];
 
   const bedfileList = bedfiles?.results ?? [];
   const inCartCount = bedfileList.filter((b) => isInCart(b.id)).length;
@@ -267,6 +276,16 @@ export function CollectionDetail({ bedsetId }: { bedsetId: string }) {
           </div>
         </div>
 
+        {/* Collection distribution plots (when available) */}
+        {distSlots.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold text-base-content/50 uppercase tracking-wide">
+              Distributions
+            </h3>
+            <PlotGallery plots={distSlots} />
+          </div>
+        )}
+
         {/* Region commonality plot */}
         {regionPlot && regionPlot.type === 'image' && (
           <div className="space-y-2">
@@ -285,7 +304,7 @@ export function CollectionDetail({ bedsetId }: { bedsetId: string }) {
             BED files ({bedfileList.length})
           </h3>
           {bedfileList.length > 0 ? (
-            <BedfileTable bedfiles={bedfileList} />
+            <BedfileTable bedfiles={bedfileList} batchStats={batchStats} />
           ) : (
             <p className="text-sm text-base-content/40 py-4">No BED files in this bedset.</p>
           )}
