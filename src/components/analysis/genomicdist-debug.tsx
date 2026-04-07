@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import type { RefGenomicDistResult, BedAnalysis } from '../../lib/bed-analysis';
 import { computeRefGenomicdist } from '../../lib/bed-analysis';
 import type { PlotSlot } from '../../lib/plot-specs';
-import { tssDistanceSlot, partitionsSlot, expectedPartitionsSlot } from './plots/genomicdist-plots';
+import { tssDistanceSlot, partitionsSlot, expectedPartitionsSlot } from './plots/local/genomicdist-plots';
 import { useFile } from '../../contexts/file-context';
 import { useAnalyzeGenome } from '../../queries/use-analyze-genome';
 

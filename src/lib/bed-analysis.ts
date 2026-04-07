@@ -2,7 +2,7 @@ import type { RegionSet, ChromosomeStatistics } from '@databio/gtars';
 import type { components } from '../bedbase-types';
 import type { PlotSlot } from './plot-specs';
 import { fileModelToUrl, fileModelToPlotSlot } from './file-model-utils';
-import { compressedDistributionSlots, type CompressedDistributions } from '../components/analysis/plots/compressed-plots';
+import { compressedDistributionSlots, type CompressedDistributions } from '../components/analysis/plots/server/compressed-plots';
 
 type BedMetadataAll = components['schemas']['BedMetadataAll'];
 

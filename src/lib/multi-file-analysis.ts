@@ -2,11 +2,17 @@ import { RegionSet, RegionSetList, type ChromosomeStatistics } from '@databio/gt
 import type { ProgressCallback, BedEntry } from './bed-parser';
 import { REGION_DIST_BINS } from './bed-analysis';
 
+export type FilePartitions = {
+  fileName: string;
+  partitions: Record<string, number>; // partition name → percentage
+};
+
 export type FileStats = {
   fileName: string;
   regions: number;
   meanWidth: number;
   nucleotides: number;
+  medianNeighborDistance?: number;
 };
 
 export type FileBreakdown = {
@@ -149,6 +155,7 @@ export type MultiFileResult = {
   positionalBins: PositionalBin[]; // flat array for plotting: file × chr × positional bin
   consensus: ConsensusRegion[];
   tssHist: TssHistPoint[] | null;  // null if ref data unavailable
+  filePartitions: FilePartitions[] | null; // null if gene model unavailable
   unionStats: { regions: number; nucleotides: number } | null;
   intersectionStats: { regions: number; nucleotides: number } | null;
 };
@@ -237,6 +244,16 @@ export async function computeMultiFileAnalysis(
       const widths = Array.from(rs.calcWidths() as unknown as ArrayLike<number>);
       widthHist.push(...binWidths(Array.from(widths), fileNames[i]));
     } catch { /* calcWidths not available */ }
+
+    try {
+      const rsAny = rs as unknown as { calcNeighborDistances?: () => ArrayLike<number> };
+      if (rsAny.calcNeighborDistances) {
+        const dists = Array.from(rsAny.calcNeighborDistances()).filter((d) => d > 0).sort((a, b) => a - b);
+        if (dists.length > 0) {
+          fileStats[i].medianNeighborDistance = dists[Math.floor(dists.length / 2)];
+        }
+      }
+    } catch { /* calcNeighborDistances not available */ }
 
     freeRs(rs);
   }
@@ -367,5 +384,5 @@ export async function computeMultiFileAnalysis(
 
   freeRs(rsl);
   onProgress?.(1);
-  return { fileStats, jaccardMatrix, overlapMatrix, perFile, chrCounts, widthHist, positionalBins: [], consensus, tssHist: null, unionStats, intersectionStats };
+  return { fileStats, jaccardMatrix, overlapMatrix, perFile, chrCounts, widthHist, positionalBins: [], consensus, tssHist: null, filePartitions: null, unionStats, intersectionStats };
 }

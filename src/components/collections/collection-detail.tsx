@@ -11,7 +11,7 @@ import { API_BASE, fileModelToPlotSlot } from '../../lib/file-model-utils';
 import { BedfileTable } from './bedfile-table';
 import { KvTable } from '../shared/kv-table';
 import { PlotGallery } from '../analysis/plot-gallery';
-import { collectionDistributionSlots, type BedSetDistributions } from './plots/collection-distributions';
+import { collectionDistributionSlots, type BedSetDistributions } from './plots/server/bedset-plots';
 
 const linkClass = 'inline-flex items-center gap-1.5 text-xs font-medium text-base-content/60 hover:text-base-content/80 bg-base-200 hover:bg-base-300 px-2.5 py-1.5 rounded-md transition-colors cursor-pointer';
 
@@ -280,7 +280,7 @@ export function CollectionDetail({ bedsetId }: { bedsetId: string }) {
         {distSlots.length > 0 && (
           <div className="space-y-2">
             <h3 className="text-sm font-semibold text-base-content/50 uppercase tracking-wide">
-              Distributions
+              Plots
             </h3>
             <PlotGallery plots={distSlots} />
           </div>

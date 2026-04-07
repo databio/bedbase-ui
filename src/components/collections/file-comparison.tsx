@@ -17,14 +17,17 @@ import {
   type PerFileGenomeResult,
   type TssHistPoint,
 } from '../../lib/multi-file-analysis';
-import { loadRefBase, columnsToTuples } from '../../lib/reference-data';
+import { loadRefBase, loadRefGeneModel, columnsToTuples, columnsToStrandedTuples } from '../../lib/reference-data';
 import { PlotGallery } from '../analysis/plot-gallery';
 import { GenomeCompatModal } from '../analysis/genome-compat-modal';
-import { similarityHeatmapSlot } from './plots/jaccard-heatmap';
-import { consensusPlotSlot } from './plots/consensus-plot';
-import { positionalHeatmapSlot } from './plots/positional-heatmap';
-import { chrRegionBoxplotSlot } from './plots/chr-region-boxplot';
-import { consensusTssSlot } from './plots/consensus-tss';
+import {
+  similarityHeatmapSlot,
+  positionalHeatmapSlot,
+  chrRegionBarSlot,
+  consensusTssSlot,
+  fileStatsScalarSlots,
+  aggregatePartitionsSlot,
+} from './plots/local/collection-plots';
 import type { PlotSlot } from '../../lib/plot-specs';
 import type { components } from '../../bedbase-types';
 
@@ -137,12 +140,6 @@ function formatNumber(n: number): string {
   return n.toLocaleString();
 }
 
-function formatBp(bp: number): string {
-  if (bp >= 1e9) return `${(bp / 1e9).toFixed(1)}G bp`;
-  if (bp >= 1e6) return `${(bp / 1e6).toFixed(1)}M bp`;
-  if (bp >= 1e3) return `${(bp / 1e3).toFixed(1)}K bp`;
-  return `${bp} bp`;
-}
 
 // --- Component ---
 
@@ -327,8 +324,48 @@ export function FileComparison() {
         } catch { /* ref data or WASM unavailable */ }
       }
 
+      // Compute per-file partitions (requires gene model)
+      type FilePartitions = { fileName: string; partitions: Record<string, number> };
+      let filePartitions: FilePartitions[] | null = null;
+      if (Object.keys(chromSizes).length > 0) {
+        try {
+          const refGM = await loadRefGeneModel(majority);
+          const gtars = await import('@databio/gtars') as any;
+
+          const genesTuples = columnsToStrandedTuples(refGM.genes);
+          const exonsTuples = columnsToTuples(refGM.exons);
+          const threeUtrTuples = columnsToTuples(refGM.threeUtr);
+          const fiveUtrTuples = columnsToTuples(refGM.fiveUtr);
+
+          const geneModel = new gtars.GeneModel(
+            genesTuples, exonsTuples, threeUtrTuples, fiveUtrTuples,
+          );
+          const partitionList = gtars.PartitionList.fromGeneModel(
+            geneModel, 200, 2000, chromSizes,
+          );
+
+          filePartitions = [];
+          for (let i = 0; i < regionSets.length; i++) {
+            const result = gtars.calcPartitions(regionSets[i], partitionList, false) as {
+              partitions: { name: string; count: number }[];
+              total: number;
+            } | null;
+            if (result && result.total > 0) {
+              const pcts: Record<string, number> = {};
+              for (const p of result.partitions) {
+                pcts[p.name] = (p.count / result.total) * 100;
+              }
+              filePartitions.push({ fileName: fileNames[i], partitions: pcts });
+            }
+          }
+
+          try { partitionList.free?.(); } catch { /* */ }
+          try { geneModel.free?.(); } catch { /* */ }
+        } catch { /* gene model unavailable */ }
+      }
+
       if (!cancelledRef.current) {
-        const result = { ...rawResult, positionalBins, tssHist };
+        const result = { ...rawResult, positionalBins, tssHist, filePartitions };
         dispatch({ type: 'ANALYSIS_DONE', result });
       }
     } catch (err) {
@@ -395,11 +432,8 @@ export function FileComparison() {
   // --- Consensus plots (independent of file selection) ---
   const consensusPlots = useMemo<PlotSlot[]>(() => {
     if (state.phase !== 'done' || !state.result) return [];
-    const { consensus, fileStats } = state.result;
-    const out: PlotSlot[] = [];
-    const cp = consensusPlotSlot(consensus, fileStats.length);
-    if (cp) out.push(cp);
-    return out;
+    const { fileStats } = state.result;
+    return fileStatsScalarSlots(fileStats);
   }, [state.phase, state.result]);
 
   // --- Selection-dependent plots (recompute when selection changes) ---
@@ -411,13 +445,6 @@ export function FileComparison() {
     const selIndices = sel.map((n) => allNames.indexOf(n));
     const out: PlotSlot[] = [];
 
-    // Jaccard/overlap: extract sub-matrix for selected files
-    if (sel.length >= 1) {
-      const filtJaccard = selIndices.map((i) => selIndices.map((j) => jaccardMatrix[i][j]));
-      const filtOverlap = selIndices.map((i) => selIndices.map((j) => overlapMatrix[i][j]));
-      out.push(similarityHeatmapSlot(filtJaccard, filtOverlap, sel));
-    }
-
     // Positional: filter bins to selected files
     if (sel.length >= 1) {
       const filtBins = positionalBins.filter((b) => selectedFiles.has(b.fileName));
@@ -425,11 +452,17 @@ export function FileComparison() {
       if (posPlot) out.push(posPlot);
     }
 
-    // Chromosome boxplot: filter to selected files
+    // Regions per chromosome: bar chart with IQR
     if (sel.length >= 2) {
       const filtChrCounts = chrCounts.filter((d) => selectedFiles.has(d.fileName));
-      const boxPlot = chrRegionBoxplotSlot(filtChrCounts, sel, chromSizesRef.current);
-      if (boxPlot) out.push(boxPlot);
+      const barPlot = chrRegionBarSlot(filtChrCounts, sel, chromSizesRef.current);
+      if (barPlot) out.push(barPlot);
+    }
+
+    // Genomic partitions (median + IQR)
+    if (state.result.filePartitions) {
+      const pp = aggregatePartitionsSlot(state.result.filePartitions);
+      if (pp) out.push(pp);
     }
 
     // TSS distance (mean/IQR across files)
@@ -439,11 +472,18 @@ export function FileComparison() {
       if (tssPlot) out.push(tssPlot);
     }
 
+    // Jaccard/overlap: extract sub-matrix for selected files
+    if (sel.length >= 1) {
+      const filtJaccard = selIndices.map((i) => selIndices.map((j) => jaccardMatrix[i][j]));
+      const filtOverlap = selIndices.map((i) => selIndices.map((j) => overlapMatrix[i][j]));
+      out.push(similarityHeatmapSlot(filtJaccard, filtOverlap, sel));
+    }
+
     return out;
   }, [state.phase, state.result, selectedFiles]);
 
   const plots = useMemo<PlotSlot[]>(
-    () => [...selectionPlots, ...consensusPlots],
+    () => [...consensusPlots, ...selectionPlots],
     [selectionPlots, consensusPlots],
   );
 
@@ -530,9 +570,9 @@ export function FileComparison() {
             </p>
             <div className="flex items-center gap-1.5 flex-1 min-w-0 text-xs text-base-content/40 overflow-hidden">
               <span className="shrink-0">{formatNumber(state.result.fileStats.reduce((s, f) => s + f.regions, 0))} regions</span>
-              {state.result.consensus.length > 0 && (
+              {/* {state.result.consensus.length > 0 && (
                 <><span className="shrink-0 hidden @xs:inline">·</span><span className="shrink-0 hidden @xs:inline">{formatNumber(state.result.consensus.length)} consensus</span></>
-              )}
+              )} */}
               {state.result.jaccardMatrix.length > 1 && (
                 <><span className="shrink-0 hidden @sm:inline">·</span><span className="shrink-0 hidden @sm:inline">avg Jaccard {(state.result.jaccardMatrix.flatMap((row, i) => row.filter((_, j) => j > i)).reduce((s, v, _, a) => s + v / a.length, 0)).toFixed(3)}</span></>
               )}
@@ -586,7 +626,7 @@ export function FileComparison() {
                 <table className="table table-sm text-xs w-full">
                   <thead className="text-base-content">
                     <tr>
-                      <th className="w-8">
+                      {/* <th className="w-8">
                         <input
                           type="checkbox"
                           className="checkbox checkbox-xs"
@@ -596,12 +636,13 @@ export function FileComparison() {
                             setSelectedFiles((prev) => prev.size === allNames.length ? new Set() : new Set(allNames));
                           }}
                         />
-                      </th>
+                      </th> */}
                       <th>File</th>
                       <th className="text-right">Regions</th>
                       <th className="text-right">Shared</th>
                       <th className="text-right">Unique</th>
                       <th className="text-right">Overlap %</th>
+                      <th className="text-right">Mean width</th>
                       {genomeResults.length > 0 && <th>Genome</th>}
                       <th className="w-8" />
                     </tr>
@@ -612,8 +653,8 @@ export function FileComparison() {
                       const isMismatch = gr?.genome != null && gr.genome !== majorityGenome;
                       const isLowTier = gr?.tier != null && gr.tier > 1;
                       return (
-                      <tr key={f.fileName} className={selectedFiles.has(f.fileName) ? '' : 'opacity-40'}>
-                        <td>
+                      <tr key={f.fileName}>
+                        {/* <td>
                           <input
                             type="checkbox"
                             className="checkbox checkbox-xs"
@@ -627,12 +668,13 @@ export function FileComparison() {
                               });
                             }}
                           />
-                        </td>
+                        </td> */}
                         <td className="max-w-[200px] truncate">{f.fileName}</td>
                         <td className="text-right">{formatNumber(f.regions)}</td>
                         <td className="text-right">{formatNumber(f.shared)}</td>
                         <td className="text-right">{formatNumber(f.unique)}</td>
                         <td className="text-right">{f.overlapPct.toFixed(1)}%</td>
+                        <td className="text-right">{formatNumber(Math.round(state.result!.fileStats.find((s) => s.fileName === f.fileName)?.meanWidth ?? 0))}</td>
                         {genomeResults.length > 0 && (
                           <td>
                             {gr?.genome ? (
@@ -683,30 +725,7 @@ export function FileComparison() {
                       </tr>
                       );
                     })}
-                    {state.result.unionStats && (
-                      <tr className="border-t border-base-300 bg-primary/5 font-semibold">
-                        <td />
-                        <td>Union</td>
-                        <td className="text-right">{formatNumber(state.result.unionStats.regions)}</td>
-                        <td />
-                        <td />
-                        <td className="text-right">{formatBp(state.result.unionStats.nucleotides)}</td>
-                        {genomeResults.length > 0 && <td />}
-                        <td />
-                      </tr>
-                    )}
-                    {state.result.intersectionStats && (
-                      <tr className="border-t border-base-300 bg-secondary/5 font-semibold">
-                        <td />
-                        <td>All shared</td>
-                        <td className="text-right">{formatNumber(state.result.intersectionStats.regions)}</td>
-                        <td />
-                        <td />
-                        <td className="text-right">{formatBp(state.result.intersectionStats.nucleotides)}</td>
-                        {genomeResults.length > 0 && <td />}
-                        <td />
-                      </tr>
-                    )}
+                    {/* Union and intersection summary rows removed */}
                   </tbody>
                 </table>
               </div>
@@ -730,7 +749,7 @@ export function FileComparison() {
           {/* Plots gallery */}
           {plots.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold text-base-content/50 uppercase tracking-wide mb-2">Visualizations</h3>
+              <h3 className="text-sm font-semibold text-base-content/50 uppercase tracking-wide mb-2">Plots</h3>
               <PlotGallery plots={plots} />
             </div>
           )}

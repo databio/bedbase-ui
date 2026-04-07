@@ -10,11 +10,11 @@
  */
 
 import * as Plot from '@observablehq/plot';
-import type { PlotSlot } from '../../../lib/plot-specs';
-import { type DistributionPoint, type ChromosomeRow } from '../../../lib/bed-analysis';
-import { regionDistributionSlot } from './region-distribution';
-import { chromosomeBarSlot } from './chromosome-bar';
-import { partitionsSlot, expectedPartitionsSlot } from './genomicdist-plots';
+import type { PlotSlot } from '../../../../lib/plot-specs';
+import { type DistributionPoint, type ChromosomeRow } from '../../../../lib/bed-analysis';
+import { regionDistributionSlot } from '../local/region-distribution';
+import { chromosomeBarSlot } from '../local/chromosome-bar';
+import { partitionsSlot, expectedPartitionsSlot } from '../local/genomicdist-plots';
 
 // ---------------------------------------------------------------------------
 // Types for the compressed distributions blob

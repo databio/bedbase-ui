@@ -1,6 +1,6 @@
 import * as Plot from '@observablehq/plot';
-import type { PlotSlot } from '../../../lib/plot-specs';
-import type { PartitionRow, ExpectedPartitionRow } from '../../../lib/bed-analysis';
+import type { PlotSlot } from '../../../../lib/plot-specs';
+import type { PartitionRow, ExpectedPartitionRow } from '../../../../lib/bed-analysis';
 
 // --- Binning helpers ---
 

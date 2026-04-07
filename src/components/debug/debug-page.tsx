@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { Upload } from 'lucide-react';
-import { compressedDistributionSlots, type CompressedDistributions } from '../analysis/plots/compressed-plots';
-import { bedsetStatsSlots, type BedSetStats } from '../analysis/plots/bedset-plots';
+import { compressedDistributionSlots, type CompressedDistributions } from '../analysis/plots/server/compressed-plots';
+import { collectionDistributionSlots, type BedSetDistributions } from '../collections/plots/server/bedset-plots';
 import { PlotGallery } from '../analysis/plot-gallery';
 import type { PlotSlot } from '../../lib/plot-specs';
 
@@ -20,7 +20,7 @@ function parseBedstat(json: Record<string, unknown>): PlotSlot[] {
 }
 
 function parseBedset(json: Record<string, unknown>): PlotSlot[] {
-  return bedsetStatsSlots(json as unknown as BedSetStats);
+  return collectionDistributionSlots(json as unknown as BedSetDistributions);
 }
 
 export function DebugPage() {

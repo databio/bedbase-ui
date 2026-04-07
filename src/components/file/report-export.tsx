@@ -2,9 +2,9 @@ import * as Plot from '@observablehq/plot';
 import { zipSync, strToU8 } from 'fflate';
 import type { PlotSlot } from '../../lib/plot-specs';
 import type { BedAnalysis } from '../../lib/bed-analysis';
-import { regionDistributionSlot } from '../analysis/plots/region-distribution';
-import { widthsHistogramSlot, neighborDistanceSlot } from '../analysis/plots/genomicdist-plots';
-import { chromosomeBarSlot } from '../analysis/plots/chromosome-bar';
+import { regionDistributionSlot } from '../analysis/plots/local/region-distribution';
+import { widthsHistogramSlot, neighborDistanceSlot } from '../analysis/plots/local/genomicdist-plots';
+import { chromosomeBarSlot } from '../analysis/plots/local/chromosome-bar';
 import { UMAP_URL } from '../../lib/umap-utils';
 import { tableau20 } from '../../lib/tableau20';
 

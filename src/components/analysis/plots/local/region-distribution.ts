@@ -1,6 +1,6 @@
 import * as Plot from '@observablehq/plot';
-import { REGION_DIST_BINS, type DistributionPoint } from '../../../lib/bed-analysis';
-import type { PlotSlot } from '../../../lib/plot-specs';
+import { REGION_DIST_BINS, type DistributionPoint } from '../../../../lib/bed-analysis';
+import type { PlotSlot } from '../../../../lib/plot-specs';
 
 const STANDARD_CHR_ORDER = [
   'chr1', 'chr2', 'chr3', 'chr4', 'chr5', 'chr6', 'chr7', 'chr8', 'chr9', 'chr10',
