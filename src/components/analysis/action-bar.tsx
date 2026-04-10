@@ -24,7 +24,7 @@ export function ActionBar({ analysis }: { analysis: BedAnalysis }) {
       addToCart({
         id: analysis.id,
         name: analysis.fileName || 'Unnamed',
-        genome: analysis.summary.dataFormat || '',
+        genome: analysis.genomeAlias || '',
         tissue: analysis.metadata?.tissue || '',
         cell_line: analysis.metadata?.cellLine || '',
         cell_type: analysis.metadata?.cellType || '',

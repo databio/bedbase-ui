@@ -269,12 +269,17 @@ export function CartView() {
                 onClick={() => openTab('analysis', 'bed/' + item.id)}
                 className="hover:bg-primary/5 cursor-pointer transition-colors"
               >
-                <td className="font-medium max-w-48 truncate">
+                <td className="font-medium max-w-48">
                   <a
                     href={`/analysis/bed/${item.id}`}
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); openTab('analysis', 'bed/' + item.id); }}
-                    className="hover:underline"
+                    className="block truncate hover:underline"
                   >{item.name}</a>
+                  <div
+                    className="font-mono text-[10px] text-base-content/30 truncate select-all"
+                    title={item.id}
+                    onClick={(e) => e.stopPropagation()}
+                  >{item.id}</div>
                 </td>
                 <td>
                   {item.genome ? (
