@@ -20,7 +20,9 @@ export type ScalarSummary = {
   mean: number;
   sd: number;
   n: number;
-  histogram: {
+  // Optional: bbconf's pre-aggregation fallback (_old_stats_to_scalar_summaries)
+  // emits {mean, sd, n} with no histogram.
+  histogram?: {
     counts: number[];
     edges: number[];
   };
@@ -556,8 +558,9 @@ const SCALAR_LABELS: Record<string, { title: string; unit: string; description: 
 };
 
 function scalarHistogramSlot(key: string, summary: ScalarSummary): PlotSlot | null {
-  const { counts, edges } = summary.histogram;
-  if (!counts || !edges || counts.length === 0) return null;
+  const hist = summary.histogram;
+  if (!hist?.counts?.length || !hist.edges) return null;
+  const { counts, edges } = hist;
 
   const bins = counts.map((count, i) => ({
     x1: edges[i],
