@@ -12,7 +12,6 @@ export type FileStats = {
   regions: number;
   meanWidth: number;
   nucleotides: number;
-  medianNeighborDistance?: number;
 };
 
 export type FileBreakdown = {
@@ -244,16 +243,6 @@ export async function computeMultiFileAnalysis(
       const widths = Array.from(rs.calcWidths() as unknown as ArrayLike<number>);
       widthHist.push(...binWidths(Array.from(widths), fileNames[i]));
     } catch { /* calcWidths not available */ }
-
-    try {
-      const rsAny = rs as unknown as { calcNeighborDistances?: () => ArrayLike<number> };
-      if (rsAny.calcNeighborDistances) {
-        const dists = Array.from(rsAny.calcNeighborDistances()).filter((d) => d > 0).sort((a, b) => a - b);
-        if (dists.length > 0) {
-          fileStats[i].medianNeighborDistance = dists[Math.floor(dists.length / 2)];
-        }
-      }
-    } catch { /* calcNeighborDistances not available */ }
 
     freeRs(rs);
   }

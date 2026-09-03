@@ -550,11 +550,6 @@ const SCALAR_LABELS: Record<string, { title: string; unit: string; description: 
     unit: '',
     description: 'Distribution of GC content fractions across member BED files.',
   },
-  median_neighbor_distance: {
-    title: 'Median neighbor distance',
-    unit: 'bp',
-    description: 'Distribution of median distances between adjacent regions across member BED files.',
-  },
 };
 
 function scalarHistogramSlot(key: string, summary: ScalarSummary): PlotSlot | null {

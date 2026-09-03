@@ -1110,13 +1110,6 @@ const SCALAR_DEFS: ScalarDef[] = [
     unit: 'bp',
     description: 'Distribution of mean region widths (bp) across compared BED files.',
   },
-  {
-    key: 'medianNeighborDistance',
-    id: 'scalar-median_neighbor_distance',
-    title: 'Median neighbor distance',
-    unit: 'bp',
-    description: 'Distribution of median distances between adjacent regions across compared BED files.',
-  },
 ];
 
 function scalarHistogramBins(values: number[], nBins?: number): { x1: number; x2: number; count: number }[] {
