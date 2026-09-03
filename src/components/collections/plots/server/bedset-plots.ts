@@ -44,7 +44,7 @@ export type BedSetDistributions = {
   > | null;
   partitions?: Record<
     string,
-    { mean_pct: number; sd_pct: number; n: number }
+    { mean: number; sd: number; n: number }
   > | null;
 };
 
@@ -472,10 +472,11 @@ function chromosomeBarSlot(
 // ---------------------------------------------------------------------------
 
 function partitionsSlot(
-  partitions: Record<string, { mean_pct: number; sd_pct: number; n: number }>,
+  partitions: Record<string, { mean: number; sd: number; n: number }>,
 ): PlotSlot | null {
+  // bbconf reports partitions as fractions; scale to percent for the axis.
   const data = Object.entries(partitions)
-    .map(([name, p]) => ({ partition: name, pct: p.mean_pct, sd: p.sd_pct }));
+    .map(([name, p]) => ({ partition: name, pct: p.mean * 100, sd: p.sd * 100 }));
   if (data.length === 0) return null;
 
   const maxLabel = Math.max(...data.map((d) => d.partition.length));
