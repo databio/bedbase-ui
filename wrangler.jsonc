@@ -1,5 +1,6 @@
 {
   "name": "bedbase-ui",
+  "workers_dev": false,
   "compatibility_date": "2026-02-20",
   "assets": {
     "directory": "./dist",
